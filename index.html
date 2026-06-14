@@ -19,6 +19,7 @@
         <h1>Caisse Moroges</h1>
         <div class="header-actions">
           <button id="stockBtn" class="small-btn">Stocks</button>
+          <button id="bilanBtn" class="small-btn">Bilan</button>
           <button id="fullscreenBtn" class="small-btn">Plein écran</button>
         </div>
       </header>
@@ -42,42 +43,91 @@
         <h2>Caisse</h2>
         <button id="exportBtn" class="small-btn">Export CSV</button>
       </header>
+
       <div class="cash-screen">
         <div><span>Reçu</span><strong id="received">0,00 €</strong></div>
         <div><span>Monnaie</span><strong id="change">0,00 €</strong></div>
       </div>
+
       <div class="quick-cash">
-        <button data-cash="500">5 €</button><button data-cash="1000">10 €</button><button data-cash="2000">20 €</button><button data-cash="5000">50 €</button><button id="exactBtn">Exact</button>
+        <button data-cash="500">5 €</button>
+        <button data-cash="1000">10 €</button>
+        <button data-cash="2000">20 €</button>
+        <button data-cash="5000">50 €</button>
+        <button id="exactBtn">Exact</button>
       </div>
+
       <div class="keypad" id="keypad">
         <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
         <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
         <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
         <button id="backBtn">⌫</button><button data-key="0">0</button><button id="clearReceivedBtn">C</button>
       </div>
+
       <div class="pay-actions">
         <button id="cashPayBtn" class="pay cash">Espèces</button>
         <button id="cardPayBtn" class="pay card">CB</button>
       </div>
-      <div class="stats">
-        <div><span>Commandes</span><strong id="ordersCount">0</strong></div>
-        <div><span>Espèces</span><strong id="cashTotal">0,00 €</strong></div>
-        <div><span>CB</span><strong id="cardTotal">0,00 €</strong></div>
-        <div><span>Total</span><strong id="globalTotal">0,00 €</strong></div>
-      </div>
     </section>
   </main>
 
-  <dialog id="stockDialog" class="stock-dialog">
-    <form method="dialog" class="stock-panel">
+  <dialog id="choiceDialog" class="modal-dialog">
+    <form method="dialog" class="modal-panel">
+      <header class="panel-header">
+        <h2 id="choiceTitle">Choix</h2>
+        <button class="small-btn">Fermer</button>
+      </header>
+      <p class="stock-help">Choisir exactement 2 viandes. Le menu comprend aussi 1 glace et 1 boisson.</p>
+      <div class="choice-block">
+        <h3>Viandes</h3>
+        <div class="choice-grid">
+          <button type="button" id="meatSaucisseMinus">−</button>
+          <strong>Saucisse</strong>
+          <input id="meatSaucisse" inputmode="numeric" value="0">
+          <button type="button" id="meatSaucissePlus">+</button>
+          <button type="button" id="meatMerguezMinus">−</button>
+          <strong>Merguez</strong>
+          <input id="meatMerguez" inputmode="numeric" value="0">
+          <button type="button" id="meatMerguezPlus">+</button>
+        </div>
+      </div>
+      <div id="drinkBlock" class="choice-block">
+        <h3>Boisson du menu</h3>
+        <div class="drink-buttons">
+          <button type="button" data-drink="soft">Soft</button>
+          <button type="button" data-drink="biere25">Verre de bière</button>
+          <button type="button" data-drink="vin">Verre de vin +0,50 €</button>
+        </div>
+      </div>
+      <div id="choiceWarning" class="warning"></div>
+      <button type="button" id="addChoiceBtn" class="pay card full-width">Ajouter</button>
+    </form>
+  </dialog>
+
+  <dialog id="stockDialog" class="modal-dialog">
+    <form method="dialog" class="modal-panel">
       <header class="panel-header">
         <h2>Gestion des stocks</h2>
         <button class="small-btn">Fermer</button>
       </header>
-      <p class="stock-help">Saisir le stock initial ou restant. Vide = stock non suivi. Les ventes décrémentent automatiquement le stock.</p>
+      <p class="stock-help">Saisir le stock initial ou restant. Vide = stock non suivi. Les menus décrémentent saucisse/merguez, glace et boisson choisie.</p>
       <div id="stockList" class="stock-list"></div>
       <div class="stock-actions">
-        <button type="button" id="resetStockBtn" class="danger small-btn">Réinitialiser les stocks</button>
+        <button type="button" id="resetStockBtn" class="danger small-btn">Réinitialiser</button>
+        <button class="small-btn">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="bilanDialog" class="modal-dialog wide">
+    <form method="dialog" class="modal-panel">
+      <header class="panel-header">
+        <h2>Bilan</h2>
+        <button class="small-btn">Fermer</button>
+      </header>
+      <div id="bilanContent"></div>
+      <div class="stock-actions">
+        <button type="button" id="resetOrdersBtn" class="danger small-btn">Effacer les commandes</button>
         <button class="small-btn">OK</button>
       </div>
     </form>
