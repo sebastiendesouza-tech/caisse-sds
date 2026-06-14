@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Caisse Moroges">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#111827">
+  <title>Caisse Moroges</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="panel products-panel">
+      <header class="panel-header">
+        <h1>Caisse Moroges</h1>
+        <div class="header-actions">
+          <button id="stockBtn" class="small-btn">Stocks</button>
+          <button id="bilanBtn" class="small-btn">Bilan</button>
+          <button id="fullscreenBtn" class="small-btn">Plein écran</button>
+        </div>
+      </header>
+      <div id="products" class="products"></div>
+    </section>
+
+    <section class="panel cart-panel">
+      <header class="panel-header">
+        <h2>Commande</h2>
+        <button id="clearCartBtn" class="danger small-btn">Vider</button>
+      </header>
+      <div id="cart" class="cart empty">Aucun article</div>
+      <div class="total-box">
+        <span>Total</span>
+        <strong id="total">0,00 €</strong>
+      </div>
+    </section>
+
+    <section class="panel payment-panel">
+      <header class="panel-header">
+        <h2>Caisse</h2>
+        <button id="printTicketBtn" class="small-btn">Imprimer ticket</button>
+        <button id="exportBtn" class="small-btn">Export CSV</button>
+      </header>
+
+      <div class="cash-screen">
+        <div><span>Reçu</span><strong id="received">0,00 €</strong></div>
+        <div><span>Monnaie</span><strong id="change">0,00 €</strong></div>
+      </div>
+
+      <div class="quick-cash">
+        <button data-cash="500">5 €</button>
+        <button data-cash="1000">10 €</button>
+        <button data-cash="2000">20 €</button>
+        <button data-cash="5000">50 €</button>
+        <button id="exactBtn">Exact</button>
+      </div>
+
+      <div class="keypad" id="keypad">
+        <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+        <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+        <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+        <button id="backBtn">⌫</button><button data-key="0">0</button><button id="clearReceivedBtn">C</button>
+      </div>
+
+      <div class="pay-actions">
+        <button id="cashPayBtn" class="pay cash">Espèces</button>
+        <button id="cardPayBtn" class="pay card">CB</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="choiceDialog" class="modal-dialog">
+    <form method="dialog" class="modal-panel">
+      <header class="panel-header">
+        <h2 id="choiceTitle">Choix</h2>
+        <button class="small-btn">Fermer</button>
+      </header>
+      <p class="stock-help">Choisir exactement 2 viandes. Le menu comprend aussi 1 glace et 1 boisson.</p>
+      <div class="choice-block">
+        <h3>Viandes</h3>
+        <div class="choice-grid">
+          <button type="button" id="meatSaucisseMinus">−</button>
+          <strong>Saucisse</strong>
+          <input id="meatSaucisse" inputmode="numeric" value="0">
+          <button type="button" id="meatSaucissePlus">+</button>
+          <button type="button" id="meatMerguezMinus">−</button>
+          <strong>Merguez</strong>
+          <input id="meatMerguez" inputmode="numeric" value="0">
+          <button type="button" id="meatMerguezPlus">+</button>
+        </div>
+      </div>
+      <div id="drinkBlock" class="choice-block">
+        <h3>Boisson du menu</h3>
+        <div class="drink-buttons">
+          <button type="button" data-drink="soft">Soft</button>
+          <button type="button" data-drink="biere25">Verre de bière</button>
+          <button type="button" data-drink="vin">Verre de vin +0,50 €</button>
+        </div>
+      </div>
+      <div id="choiceWarning" class="warning"></div>
+      <button type="button" id="addChoiceBtn" class="pay card full-width">Ajouter</button>
+    </form>
+  </dialog>
+
+  <dialog id="stockDialog" class="modal-dialog">
+    <form method="dialog" class="modal-panel">
+      <header class="panel-header">
+        <h2>Gestion des stocks</h2>
+        <button class="small-btn">Fermer</button>
+      </header>
+      <p class="stock-help">Saisir le stock initial ou restant. Vide = stock non suivi. Les menus décrémentent saucisse/merguez, glace et boisson choisie.</p>
+      <div id="stockList" class="stock-list"></div>
+      <div class="stock-actions">
+        <button type="button" id="resetStockBtn" class="danger small-btn">Réinitialiser</button>
+        <button class="small-btn">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="bilanDialog" class="modal-dialog wide">
+    <form method="dialog" class="modal-panel">
+      <header class="panel-header">
+        <h2>Bilan</h2>
+        <button class="small-btn">Fermer</button>
+      </header>
+      <div id="bilanContent"></div>
+      <div class="stock-actions">
+        <button type="button" id="resetOrdersBtn" class="danger small-btn">Effacer les commandes</button>
+        <button class="small-btn">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="printArea" class="print-area"></div>
+  <script src="app.js"></script>
+</body>
+</html>
