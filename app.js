@@ -4,8 +4,12 @@ const PRODUCTS = [
   { id: "soft", name: "Soft canette", price: 200, cat: "Boissons", stockable: true },
   { id: "biere25", name: "Bière 25 cl", price: 250, cat: "Boissons", stockable: true },
   { id: "pichet", name: "Pichet bière 1 L", price: 900, cat: "Boissons", stockable: true },
-  { id: "vin", name: "Verre de vin", price: 300, cat: "Boissons", stockable: true },
-  { id: "btvin", name: "Bouteille vin", price: 1100, cat: "Boissons", stockable: true },
+  { id: "vin_rouge", name: "Verre vin rouge", price: 300, cat: "Boissons", stockable: true },
+  { id: "vin_blanc", name: "Verre vin blanc", price: 300, cat: "Boissons", stockable: true },
+  { id: "vin_rose", name: "Verre vin rosé", price: 300, cat: "Boissons", stockable: true },
+  { id: "btvin_rouge", name: "Bouteille rouge", price: 1100, cat: "Boissons", stockable: true },
+  { id: "btvin_blanc", name: "Bouteille blanc", price: 1100, cat: "Boissons", stockable: true },
+  { id: "btvin_rose", name: "Bouteille rosé", price: 1100, cat: "Boissons", stockable: true },
   { id: "cremant", name: "Bouteille crémant", price: 1300, cat: "Boissons", stockable: true },
 
   { id: "assiette", name: "Assiette gourmande", price: 700, cat: "Restauration", composite: "assiette" },
@@ -91,8 +95,15 @@ function addProduct(product) {
 }
 
 function makeCompositeLine(product) {
-  const drinkName = choice.drink === "soft" ? "Soft" : choice.drink === "biere25" ? "Bière" : "Vin +0,50 €";
-  const price = product.price + (product.composite === "menu" && choice.drink === "vin" ? 50 : 0);
+  const drinkNames = {
+    soft: "Soft",
+    biere25: "Bière",
+    vin_rouge: "Vin rouge +0,50 €",
+    vin_blanc: "Vin blanc +0,50 €",
+    vin_rose: "Vin rosé +0,50 €"
+  };
+  const drinkName = drinkNames[choice.drink] || "Soft";
+  const price = product.price + (product.composite === "menu" && choice.drink.startsWith("vin_") ? 50 : 0);
   const meatText = `${choice.saucisse} saucisse / ${choice.merguez} merguez`;
   const sub = product.composite === "menu" ? `${meatText} · ${drinkName} · glace` : meatText;
   return {
@@ -211,6 +222,12 @@ function renderPayment() {
   byId("total").textContent = euro(total);
   byId("received").textContent = euro(received);
   byId("change").textContent = euro(Math.max(0, received - total));
+  const s = stats();
+  const global = s.cashTotal + s.cardTotal;
+  const oc = byId("ordersCount"); if (oc) oc.textContent = orders.length;
+  const ct = byId("cashTotal"); if (ct) ct.textContent = euro(s.cashTotal);
+  const cbt = byId("cardTotal"); if (cbt) cbt.textContent = euro(s.cardTotal);
+  const gt = byId("globalTotal"); if (gt) gt.textContent = euro(global);
 }
 function renderAll() { renderProducts(); renderCart(); renderPayment(); }
 
@@ -263,35 +280,142 @@ function finishOrder(payment) {
   lastPrintedOrder = order;
   cart = []; receivedDigits = "";
   renderAll();
-  alert(`Commande n°${order.number} enregistrée`);
+  printTicket(order);
 }
 
 function stats() {
-  const cashTotal = orders.filter(o => o.payment === "cash").reduce((s, o) => s + o.total, 0);
-  const cardTotal = orders.filter(o => o.payment === "card").reduce((s, o) => s + o.total, 0);
-  const sold = {};
+  const cashTotal = orders.filter(o => o.payment === "cash").reduce((sum, o) => sum + o.total, 0);
+  const cardTotal = orders.filter(o => o.payment === "card").reduce((sum, o) => sum + o.total, 0);
+  const soldByProductId = {};
+  const soldByName = {};
+  const revenueByName = {};
   const comps = {};
+  const drinkChoices = { soft: 0, biere25: 0, vin_rouge: 0, vin_blanc: 0, vin_rose: 0 };
+  const meatChoices = { saucisse: 0, merguez: 0 };
+
   orders.forEach(order => {
-    order.lines.forEach(line => sold[line.name] = (sold[line.name] || 0) + line.qty);
+    order.lines.forEach(line => {
+      const key = line.productId || line.id;
+      soldByProductId[key] = (soldByProductId[key] || 0) + line.qty;
+      soldByName[line.name] = (soldByName[line.name] || 0) + line.qty;
+      revenueByName[line.name] = (revenueByName[line.name] || 0) + line.price * line.qty;
+      if (line.drink) drinkChoices[line.drink] = (drinkChoices[line.drink] || 0) + line.qty;
+      if (line.meats) {
+        meatChoices.saucisse += (line.meats.saucisse || 0) * line.qty;
+        meatChoices.merguez += (line.meats.merguez || 0) * line.qty;
+      }
+    });
     Object.entries(order.components || {}).forEach(([id, qty]) => comps[id] = (comps[id] || 0) + qty);
   });
-  return { cashTotal, cardTotal, sold, comps };
+  return { cashTotal, cardTotal, soldByProductId, soldByName, revenueByName, comps, drinkChoices, meatChoices };
+}
+
+function tableRows(rows, empty = "Aucune donnée") {
+  return rows.length ? rows.join("") : `<tr><td>${empty}</td><td></td><td></td></tr>`;
 }
 
 function renderBilan() {
   const s = stats();
   const root = byId("bilanContent");
-  const rows = Object.entries(s.sold).map(([name, qty]) => `<tr><td>${name}</td><td>${qty}</td><td></td></tr>`).join("");
-  const compRows = Object.entries(s.comps).map(([id, qty]) => `<tr><td>${stockItemById(id).name}</td><td>${qty}</td><td>${stock[id] ?? ""}</td></tr>`).join("");
+  const total = s.cashTotal + s.cardTotal;
+  const productRows = PRODUCTS.map(product => {
+    const qty = s.soldByProductId[product.id] || 0;
+    const ca = Object.entries(s.revenueByName).filter(([name]) => name === product.name).reduce((sum, [, value]) => sum + value, 0);
+    const stockRestant = product.stockable ? (stockValue(product.id) === null ? "Non suivi" : stockValue(product.id)) : "";
+    return `<tr><td>${product.name}</td><td>${qty}</td><td>${euro(ca)}</td><td>${stockRestant}</td></tr>`;
+  }).join("");
+
+  const compRows = STOCK_ITEMS.map(item => {
+    const used = s.comps[item.id] || 0;
+    const remaining = stockValue(item.id) === null ? "Non suivi" : stockValue(item.id);
+    return `<tr><td>${item.name}</td><td>${used}</td><td>${remaining}</td></tr>`;
+  }).join("");
+
+  const choiceRows = [
+    `<tr><td>Saucisse</td><td>${s.meatChoices.saucisse}</td><td></td></tr>`,
+    `<tr><td>Merguez</td><td>${s.meatChoices.merguez}</td><td></td></tr>`,
+    `<tr><td>Menus avec soft</td><td>${s.drinkChoices.soft || 0}</td><td></td></tr>`,
+    `<tr><td>Menus avec bière</td><td>${s.drinkChoices.biere25 || 0}</td><td></td></tr>`,
+    `<tr><td>Menus avec vin rouge +0,50 €</td><td>${s.drinkChoices.vin_rouge || 0}</td><td></td></tr>`,
+    `<tr><td>Menus avec vin blanc +0,50 €</td><td>${s.drinkChoices.vin_blanc || 0}</td><td></td></tr>`,
+    `<tr><td>Menus avec vin rosé +0,50 €</td><td>${s.drinkChoices.vin_rose || 0}</td><td></td></tr>`
+  ].join("");
+
   root.innerHTML = `
     <div class="bilan-grid">
       <div class="mini-stat"><span>Commandes</span><strong>${orders.length}</strong></div>
       <div class="mini-stat"><span>Espèces</span><strong>${euro(s.cashTotal)}</strong></div>
       <div class="mini-stat"><span>CB</span><strong>${euro(s.cardTotal)}</strong></div>
-      <div class="mini-stat"><span>Total</span><strong>${euro(s.cashTotal + s.cardTotal)}</strong></div>
+      <div class="mini-stat"><span>Total</span><strong>${euro(total)}</strong></div>
     </div>
-    <h3>Ventes par produit</h3><div class="bilan-table"><table><thead><tr><th>Produit</th><th>Vendu</th><th></th></tr></thead><tbody>${rows || "<tr><td>Aucune vente</td><td></td><td></td></tr>"}</tbody></table></div>
-    <h3 style="margin-top:10px">Consommation stock</h3><div class="bilan-table"><table><thead><tr><th>Stock</th><th>Utilisé</th><th>Restant</th></tr></thead><tbody>${compRows || "<tr><td>Aucune consommation</td><td></td><td></td></tr>"}</tbody></table></div>`;
+    <h3>Ventes par produit</h3>
+    <div class="bilan-table"><table><thead><tr><th>Produit</th><th>Vendu</th><th>CA</th><th>Stock restant</th></tr></thead><tbody>${productRows}</tbody></table></div>
+    <h3 style="margin-top:10px">Détail menus / assiettes</h3>
+    <div class="bilan-table compact"><table><thead><tr><th>Choix</th><th>Quantité</th><th></th></tr></thead><tbody>${choiceRows}</tbody></table></div>
+    <h3 style="margin-top:10px">Consommation et stocks restants</h3>
+    <div class="bilan-table"><table><thead><tr><th>Stock</th><th>Utilisé</th><th>Restant</th></tr></thead><tbody>${compRows}</tbody></table></div>`;
+}
+
+function renderBilanPrintableHtml() {
+  renderBilan();
+  return `<div class="bilan-print"><h1>Bilan caisse Moroges</h1><p>${formatDateTime(new Date().toISOString())}</p>${byId("bilanContent").innerHTML}</div>`;
+}
+
+function printBilan() {
+  byId("printArea").innerHTML = renderBilanPrintableHtml();
+  document.body.classList.remove("print-ticket");
+  document.body.classList.add("print-bilan");
+  window.print();
+  setTimeout(() => document.body.classList.remove("print-bilan"), 500);
+}
+
+function exportBilanCSV() {
+  const s = stats();
+  const rows = [
+    ["section", "libelle", "quantite", "montant_centimes", "stock_restant"],
+    ["resume", "commandes", orders.length, "", ""],
+    ["resume", "ca_especes", "", s.cashTotal, ""],
+    ["resume", "ca_cb", "", s.cardTotal, ""],
+    ["resume", "ca_total", "", s.cashTotal + s.cardTotal, ""]
+  ];
+  PRODUCTS.forEach(product => rows.push(["produit", product.name, s.soldByProductId[product.id] || 0, "", product.stockable ? (stockValue(product.id) ?? "non suivi") : ""]));
+  rows.push(["choix", "saucisse", s.meatChoices.saucisse, "", stockValue("saucisse") ?? "non suivi"]);
+  rows.push(["choix", "merguez", s.meatChoices.merguez, "", stockValue("merguez") ?? "non suivi"]);
+  rows.push(["choix", "menus avec soft", s.drinkChoices.soft || 0, "", ""]);
+  rows.push(["choix", "menus avec biere", s.drinkChoices.biere25 || 0, "", ""]);
+  rows.push(["choix", "menus avec vin rouge", s.drinkChoices.vin_rouge || 0, "", ""]);
+  rows.push(["choix", "menus avec vin blanc", s.drinkChoices.vin_blanc || 0, "", ""]);
+  rows.push(["choix", "menus avec vin rose", s.drinkChoices.vin_rose || 0, "", ""]);
+  STOCK_ITEMS.forEach(item => rows.push(["stock", item.name, s.comps[item.id] || 0, "", stockValue(item.id) ?? "non suivi"]));
+  downloadCSV(rows, `bilan-detaille-moroges-${new Date().toISOString().slice(0, 10)}.csv`);
+}
+
+function renderHistory() {
+  const root = byId("historyContent");
+  if (!orders.length) { root.innerHTML = `<div class="empty-history">Aucune commande enregistrée</div>`; return; }
+  root.innerHTML = orders.slice().reverse().map(order => {
+    const lines = order.lines.map(line => `<li>${line.qty} x ${escapeHtml(line.name)}${line.sub ? ` <span>${escapeHtml(line.sub)}</span>` : ""}</li>`).join("");
+    return `<article class="history-card">
+      <header><strong>Commande n°${order.number}</strong><span>${formatDateTime(order.date)}</span><span>${order.payment === "card" ? "CB" : "Espèces"}</span><b>${euro(order.total)}</b></header>
+      <ul>${lines}</ul>
+      <button type="button" class="small-btn" data-print-order="${order.number}">Réimprimer</button>
+    </article>`;
+  }).join("");
+  root.querySelectorAll("[data-print-order]").forEach(btn => btn.addEventListener("click", () => {
+    const order = orders.find(o => String(o.number) === btn.dataset.printOrder);
+    if (order) printTicket(order);
+  }));
+}
+
+function downloadCSV(rows, filename) {
+  const csv = rows.map(row => row.map(value => `"${String(value ?? "").replaceAll('"', '""')}"`).join(";")).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function escapeHtml(value) {
@@ -315,31 +439,41 @@ function orderFromCurrentCart() {
 function renderTicketHtml(order) {
   const lines = order.lines.map(line => `
     <div class="ticket-line">
-      <div>${line.qty} x ${escapeHtml(line.name)}</div>
-      <div>${euro(line.price * line.qty)}</div>
+      <strong>${line.qty} x ${escapeHtml(line.name)}</strong>
+      ${line.sub ? `<span>${escapeHtml(line.sub)}</span>` : ""}
     </div>
-    ${line.sub ? `<div class="ticket-sub">${escapeHtml(line.sub)}</div>` : ""}
   `).join("");
+
+  const isCash = order.payment === "cash";
+  const received = isCash ? (order.received ?? getReceived()) : null;
+  const change = isCash ? (order.change ?? Math.max(0, received - order.total)) : null;
+
   return `
-    <div class="ticket">
-      <h1>FÊTE DE LA MUSIQUE<br>MOROGES</h1>
-      <div class="ticket-meta">Commande n°${order.number}</div>
-      <div class="ticket-meta">${formatDateTime(order.date)}</div>
-      <hr>
-      ${lines || "<p>Aucun article</p>"}
-      <hr>
-      <div class="ticket-total"><span>Total</span><strong>${euro(order.total)}</strong></div>
-      <div class="ticket-meta">Paiement : ${order.payment === "card" ? "CB" : order.payment === "cash" ? "Espèces" : "Non validé"}</div>
-      <p class="ticket-footer">Merci</p>
+    <div class="ticket compact-ticket">
+      <div class="ticket-order">Commande n°${order.number}</div>
+
+      <section class="ticket-section compact-list">
+        ${lines || "<p>Aucun article</p>"}
+      </section>
+
+      <section class="ticket-caisse compact-caisse">
+        <div class="ticket-total"><span>Total</span><strong>${euro(order.total)}</strong></div>
+        ${isCash ? `
+          <div class="ticket-pay"><span>Payé</span><strong>${euro(received)}</strong></div>
+          <div class="ticket-change"><span>Monnaie</span><strong>${euro(change)}</strong></div>
+        ` : `<div class="ticket-pay"><span>Payé</span><strong>CB</strong></div>`}
+      </section>
     </div>
   `;
 }
-
-function printTicket() {
-  const order = cart.length ? orderFromCurrentCart() : lastPrintedOrder || orders.at(-1);
+function printTicket(orderToPrint = null) {
+  const order = orderToPrint || (cart.length ? orderFromCurrentCart() : lastPrintedOrder || orders.at(-1));
   if (!order || !order.lines || !order.lines.length) return alert("Aucun ticket à imprimer.");
   byId("printArea").innerHTML = renderTicketHtml(order);
+  document.body.classList.remove("print-bilan");
+  document.body.classList.add("print-ticket");
   window.print();
+  setTimeout(() => document.body.classList.remove("print-ticket"), 500);
 }
 
 function exportCSV() {
@@ -348,22 +482,21 @@ function exportCSV() {
     const comps = Object.entries(getLineComponents(line)).map(([id, qty]) => `${stockItemById(id).name}:${qty * line.qty}`).join(", ");
     rows.push([order.number, order.date, order.payment, order.total, order.received, order.change, line.name, line.sub || "", line.qty, line.price, comps]);
   }));
-  const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(";")).join("\n");
-  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `bilan-caisse-moroges-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click(); URL.revokeObjectURL(url);
+  downloadCSV(rows, `commandes-caisse-moroges-${new Date().toISOString().slice(0, 10)}.csv`);
 }
 
 function bindEvents() {
   byId("clearCartBtn").addEventListener("click", () => { cart = []; renderAll(); });
   byId("stockBtn").addEventListener("click", () => { renderStockList(); byId("stockDialog").showModal(); });
   byId("bilanBtn").addEventListener("click", () => { renderBilan(); byId("bilanDialog").showModal(); });
+  byId("historyBtn").addEventListener("click", () => { renderHistory(); byId("historyDialog").showModal(); });
   byId("resetStockBtn").addEventListener("click", () => { if (confirm("Réinitialiser tous les stocks ?")) { STOCK_ITEMS.forEach(i => stock[i.id] = ""); saveStock(); renderStockList(); renderAll(); } });
-  byId("resetOrdersBtn").addEventListener("click", () => { if (confirm("Effacer toutes les commandes ?")) { orders = []; saveOrders(); renderBilan(); } });
-  byId("printTicketBtn").addEventListener("click", printTicket);
+  byId("resetOrdersBtn").addEventListener("click", () => { if (confirm("Effacer toutes les commandes ?")) { orders = []; saveOrders(); renderBilan(); renderAll(); } });
+  byId("exportBilanBtn").addEventListener("click", exportBilanCSV);
+  byId("printBilanBtn").addEventListener("click", printBilan);
+  byId("exportOrdersBtn").addEventListener("click", exportCSV);
+  const printTicketBtn = byId("printTicketBtn");
+  if (printTicketBtn) printTicketBtn.addEventListener("click", () => printTicket());
   byId("exportBtn").addEventListener("click", exportCSV);
   byId("cashPayBtn").addEventListener("click", () => finishOrder("cash"));
   byId("cardPayBtn").addEventListener("click", () => finishOrder("card"));
