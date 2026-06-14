@@ -1,125 +1,88 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#f6a21a">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>Caisse Moroges</title>
-<style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{touch-action:manipulation;-webkit-text-size-adjust:100%}
-html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#fffaf2;color:#241414}
-body{height:100vh;overflow:hidden}
-header{height:44px;background:#fff;border-bottom:2px solid #ead9bf;padding:5px 10px}
-h1{font-size:18px;margin:0}.hint{font-size:11px;color:#6b4d37}
-main{height:calc(100vh - 44px);display:grid;grid-template-columns:48% 20% 32%;gap:6px;padding:6px}
-.panel{background:#fff;border:2px solid #ead9bf;border-radius:12px;padding:6px;overflow:auto}
-h2{font-size:17px;margin:0 0 5px}.products{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.cat{grid-column:1/-1;background:#fff4d6;border-left:6px solid #f6a21a;border-radius:7px;padding:4px 8px;font-size:15px;font-weight:900;margin-top:2px}
-button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.prod{border:1px solid #ead9bf;background:#fff;border-radius:10px;padding:5px;min-height:58px;font-size:12px;font-weight:800;box-shadow:0 1px 0 #e6d1aa}
-.prod:active{transform:translateY(1px);box-shadow:none}.ico{font-size:18px;margin-right:3px}.price{display:block;color:#c62828;font-size:18px;font-weight:900;margin-top:2px}
-.cartline{border-bottom:1px dashed #ddd;padding:5px 0;min-height:42px}.carttitle{font-size:12px;font-weight:700;padding-right:72px}.cartprice{font-size:14px;font-weight:900;color:#c62828}
-.qty{float:right;white-space:nowrap}.qty button{width:26px;height:26px;border-radius:7px;border:1px solid #bbb;background:white;font-size:17px;font-weight:900}.qty span{display:inline-block;width:20px;text-align:center;font-weight:900;font-size:13px}
-.total{font-size:29px;font-weight:900;color:#c62828;text-align:right;margin:7px 0}
-.actionrow{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}.actionrow button{border:0;border-radius:10px;padding:9px 5px;font-size:13px;font-weight:900}.undo{background:#eee}.reset{background:#351b1b;color:white}
-.biglabel{font-size:15px;font-weight:900;margin-top:2px}.screen{border:2px solid #ead9bf;border-radius:10px;background:#fffaf2;text-align:right;font-size:25px;font-weight:900;padding:6px;margin:4px 0}.change{font-size:28px;font-weight:900;color:#2e7d32;text-align:right;margin:2px 0 6px}
-.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.keypad button{border:1px solid #efcf83;border-radius:10px;background:#fff3d0;font-size:22px;font-weight:900;padding:8px}.keypad .clear{background:#eee;border-color:#ddd}.keypad .exact{grid-column:span 2;background:#dff5df;border-color:#bbe0bb;font-size:15px}
-.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:5px}.quick button{border:1px solid #efcf83;border-radius:10px;background:#fff3d0;font-size:15px;font-weight:900;padding:8px 2px}
-.payrow{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}.payrow button{border:0;border-radius:11px;padding:10px 3px;font-size:14px;font-weight:900}.cash{background:#dff5df}.cb{background:#dfeaff}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px}.tabs button{border:0;border-radius:9px;padding:7px;font-size:13px;font-weight:900;background:#eee}.tabs button.active{background:#f6a21a}
-#bilan{display:none}.sumline{display:grid;grid-template-columns:1fr auto auto;gap:5px;border-bottom:1px solid #eee;padding:4px 0;font-size:12px}.sumtotal{font-size:18px;font-weight:900;margin:6px 0}
-@media (orientation:portrait){
- body{overflow:auto;height:auto}header{height:auto}main{height:auto;display:block}.panel{margin:6px;max-height:none}.products{grid-template-columns:repeat(2,1fr)}
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Caisse Moroges">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#111827">
+  <title>Caisse Moroges</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header><h1>🍻 Caisse Moroges</h1><div class="hint">iPad paysage - vente tickets + consignes. Saisie : 2000 = 20,00 €.</div></header>
-<main>
-<section class="panel"><h2>Produits</h2><div class="products" id="products"></div></section>
-<section class="panel"><h2>Commande</h2><div id="cart"></div><div class="total">Total<br><span id="total">0,00 €</span></div><div class="actionrow"><button class="undo" id="undoBtn">Annuler</button><button class="reset" id="resetBtn">Nouvelle</button></div></section>
-<section class="panel">
-<div class="tabs"><button id="tabCaisse" class="active">Caisse</button><button id="tabBilan">Bilan</button></div>
-<div id="caisse">
-<div class="biglabel">Reçu espèces</div><div class="screen" id="paid">0,00 €</div>
-<div class="biglabel">À rendre</div><div class="change" id="change">0,00 €</div>
-<div class="keypad">
-<button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
-<button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
-<button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-<button data-key="0">0</button><button id="backBtn" class="clear">⌫</button><button id="clearBtn" class="clear">C</button>
-<button id="exactBtn" class="exact">Montant exact</button><button id="add50Btn" class="clear">+0,50</button>
-</div>
-<div class="quick"><button data-bill="500">5€</button><button data-bill="1000">10€</button><button data-bill="2000">20€</button><button data-bill="5000">50€</button></div>
-<div class="payrow"><button class="cash" id="cashBtn">Valider espèces</button><button class="cb" id="cbBtn">Valider CB</button></div>
-</div>
-<div id="bilan"><h2>Bilan</h2><div id="summary"></div><div class="actionrow"><button class="undo" id="exportBtn">Exporter CSV</button><button class="reset" id="resetSalesBtn">RAZ bilan</button></div></div>
-</section>
-</main>
-<script>
-(function(){
-var products=[
-{cat:"Boissons"},
-{name:"Eau 50 cl",price:0.50,emoji:"💧"},{name:"Eau 1,5 L",price:1.50,emoji:"💧"},{name:"Soft canette",price:2.00,emoji:"🥤"},
-{name:"Bière 25 cl",price:2.50,emoji:"🍺"},{name:"Pichet 1 L",price:9.00,emoji:"🍻"},{name:"Vin verre",price:3.00,emoji:"🍷"},
-{name:"Bouteille vin",price:11.00,emoji:"🍾"},{name:"Crémant",price:13.00,emoji:"🥂"},
-{cat:"Restauration"},
-{name:"Assiette",price:7.00,emoji:"🍟"},{name:"Frites",price:2.50,emoji:"🍟"},{name:"Glace",price:2.00,emoji:"🍦"},
-{name:"Popcorn",price:1.00,emoji:"🍿"},{name:"Menu",price:10.00,emoji:"🍽️"},{name:"Suppl. vin",price:0.50,emoji:"🍷"},
-{cat:"Consignes"},
-{name:"Consigne gobelet",price:2.00,emoji:"♻️"},{name:"Retour consigne",price:-2.00,emoji:"↩️"}
-];
-var cart={},history=[],paidDigits="",sales=[];
-try{sales=JSON.parse(localStorage.getItem("morogesSalesOpti")||"[]")}catch(e){sales=[]}
-function euro(n){return Number(n).toLocaleString("fr-FR",{style:"currency",currency:"EUR"})}
-function total(){var s=0;for(var k in cart){s+=products[k].price*cart[k]}return s}
-function paidCents(){return paidDigits===""?0:parseInt(paidDigits,10)}
-function paidAmount(){return paidCents()/100}
-function saveSales(){try{localStorage.setItem("morogesSalesOpti",JSON.stringify(sales))}catch(e){}}
-function addProduct(i){cart[i]=(cart[i]||0)+1;history.push(i);render()}
-function removeOne(i){if(!cart[i])return;cart[i]--;if(cart[i]<=0)delete cart[i];render()}
-function renderProducts(){var html="";for(var i=0;i<products.length;i++){var p=products[i];if(p.cat){html+='<div class="cat">'+p.cat+'</div>'}else{html+='<button class="prod" data-product="'+i+'"><span class="ico">'+p.emoji+'</span>'+p.name+'<span class="price">'+euro(p.price)+'</span></button>'}}document.getElementById("products").innerHTML=html}
-function render(){var html="",empty=true;for(var k in cart){empty=false;var p=products[k],q=cart[k];html+='<div class="cartline"><div class="qty"><button data-minus="'+k+'">−</button><span>'+q+'</span><button data-plus="'+k+'">+</button></div><div class="carttitle">'+p.emoji+' '+p.name+'</div><div class="cartprice">'+euro(p.price*q)+'</div></div>'}document.getElementById("cart").innerHTML=empty?"<p>Aucun article.</p>":html;var t=total();document.getElementById("total").textContent=euro(t);document.getElementById("paid").textContent=euro(paidAmount());document.getElementById("change").textContent=euro(Math.max(0,paidAmount()-t))}
-function resetCart(){cart={};history=[];paidDigits="";render()}
-function undo(){var i=history.pop();if(i!==undefined)removeOne(i)}
-function tap(d){if(paidDigits.length<7){paidDigits+=String(d);render()}}
-function backspace(){paidDigits=paidDigits.slice(0,-1);render()}
-function clearPaid(){paidDigits="";render()}
-function setPaidCents(c){paidDigits=String(c);render()}
-function exactPaid(){paidDigits=String(Math.round(total()*100));render()}
-function addCents(c){paidDigits=String(paidCents()+c);render()}
-function checkout(method){var t=total();if(t===0){alert("Aucune commande à valider.");return}var paid=method==="Espèces"?paidAmount():t;if(method==="Espèces"&&paid<t){if(!confirm("Le montant reçu est inférieur au total. Valider quand même ?"))return}var items=[];for(var k in cart){items.push({name:products[k].name,price:products[k].price,qty:cart[k],total:products[k].price*cart[k]})}sales.push({date:new Date().toLocaleString("fr-FR"),method:method,total:t,paid:paid,change:Math.max(0,paid-t),items:items});saveSales();resetCart();alert("Vente enregistrée : "+method+" - "+euro(t))}
-function showCaisse(){document.getElementById("caisse").style.display="block";document.getElementById("bilan").style.display="none";document.getElementById("tabCaisse").className="active";document.getElementById("tabBilan").className=""}
-function showBilan(){document.getElementById("caisse").style.display="none";document.getElementById("bilan").style.display="block";document.getElementById("tabCaisse").className="";document.getElementById("tabBilan").className="active";renderSummary()}
-function renderSummary(){var qty={},amount={},pay={"Espèces":0,"CB":0};for(var i=0;i<sales.length;i++){var s=sales[i];pay[s.method]=(pay[s.method]||0)+s.total;for(var j=0;j<s.items.length;j++){var it=s.items[j];qty[it.name]=(qty[it.name]||0)+it.qty;amount[it.name]=(amount[it.name]||0)+it.total}}var totalSales=0;for(var i=0;i<sales.length;i++)totalSales+=sales[i].total;var html='<div class="sumtotal">Total ventes : '+euro(totalSales)+'</div>';html+='<div>Espèces : <strong>'+euro(pay["Espèces"]||0)+'</strong></div>';html+='<div>CB : <strong>'+euro(pay["CB"]||0)+'</strong></div>';html+='<div>Commandes : <strong>'+sales.length+'</strong></div><h3>Produits</h3>';var names=[];for(var n in qty)names.push(n);names.sort();for(var a=0;a<names.length;a++){var name=names[a];html+='<div class="sumline"><div>'+name+'</div><div>x'+qty[name]+'</div><div>'+euro(amount[name])+'</div></div>'}document.getElementById("summary").innerHTML=html}
-function resetSales(){if(confirm("Effacer définitivement le bilan ?")){sales=[];saveSales();renderSummary()}}
-function downloadCSV(){var rows=["Date;Paiement;Produit;Quantite;Prix unitaire;Total ligne;Total commande"];for(var i=0;i<sales.length;i++){var s=sales[i];for(var j=0;j<s.items.length;j++){var it=s.items[j];rows.push([s.date,s.method,it.name,it.qty,it.price.toFixed(2),it.total.toFixed(2),s.total.toFixed(2)].join(";"))}}var blob=new Blob([rows.join("\\n")],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="bilan_ventes_moroges.csv";document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
-document.addEventListener("click",function(e){var t=e.target;while(t&&t.tagName!=="BUTTON")t=t.parentNode;if(!t)return;if(t.getAttribute("data-product")!==null)addProduct(parseInt(t.getAttribute("data-product"),10));else if(t.getAttribute("data-plus")!==null)addProduct(parseInt(t.getAttribute("data-plus"),10));else if(t.getAttribute("data-minus")!==null)removeOne(parseInt(t.getAttribute("data-minus"),10));else if(t.getAttribute("data-key")!==null)tap(t.getAttribute("data-key"));else if(t.getAttribute("data-bill")!==null)setPaidCents(parseInt(t.getAttribute("data-bill"),10))});
-document.getElementById("undoBtn").onclick=undo;document.getElementById("resetBtn").onclick=resetCart;document.getElementById("backBtn").onclick=backspace;document.getElementById("clearBtn").onclick=clearPaid;document.getElementById("exactBtn").onclick=exactPaid;document.getElementById("add50Btn").onclick=function(){addCents(50)};document.getElementById("cashBtn").onclick=function(){checkout("Espèces")};document.getElementById("cbBtn").onclick=function(){checkout("CB")};document.getElementById("tabCaisse").onclick=showCaisse;document.getElementById("tabBilan").onclick=showBilan;document.getElementById("exportBtn").onclick=downloadCSV;document.getElementById("resetSalesBtn").onclick=resetSales;
-if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("./service-worker.js").catch(function(){})})}
-renderProducts();render();
-})();
-</script>
+  <main class="app">
+    <section class="panel products-panel">
+      <header class="panel-header">
+        <h1>Caisse Moroges</h1>
+        <div class="header-actions">
+          <button id="stockBtn" class="small-btn">Stocks</button>
+          <button id="fullscreenBtn" class="small-btn">Plein écran</button>
+        </div>
+      </header>
+      <div id="products" class="products"></div>
+    </section>
 
-<script>
-(function(){
-  var lastTouchEnd = 0;
-  document.addEventListener('touchend', function(event) {
-    var now = Date.now();
-    if (now - lastTouchEnd <= 350) {
-      event.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, {passive:false});
+    <section class="panel cart-panel">
+      <header class="panel-header">
+        <h2>Commande</h2>
+        <button id="clearCartBtn" class="danger small-btn">Vider</button>
+      </header>
+      <div id="cart" class="cart empty">Aucun article</div>
+      <div class="total-box">
+        <span>Total</span>
+        <strong id="total">0,00 €</strong>
+      </div>
+    </section>
 
-  document.addEventListener('gesturestart', function(event) {
-    event.preventDefault();
-  });
-})();
-</script>
+    <section class="panel payment-panel">
+      <header class="panel-header">
+        <h2>Caisse</h2>
+        <button id="exportBtn" class="small-btn">Export CSV</button>
+      </header>
+      <div class="cash-screen">
+        <div><span>Reçu</span><strong id="received">0,00 €</strong></div>
+        <div><span>Monnaie</span><strong id="change">0,00 €</strong></div>
+      </div>
+      <div class="quick-cash">
+        <button data-cash="500">5 €</button><button data-cash="1000">10 €</button><button data-cash="2000">20 €</button><button data-cash="5000">50 €</button><button id="exactBtn">Exact</button>
+      </div>
+      <div class="keypad" id="keypad">
+        <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+        <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+        <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+        <button id="backBtn">⌫</button><button data-key="0">0</button><button id="clearReceivedBtn">C</button>
+      </div>
+      <div class="pay-actions">
+        <button id="cashPayBtn" class="pay cash">Espèces</button>
+        <button id="cardPayBtn" class="pay card">CB</button>
+      </div>
+      <div class="stats">
+        <div><span>Commandes</span><strong id="ordersCount">0</strong></div>
+        <div><span>Espèces</span><strong id="cashTotal">0,00 €</strong></div>
+        <div><span>CB</span><strong id="cardTotal">0,00 €</strong></div>
+        <div><span>Total</span><strong id="globalTotal">0,00 €</strong></div>
+      </div>
+    </section>
+  </main>
 
+  <dialog id="stockDialog" class="stock-dialog">
+    <form method="dialog" class="stock-panel">
+      <header class="panel-header">
+        <h2>Gestion des stocks</h2>
+        <button class="small-btn">Fermer</button>
+      </header>
+      <p class="stock-help">Saisir le stock initial ou restant. Vide = stock non suivi. Les ventes décrémentent automatiquement le stock.</p>
+      <div id="stockList" class="stock-list"></div>
+      <div class="stock-actions">
+        <button type="button" id="resetStockBtn" class="danger small-btn">Réinitialiser les stocks</button>
+        <button class="small-btn">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
 </body>
 </html>
