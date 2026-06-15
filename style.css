@@ -888,7 +888,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
 #saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
 
-/* v2026-07 - boutons de vente plus lisibles */
+/* v2026-08 - boutons de vente plus lisibles */
 .product-btn {
   align-items: center;
   text-align: center;
@@ -902,7 +902,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .product-btn .name { font-size: 14px; }
 .product-btn .price { font-size: 15px; }
 
-/* v2026-07 - ticket A6 restauration : priorité aux produits */
+/* v2026-08 - ticket A6 restauration : priorité aux produits */
 @media print {
   body.print-ticket .ticket.ticket-color-black { color: #000 !important; }
   body.print-ticket .ticket.ticket-color-blue { color: #0047b3 !important; }
@@ -984,7 +984,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v2026-07 - ticket A6 compact : lisible sans déborder */
+/* v2026-08 - ticket A6 compact : lisible sans déborder */
 @media print {
   body.print-ticket .ticket {
     padding: 3mm !important;
@@ -1070,5 +1070,32 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   body.print-ticket .ticket-pay strong,
   body.print-ticket .ticket-change strong {
     font-size: 9pt !important;
+  }
+}
+
+
+/* v2026-08 - ordre ticket : commande, total/paiement, puis zone a retirer plus tard */
+@media print {
+  body.print-ticket .ticket-delayed-note {
+    border-top: 1px dashed currentColor !important;
+    margin-top: 1.2mm !important;
+    padding-top: .8mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  body.print-ticket .ticket-delayed-note h2 {
+    display: block !important;
+    font-size: 8pt !important;
+    font-weight: 1000 !important;
+    letter-spacing: .02em !important;
+    text-align: left !important;
+    margin: 0 0 .8mm !important;
+    padding: .6mm .8mm !important;
+    border: 1px solid currentColor !important;
+  }
+  body.print-ticket .ticket-note-line {
+    height: 7mm !important;
+    border-bottom: 1px dotted currentColor !important;
+    opacity: .9 !important;
   }
 }

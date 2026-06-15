@@ -1721,13 +1721,6 @@ function renderTicketHtml(order) {
         ${normalLines || (!delayedLines ? "<p>Aucun article</p>" : "")}
       </section>
 
-      ${delayedLines ? `
-        <section class="ticket-delayed">
-          <h2>À RETIRER PLUS TARD</h2>
-          ${delayedLines}
-        </section>
-      ` : ""}
-
       <section class="ticket-caisse compact-caisse">
         <div class="ticket-total"><span>Total</span><strong>${euro(order.total)}</strong></div>
         ${isRefund ? `
@@ -1736,6 +1729,11 @@ function renderTicketHtml(order) {
           <div class="ticket-pay"><span>Payé</span><strong>${euro(received)}</strong></div>
           <div class="ticket-change"><span>Monnaie</span><strong>${euro(change)}</strong></div>
         ` : `<div class="ticket-pay"><span>Paiement</span><strong>${escapeHtml(paymentLabel)}</strong></div>`}
+      </section>
+
+      <section class="ticket-delayed ticket-delayed-note">
+        <h2>À RETIRER PLUS TARD</h2>
+        ${delayedLines || `<div class="ticket-note-line"></div>`}
       </section>
     </div>
   `;
