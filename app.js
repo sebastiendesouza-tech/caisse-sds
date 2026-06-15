@@ -1323,54 +1323,36 @@ function renderStockList() {
 }
 
 
-function printTicketIsolated(ticketHtml) {
-  const oldFrame = document.getElementById("ticketPrintFrame");
-  if (oldFrame) oldFrame.remove();
-  const frame = document.createElement("iframe");
-  frame.id = "ticketPrintFrame";
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.right = "0";
-  frame.style.bottom = "0";
-  frame.style.width = "1px";
-  frame.style.height = "1px";
-  frame.style.border = "0";
-  frame.style.opacity = "0";
-  const css = `
-    @page { size: A6 portrait; margin: 0; }
-    html, body { margin: 0; padding: 0; background: #fff; color: #000; width: auto; height: auto; overflow: visible; }
-    body { font-family: Arial, Helvetica, sans-serif; }
-    .ticket { display: block; color: #000; font-size: 8.8pt; font-weight: 700; line-height: 1.08; padding: 4mm; box-sizing: border-box; }
-    .ticket-order { text-align: center; font-size: 13pt; font-weight: 800; border-bottom: 1px dashed #000; padding-bottom: 1.5mm; margin-bottom: 2mm; line-height: 1; }
-    .ticket-section { border: 0; padding: 0; margin: 0; }
-    .ticket-line { display: block; page-break-inside: avoid; break-inside: avoid; margin: 0 0 1.2mm; font-size: 9pt; font-weight: 800; }
-    .ticket-line strong { display: flex; justify-content: space-between; gap: 3mm; font-size: 9.5pt; font-weight: 900; }
-    .ticket-line strong em { font-style: normal; white-space: nowrap; }
-    .ticket-line span { display: block; margin-left: 3mm; font-size: 7.7pt; font-weight: 650; line-height: 1.05; }
-    .ticket-caisse { border-top: 1px dashed #000; padding-top: 1.5mm; margin-top: 2mm; }
-    .ticket-total, .ticket-pay, .ticket-change { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm; margin-top: .8mm; font-size: 10pt; font-weight: 800; }
-    .ticket-total strong, .ticket-pay strong, .ticket-change strong { font-size: 10.5pt; font-weight: 900; }
-    .ticket-delayed { border-top: 1px dashed #000; margin-top: 2mm; padding-top: 1.5mm; }
-    .ticket-delayed h2 { margin: 0 0 1mm; font-size: 10pt; text-align: center; }
-  `;
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title></title><style>${css}</style></head><body>${ticketHtml}</body></html>`;
-  frame.onload = () => {
-    try {
-      const win = frame.contentWindow;
-      win.focus();
-      win.print();
-    } catch (err) {
-      byId("printArea").innerHTML = ticketHtml;
-      document.body.classList.remove("print-bilan");
-      document.body.classList.add("print-ticket");
-      window.print();
-      setTimeout(() => document.body.classList.remove("print-ticket"), 500);
-    }
-    setTimeout(() => frame.remove(), 3000);
-  };
-  document.body.appendChild(frame);
-  frame.srcdoc = html;
+let printCleanupTimer = null;
+
+function cleanupPrintMode() {
+  document.body.classList.remove("print-ticket", "print-bilan");
+  if (printCleanupTimer) {
+    clearTimeout(printCleanupTimer);
+    printCleanupTimer = null;
+  }
 }
+
+function startPrintMode(mode) {
+  if (printCleanupTimer) clearTimeout(printCleanupTimer);
+  document.body.classList.remove("print-ticket", "print-bilan");
+  document.body.classList.add(mode);
+  // Sur iPad/AirPrint, l'aperçu peut se construire lentement. Ne pas enlever
+  // le mode impression après 500 ms, sinon une page blanche peut être relancée.
+  printCleanupTimer = setTimeout(cleanupPrintMode, 60000);
+}
+
+function printCurrentContent(mode) {
+  startPrintMode(mode);
+  window.print();
+}
+
+window.addEventListener("afterprint", cleanupPrintMode);
+window.addEventListener("focus", () => {
+  if (document.body.classList.contains("print-ticket") || document.body.classList.contains("print-bilan")) {
+    setTimeout(cleanupPrintMode, 800);
+  }
+});
 
 function finishOrder(payment, volunteerName = "") {
   const total = getTotal();
@@ -1407,7 +1389,8 @@ function finishOrder(payment, volunteerName = "") {
 
   if (payment !== "volunteer") {
     lastPrintedOrder = order;
-    printTicketIsolated(renderTicketHtml(order));
+    byId("printArea").innerHTML = renderTicketHtml(order);
+    printCurrentContent("print-ticket");
   }
 
   cart = [];
@@ -1545,10 +1528,7 @@ function renderBilanPrintableHtml() {
 
 function printBilan() {
   byId("printArea").innerHTML = renderBilanPrintableHtml();
-  document.body.classList.remove("print-ticket");
-  document.body.classList.add("print-bilan");
-  window.print();
-  setTimeout(() => document.body.classList.remove("print-bilan"), 500);
+  printCurrentContent("print-bilan");
 }
 
 function exportBilanCSV() {
@@ -1610,7 +1590,8 @@ function renderHistory() {
   root.querySelectorAll("[data-print-order]").forEach(btn => btn.addEventListener("click", () => {
     const order = orders.find(o => String(o.number) === btn.dataset.printOrder);
     if (order) {
-      printTicketIsolated(renderTicketHtml(order));
+      byId("printArea").innerHTML = renderTicketHtml(order);
+      printCurrentContent("print-ticket");
     }
   }));
   root.querySelectorAll("[data-toggle-volunteer]").forEach(btn => btn.addEventListener("click", () => {
@@ -1741,7 +1722,8 @@ function renderTicketHtml(order) {
 function printTicket() {
   const order = cart.length ? orderFromCurrentCart() : lastPrintedOrder || orders.at(-1);
   if (!order || !order.lines || !order.lines.length) return alert("Aucun ticket à imprimer.");
-  printTicketIsolated(renderTicketHtml(order));
+  byId("printArea").innerHTML = renderTicketHtml(order);
+  printCurrentContent("print-ticket");
 }
 
 function exportCSV() {
