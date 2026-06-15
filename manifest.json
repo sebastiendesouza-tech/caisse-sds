@@ -1,6 +1,6 @@
 {
-  "name": "Caisse Moroges",
-  "short_name": "Caisse",
+  "name": "Caisse by SDS",
+  "short_name": "SDS",
   "start_url": "./",
   "display": "standalone",
   "orientation": "landscape",

@@ -317,3 +317,558 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .history-search { margin-bottom: 10px; }
 .history-paid { font-weight: 900; color: #334155; }
 @media (max-width: 1000px) { .pay-actions { grid-template-columns: 1fr; } }
+
+
+/* Paramétrage des boutons */
+.small-btn.primary { background: #dbeafe; color: #1d4ed8; }
+.product-btn.empty-slot {
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+  opacity: .55;
+}
+.settings-content {
+  max-height: 62dvh;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding-right: 4px;
+}
+.settings-category {
+  background: #e5e7eb;
+  border-radius: 14px;
+  padding: 8px;
+}
+.settings-head,
+.settings-row {
+  display: grid;
+  grid-template-columns: 42px 1.5fr 92px 1.2fr;
+  gap: 8px;
+  align-items: center;
+}
+.settings-head {
+  padding: 0 8px 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.settings-row {
+  background: #fff;
+  border-radius: 11px;
+  padding: 7px;
+  margin-top: 6px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.settings-slot {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  display: grid;
+  place-items: center;
+  font-weight: 1000;
+  color: #334155;
+}
+.settings-row input,
+.settings-row select {
+  min-width: 0;
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 8px;
+  background: #fff;
+  font-weight: 800;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+.settings-price { text-align: right; }
+@media (max-width: 1000px) {
+  .settings-head, .settings-row { grid-template-columns: 34px 1.2fr 78px 1fr; gap: 5px; }
+  .settings-row input, .settings-row select { font-size: 14px; }
+}
+
+/* Paramétrage produit composé */
+.settings-row-wrap {
+  background: #fff;
+  border-radius: 12px;
+  margin-top: 6px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+  overflow: hidden;
+}
+.settings-row-wrap .settings-row {
+  margin-top: 0;
+  box-shadow: none;
+}
+.settings-composite {
+  border-top: 1px solid #e2e8f0;
+  padding: 8px;
+  background: #f8fafc;
+}
+.composite-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.composite-options label,
+.component-row {
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.settings-subtitle {
+  margin: 8px 0 5px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.component-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 54px;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+.component-row.compact {
+  grid-template-columns: 24px 1fr;
+}
+.component-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.component-row em {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+.component-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
+.component-qty {
+  height: 36px !important;
+  text-align: center;
+  padding: 0 !important;
+}
+@media (max-width: 1000px) {
+  .composite-options,
+  .components-grid { grid-template-columns: 1fr; }
+}
+
+/* Produits composés paramétrables : rubriques Viandes / Accompagnements / Autre */
+.choice-content { display: grid; gap: 8px; max-height: 58dvh; overflow: auto; padding-right: 4px; }
+.choice-section { background: white; border-radius: 14px; padding: 10px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.choice-section h3 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 16px; }
+.choice-section h3 em { font-style: normal; color: #2563eb; font-weight: 1000; }
+.choice-line { display: grid; grid-template-columns: 44px 1fr auto 42px 44px; gap: 8px; align-items: center; padding: 5px 0; border-top: 1px solid #eef2f7; }
+.choice-line:first-of-type { border-top: 0; }
+.choice-line button { height: 40px; border-radius: 10px; background: #dbeafe; color: #1d4ed8; font-weight: 1000; }
+.choice-line strong { font-size: 15px; }
+.choice-line small { color: #64748b; font-weight: 800; font-size: 12px; }
+.choice-line span { min-width: 32px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: #eff6ff; font-weight: 1000; }
+.choice-group-settings { margin-bottom: 10px; }
+.group-rule-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.group-rule-row label { display: grid; gap: 4px; font-size: 13px; color: #334155; font-weight: 900; }
+.group-rule-row input, .group-item-row input, .supplement-input { height: 38px; border: 2px solid #cbd5e1; border-radius: 10px; padding: 0 8px; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+.group-item-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; margin-top: 6px; }
+.other-row { grid-template-columns: auto 1fr 110px; }
+.other-row .supplement-input { width: 100%; }
+
+/* Séparation Paramètres boutons / Viandes et accompagnements */
+.choice-groups-manager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-height: 68dvh;
+  overflow: auto;
+  padding-right: 4px;
+}
+.group-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.group-option-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.group-option-head label {
+  font-weight: 1000;
+  color: #0f172a;
+}
+.group-rule-row.compact {
+  margin: 6px 0;
+}
+.group-rule-row.compact input {
+  height: 34px;
+  text-align: center;
+}
+.mini-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.mini-check {
+  background: #f8fafc;
+  border-radius: 9px;
+  padding: 6px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.mini-check input {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+@media (max-width: 1000px) {
+  .choice-groups-manager,
+  .group-options-grid,
+  .mini-check-grid { grid-template-columns: 1fr; }
+}
+
+/* Paramètres généraux et mode caisse désactivée */
+.cash-disabled .cash-controls,
+.cash-disabled .cash-screen,
+.cash-disabled .quick-cash,
+.cash-disabled .keypad { display: none !important; }
+.cash-disabled-notice {
+  display: none;
+  background: #f1f5f9;
+  color: #334155;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.15;
+}
+.cash-disabled .cash-disabled-notice { display: block; }
+.cash-disabled-notice small { font-size: 12px; font-weight: 800; color: #64748b; }
+.general-settings { display: grid; gap: 12px; }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.toggle-row input { width: 24px; height: 24px; }
+.volunteers-settings-list { display: grid; gap: 8px; }
+.volunteer-setting-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  background: white;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.volunteer-setting-row input {
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-weight: 900;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Menu paramètres par engrenage */
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e5e7eb;
+  font-size: 22px;
+  font-weight: 900;
+  display: inline-grid;
+  place-items: center;
+}
+.settings-menu-dialog { width: min(520px, 92vw); }
+.settings-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.settings-menu-btn {
+  min-height: 72px;
+  border-radius: 14px;
+  background: white;
+  text-align: left;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.settings-menu-btn strong {
+  display: block;
+  font-size: 18px;
+  color: #0f172a;
+}
+.settings-menu-btn span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+/* Zone exploitation en bas de la caisse */
+.cash-tools {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+.cash-tools-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cash-tools .small-btn {
+  min-height: 44px;
+}
+.cash-tools .danger {
+  margin-top: 8px;
+}
+
+
+/* Réglages produits composés : nombre + choix/default */
+.group-default-row {
+  display: grid;
+  grid-template-columns: 1fr 70px;
+  gap: 6px;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 5px;
+}
+.group-default-row input[inputmode="numeric"] {
+  width: 100%;
+  height: 34px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 900;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+.settings-note {
+  margin: 5px 0 6px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+.group-rule-row.compact {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+.group-rule-row.compact input[inputmode="numeric"] {
+  width: 64px;
+  height: 34px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 900;
+}
+
+/* Retrait plus tard */
+.settings-row { grid-template-columns: 38px 1.4fr 110px 150px 150px; }
+.settings-delayed { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900; color: #334155; }
+.settings-delayed input { width: 18px; height: 18px; }
+@media (max-width: 1050px) { .settings-row { grid-template-columns: 30px 1fr 90px 130px; } .settings-delayed { grid-column: 2 / -1; } }
+
+@media print {
+  body.print-ticket .ticket-delayed {
+    border-top: 1.5px dashed #000;
+    border-bottom: 1.5px dashed #000;
+    padding: 1.5mm 0;
+    margin: 2mm 0;
+  }
+  body.print-ticket .ticket-delayed h2 {
+    margin: 0 0 1mm;
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 1000;
+    letter-spacing: .02em;
+  }
+  body.print-ticket .delayed-ticket-line strong {
+    font-size: 13pt !important;
+  }
+}
+
+/* Choix du retrait plus tard à la commande */
+.delayed-choice-section {
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px #fed7aa;
+}
+.delayed-choice-line {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px;
+  border-radius: 10px;
+  background: white;
+  margin-top: 6px;
+  font-weight: 900;
+}
+.delayed-choice-line input {
+  width: 22px;
+  height: 22px;
+}
+.delayed-choice-line small {
+  color: #9a3412;
+  font-weight: 800;
+}
+
+/* Couleurs paramétrables des boutons produits */
+.product-btn.color-white { background: #ffffff; }
+.product-btn.color-blue { background: #dbeafe; box-shadow: inset 0 0 0 1px #93c5fd; }
+.product-btn.color-green { background: #dcfce7; box-shadow: inset 0 0 0 1px #86efac; }
+.product-btn.color-orange { background: #ffedd5; box-shadow: inset 0 0 0 1px #fdba74; }
+.product-btn.color-purple { background: #ede9fe; box-shadow: inset 0 0 0 1px #c4b5fd; }
+.product-btn.color-pink { background: #fce7f3; box-shadow: inset 0 0 0 1px #f9a8d4; }
+.product-btn.color-yellow { background: #fef9c3; box-shadow: inset 0 0 0 1px #fde68a; }
+.product-btn.color-gray { background: #f1f5f9; box-shadow: inset 0 0 0 1px #cbd5e1; }
+.product-btn[class*="color-"] .price { color: #064e3b; }
+.product-btn.color-purple .price, .product-btn.color-pink .price { color: #581c87; }
+.product-btn.color-blue .price { color: #1e3a8a; }
+.product-btn.color-orange .price, .product-btn.color-yellow .price { color: #7c2d12; }
+
+.settings-color {
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 8px;
+  font-weight: 900;
+  background: white;
+}
+
+/* Choix remis plus tard : boutons Oui / Non */
+.delayed-simple-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.delayed-simple-actions .pay { min-height: 72px; font-size: 24px; }
+.delayed-choice-line {
+  grid-template-columns: 1fr auto;
+}
+.delayed-choice-line > div:first-child strong { display: block; }
+.delayed-choice-buttons {
+  display: grid;
+  grid-template-columns: 68px 68px;
+  gap: 6px;
+}
+.delayed-choice-buttons button {
+  min-height: 42px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 1000;
+}
+.delayed-choice-buttons button.selected {
+  background: #2563eb;
+  color: white;
+}
+
+@media (max-width: 1050px) {
+  .settings-row { grid-template-columns: 30px 1fr 90px 120px 110px; }
+}
+
+
+/* Correction affichage option retrait plus tard dans les paramètres */
+.settings-row { grid-template-columns: 38px 1.4fr 110px 150px 150px !important; }
+.settings-delayed {
+  margin: 6px 0 0 45px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px #fed7aa;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 1000;
+  color: #9a3412;
+}
+.settings-delayed input[type="checkbox"] {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  accent-color: #f97316;
+}
+@media (max-width: 1050px) {
+  .settings-row { grid-template-columns: 30px 1fr 90px 120px 110px !important; }
+  .settings-delayed { margin-left: 37px; }
+}
+
+/* Réinitialisation des boutons paramétrables */
+.settings-category-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0;
+}
+.settings-category-head h3 { margin: 0; }
+.reset-category-btn { white-space: nowrap; }
+.settings-row { grid-template-columns: 34px 1fr 84px 142px 104px 42px; }
+.reset-slot-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 1000;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+}
+.reset-slot-btn:active { transform: scale(.97); }
+@media (max-width: 1080px) {
+  .settings-row { grid-template-columns: 28px 1fr 76px 118px 92px 38px; }
+  .reset-slot-btn { width: 36px; height: 36px; }
+}
+
+
+.general-input-row { display: grid; grid-template-columns: 1fr 160px; gap: 10px; align-items: center; background: white; border-radius: 12px; padding: 10px; margin-top: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; font-weight: 900; }
+.general-input-row input { width: 100%; height: 42px; border: 2px solid #cbd5e1; border-radius: 10px; padding: 0 10px; text-align: right; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+
+.app-version { font-size: 13px; font-weight: 900; color: #64748b; margin-left: 4px; white-space: nowrap; }
+
+/* Retour consigne : total négatif = remboursement espèces uniquement */
+.negative-total #cardPayBtn,
+.negative-total #volunteerPayBtn { display: none !important; }
+.negative-total .pay-actions { grid-template-columns: 1fr !important; }
+.negative-total #cashPayBtn { background: #dc2626; }
+
+/* Correction affichage des totaux de ligne */
+.line-total { white-space: nowrap; align-self: center; }
+.history-card li { margin-bottom: 6px; }
+.history-line-main { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.history-line-main strong { white-space: nowrap; font-weight: 1000; color: #0f172a; }
+.history-line-title { color: #0f172a !important; font-size: 14px !important; font-weight: 900; }
+.history-line-sub { display: block; margin-top: 2px; color: #64748b; font-size: 12px; }
+.ticket-line strong { display: flex; justify-content: space-between; gap: 3mm; }
+.ticket-line strong em { font-style: normal; white-space: nowrap; }
