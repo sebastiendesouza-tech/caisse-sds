@@ -1,3 +1,30 @@
+// Outil de dépannage : ajoute ?resetConfig=1 à l'URL pour remettre uniquement les boutons à zéro
+// ou ?resetAllSds=1 pour vider toute la caisse locale de cet appareil.
+(function rescueLocalDataFromUrl(){
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    if (params.has("resetConfig")) {
+      localStorage.removeItem("moroges_product_config");
+      localStorage.removeItem("moroges_choice_groups");
+    }
+    if (params.has("resetAllSds")) {
+      ["moroges_product_config", "moroges_choice_groups", "moroges_general_settings", "moroges_orders", "moroges_stock", "moroges_volunteers"].forEach(key => localStorage.removeItem(key));
+    }
+  } catch (error) {
+    console.warn("Recovery URL ignored", error);
+  }
+})();
+
+window.addEventListener("error", event => {
+  try {
+    const toast = document.getElementById("toast");
+    if (toast) {
+      toast.textContent = "Erreur détectée : recharge l'application ou utilise ?resetConfig=1";
+      toast.classList.add("show");
+    }
+  } catch {}
+});
+
 const DEFAULT_PRODUCT_CONFIG = [
   { id: "eau50", subCategory: "sans_alcool", slot: 1, cat: "Boissons", name: "Eau 50 cl", price: 50, type: "simple" },
   { id: "eau150", subCategory: "sans_alcool", slot: 2, cat: "Boissons", name: "Eau 1,5 L", price: 150, type: "simple" },
@@ -320,7 +347,38 @@ function loadProductConfig() {
   }
 }
 
+function sanitizeProductConfig(config) {
+  const source = Array.isArray(config) ? config : DEFAULT_PRODUCT_CONFIG;
+  return source.map(raw => {
+    const item = raw && typeof raw === "object" ? raw : {};
+    const type = normalizeType(item.type);
+    const normalized = {
+      ...item,
+      name: String(item.name || ""),
+      price: Number(item.price) || 0,
+      type,
+      subCategory: type === "simple" ? String(item.subCategory || "") : "",
+      canDelayPickup: Boolean(item.canDelayPickup ?? item.delayedPickup),
+      delayedPickup: false,
+      color: defaultColorForProduct({ ...item, type }),
+      components: type === "composite" ? normalizeComponents(item.components) : [],
+      options: normalizeOptions(item.options)
+    };
+    if (type === "menu") {
+      normalized.components = [];
+      normalized.options.groups = Object.fromEntries(Object.entries(normalized.options.groups || {}).map(([id, rule]) => [id, { ...rule, enabled: false }]));
+      normalized.options.other = { enabled: false, count: 0, ids: [], supplementsEnabled: false, supplements: {} };
+    }
+    if (type === "simple") {
+      normalized.components = [];
+      normalized.options = normalizeOptions({});
+    }
+    return normalized;
+  });
+}
+
 function saveProductConfig() {
+  productConfig = sanitizeProductConfig(productConfig);
   localStorage.setItem("moroges_product_config", JSON.stringify(productConfig));
 }
 
@@ -2067,16 +2125,23 @@ function applySettingsFromDialog() {
       item.options = normalizeOptions({});
     }
   });
-  saveProductConfig();
-  PRODUCTS = buildProducts();
-  STOCK_ITEMS = buildStockItems();
-  for (const item of STOCK_ITEMS) if (!(item.id in stock)) stock[item.id] = "";
-  saveStock();
-  renderAll();
-  renderStockList();
-  renderSettings();
-  showToast("Paramètres enregistrés");
-  byId("settingsDialog")?.close();
+  try {
+    saveProductConfig();
+    PRODUCTS = buildProducts();
+    STOCK_ITEMS = buildStockItems();
+    for (const item of STOCK_ITEMS) if (!(item.id in stock)) stock[item.id] = "";
+    saveStock();
+    byId("settingsDialog")?.close();
+    renderAll();
+    renderStockList();
+    renderSettings();
+    showToast("Paramètres enregistrés");
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement des paramètres", error);
+    alert("Les paramètres n'ont pas pu être enregistrés. La configuration a été sécurisée, recharge la page puis réessaie.");
+    productConfig = sanitizeProductConfig(productConfig);
+    saveProductConfig();
+  }
 }
 
 function resetProductSettings() {
