@@ -440,12 +440,15 @@ function componentCandidates(currentId = "") {
   return merged.filter(item => !seen.has(item.id) && seen.add(item.id));
 }
 
-const DEFAULT_GENERAL_SETTINGS = { cashEnabled: true, cashFund: 0, categoryColors: DEFAULT_CATEGORY_COLORS };
+const VALID_TICKET_COLORS = new Set(["black", "blue", "red"]);
+function normalizeTicketColor(value) { return VALID_TICKET_COLORS.has(String(value || "")) ? String(value) : "black"; }
+const DEFAULT_GENERAL_SETTINGS = { cashEnabled: true, cashFund: 0, categoryColors: DEFAULT_CATEGORY_COLORS, ticketColor: "black" };
 function loadGeneralSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem("moroges_general_settings") || "null");
     const merged = { ...DEFAULT_GENERAL_SETTINGS, ...(saved && typeof saved === "object" ? saved : {}) };
     merged.categoryColors = normalizedCategoryColors(merged.categoryColors);
+    merged.ticketColor = normalizeTicketColor(merged.ticketColor);
     return merged;
   } catch { return { ...DEFAULT_GENERAL_SETTINGS }; }
 }
@@ -1162,8 +1165,7 @@ function renderProducts() {
       btn.className = `product-btn color-${normalizeColor(product.color)} ${product.price < 0 ? "negative" : ""} ${out ? "out" : ""} ${level === "low" ? "low" : ""}`;
       btn.disabled = out;
       const stockLabel = available === null ? "" : `<span class="stock-badge ${level}">Stock ${Math.max(0, available)}</span>`;
-      const specialLabel = product.type === "menu" ? " · menu" : (product.composite ? " · composé" : "");
-      btn.innerHTML = `<span class="name">${escapeHtml(product.name)}</span><span class="price">${euro(product.price)}${specialLabel}</span>${stockLabel}`;
+      btn.innerHTML = `<span class="name">${escapeHtml(product.name)}</span><span class="price">${euro(product.price)}</span>${stockLabel}`;
       btn.addEventListener("click", () => addProduct(product));
       grid.appendChild(btn);
     });
@@ -1692,7 +1694,7 @@ function renderTicketHtml(order) {
   const paymentLabel = order.payment === "card" ? "CB" : order.payment === "volunteer" ? `Bénévole${order.volunteerName ? " - " + order.volunteerName : ""}` : "Espèces";
 
   return `
-    <div class="ticket compact-ticket">
+    <div class="ticket compact-ticket ticket-color-${normalizeTicketColor(generalSettings.ticketColor)}">
       <div class="ticket-order">Commande n°${order.number}</div>
 
       <section class="ticket-section compact-list">
@@ -1724,6 +1726,22 @@ function printTicket() {
   if (!order || !order.lines || !order.lines.length) return alert("Aucun ticket à imprimer.");
   byId("printArea").innerHTML = renderTicketHtml(order);
   printCurrentContent("print-ticket");
+}
+
+function updateFullscreenButton() {
+  const btn = byId("fullscreenBtn");
+  if (!btn) return;
+  btn.textContent = document.fullscreenElement ? "Quitter le plein écran" : "Plein écran";
+}
+
+function toggleFullscreenMode() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen?.();
+    setTimeout(updateFullscreenButton, 100);
+    return;
+  }
+  document.documentElement.requestFullscreen?.();
+  setTimeout(updateFullscreenButton, 100);
 }
 
 function exportCSV() {
@@ -2194,6 +2212,8 @@ function renderGeneralSettings() {
   if (cash) cash.checked = Boolean(generalSettings.cashEnabled);
   const cashFund = byId("generalCashFund");
   if (cashFund) cashFund.value = eurosForInput(Number(generalSettings.cashFund) || 0);
+  const ticketColor = byId("generalTicketColor");
+  if (ticketColor) ticketColor.value = normalizeTicketColor(generalSettings.ticketColor);
   const colorRoot = byId("categoryColorsSettingsList");
   if (colorRoot) {
     const colors = normalizedCategoryColors(generalSettings.categoryColors);
@@ -2221,6 +2241,7 @@ function renderGeneralSettings() {
 function applyGeneralSettings() {
   generalSettings.cashEnabled = Boolean(byId("generalCashEnabled")?.checked);
   generalSettings.cashFund = centsFromInput(byId("generalCashFund")?.value || "0");
+  generalSettings.ticketColor = normalizeTicketColor(byId("generalTicketColor")?.value || "black");
   const categoryColors = {};
   document.querySelectorAll("[data-category-color]").forEach(select => { categoryColors[select.dataset.categoryColor] = normalizeColor(select.value); });
   generalSettings.categoryColors = normalizedCategoryColors(categoryColors);
@@ -2305,7 +2326,9 @@ function bindEvents() {
   byId("volunteerCustomBtn")?.addEventListener("click", () => finishVolunteerOrder(byId("volunteerCustomName")?.value || ""));
   byId("exactBtn").addEventListener("click", () => { receivedDigits = String(Math.max(0, getTotal())); renderPayment(); });
   byId("clearReceivedBtn").addEventListener("click", () => { receivedDigits = ""; renderPayment(); });
-  byId("fullscreenBtn").addEventListener("click", () => document.documentElement.requestFullscreen?.());
+  byId("fullscreenBtn").addEventListener("click", toggleFullscreenMode);
+  document.addEventListener("fullscreenchange", updateFullscreenButton);
+  updateFullscreenButton();
   document.querySelectorAll("[data-cash]").forEach(btn => btn.addEventListener("click", () => { receivedDigits = btn.dataset.cash; renderPayment(); }));
   byId("keypad").addEventListener("click", event => { const key = event.target.dataset.key; if (key) { receivedDigits = (receivedDigits + key).replace(/^0+/, "").slice(0, 6); renderPayment(); } });
 
