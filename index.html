@@ -10,7 +10,7 @@
   <title>Caisse by SDS v2026-02</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=touche-19">
+  <link rel="stylesheet" href="style.css?v=touche-20">
 </head>
 <body>
   <main class="app">
@@ -253,7 +253,7 @@
         <div class="header-actions">
           <button id="resetSettingsBtn" class="danger small-btn" type="button">↺ Réinitialiser tous les boutons</button>
           <button id="saveSettingsBtn" class="small-btn" type="button">Enregistrer</button>
-          <button class="small-btn" type="submit">Fermer</button>
+          <button id="settingsCloseBtn" class="small-btn" type="button">Fermer</button>
         </div>
       </header>
       <p class="stock-help">Pour chaque bouton : nom, prix et type. Un bouton sans nom reste vide/inactif. Pour un produit composé : indique le nombre de viandes/accompagnements, coche “Choix à faire” si le choix se fait à la commande, sinon renseigne les quantités par défaut. Les produits simples sélectionnés sont proposés au choix avec supplément éventuel.</p>
@@ -264,6 +264,10 @@
         <span>Type</span>
       </div>
       <div id="settingsContent" class="settings-content"></div>
+      <div class="settings-save-bar">
+        <button id="saveSettingsBtnBottom" class="small-btn" type="button">Enregistrer</button>
+        <button id="settingsCloseBtnBottom" class="small-btn" type="button">Fermer</button>
+      </div>
     </form>
   </dialog>
 
@@ -285,6 +289,6 @@
   <div id="printArea" class="print-area"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js?v=touche-19"></script>
+  <script src="app.js?v=touche-20"></script>
 </body>
 </html>

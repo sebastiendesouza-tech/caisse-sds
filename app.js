@@ -2159,7 +2159,7 @@ function applySettingsFromDialog() {
     STOCK_ITEMS = buildStockItems();
     for (const item of STOCK_ITEMS) if (!(item.id in stock)) stock[item.id] = "";
     saveStock();
-    byId("settingsDialog")?.close();
+    closeSettingsDialogSafely();
     renderAll();
     renderStockList();
     renderSettings();
@@ -2240,6 +2240,38 @@ function addVolunteerSettingRow() {
   renderGeneralSettings();
 }
 
+
+function closeSettingsDialogSafely() {
+  const active = document.activeElement;
+  if (active && typeof active.blur === "function") active.blur();
+  const dialog = byId("settingsDialog");
+  if (dialog?.open) dialog.close();
+}
+
+function bindSafeTap(button, handler) {
+  if (!button) return;
+  let lastTouch = 0;
+  const run = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    const active = document.activeElement;
+    if (active && typeof active.blur === "function") active.blur();
+    handler(event);
+  };
+  button.addEventListener("touchend", event => {
+    lastTouch = Date.now();
+    run(event);
+  }, { passive: false });
+  button.addEventListener("click", event => {
+    if (Date.now() - lastTouch < 700) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    run(event);
+  });
+}
+
 function bindEvents() {
   byId("clearCartBtn").addEventListener("click", () => { cart = []; renderAll(); });
   const closeSettingsMenu = () => { const dialog = byId("settingsMenuDialog"); if (dialog?.open) dialog.close(); };
@@ -2251,7 +2283,10 @@ function bindEvents() {
   byId("saveGeneralSettingsBtn")?.addEventListener("click", applyGeneralSettings);
   byId("addVolunteerSettingBtn")?.addEventListener("click", addVolunteerSettingRow);
   byId("saveChoiceGroupsBtn")?.addEventListener("click", applyChoiceGroupManager);
-  byId("saveSettingsBtn")?.addEventListener("click", applySettingsFromDialog);
+  bindSafeTap(byId("saveSettingsBtn"), applySettingsFromDialog);
+  bindSafeTap(byId("saveSettingsBtnBottom"), applySettingsFromDialog);
+  bindSafeTap(byId("settingsCloseBtn"), closeSettingsDialogSafely);
+  bindSafeTap(byId("settingsCloseBtnBottom"), closeSettingsDialogSafely);
   byId("resetSettingsBtn")?.addEventListener("click", resetProductSettings);
   byId("bilanBtn").addEventListener("click", () => { renderBilan(); byId("bilanDialog").showModal(); });
   byId("historyBtn").addEventListener("click", () => { const hs = byId("historySearch"); if (hs) hs.value = ""; renderHistory(); byId("historyDialog").showModal(); });

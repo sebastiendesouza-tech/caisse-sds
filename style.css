@@ -879,3 +879,11 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   @page { size: A6 portrait; margin: 0; }
   body.print-ticket .ticket { padding: 4mm; box-sizing: border-box; }
 }
+
+
+/* Correctif iPad paramètres : zone d'action stable, évite les taps captés par les listes déroulantes pendant le défilement. */
+#settingsDialog .modal-panel { max-height: 90dvh; overflow: auto; -webkit-overflow-scrolling: touch; }
+#settingsDialog .panel-header { position: sticky; top: 0; z-index: 50; background: #f8fafc; padding-bottom: 8px; }
+.settings-save-bar { position: sticky; bottom: 0; z-index: 60; display: flex; gap: 10px; justify-content: flex-end; align-items: center; padding: 10px 0 2px; margin-top: 10px; background: linear-gradient(to top, #f8fafc 82%, rgba(248,250,252,0)); }
+.settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
+#saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
