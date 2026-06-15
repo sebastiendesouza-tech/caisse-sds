@@ -887,3 +887,64 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .settings-save-bar { position: sticky; bottom: 0; z-index: 60; display: flex; gap: 10px; justify-content: flex-end; align-items: center; padding: 10px 0 2px; margin-top: 10px; background: linear-gradient(to top, #f8fafc 82%, rgba(248,250,252,0)); }
 .settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
 #saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
+
+/* Touche 21 - Lisibilite ticket cuisine/caisse : produits plus grands, infos secondaires plus discretes */
+@media print {
+  body.print-ticket .ticket h1,
+  body.print-ticket .ticket-date {
+    font-size: 7.5pt !important;
+    line-height: 1 !important;
+    margin-bottom: .8mm !important;
+    font-weight: 700 !important;
+  }
+  body.print-ticket .ticket-order {
+    font-size: 9pt !important;
+    font-weight: 800 !important;
+    border-bottom: 1px dashed #000 !important;
+    padding-bottom: .8mm !important;
+    margin-bottom: 1.4mm !important;
+  }
+  body.print-ticket .ticket-line,
+  body.print-ticket .ticket-line strong {
+    font-size: 14pt !important;
+    line-height: 1.05 !important;
+    font-weight: 1000 !important;
+  }
+  body.print-ticket .ticket-line span {
+    font-size: 11pt !important;
+    line-height: 1.05 !important;
+    font-weight: 800 !important;
+    margin-left: 2mm !important;
+  }
+  body.print-ticket .ticket-caisse {
+    margin-top: 1.2mm !important;
+    padding-top: 1mm !important;
+  }
+  body.print-ticket .ticket-total,
+  body.print-ticket .ticket-pay,
+  body.print-ticket .ticket-change {
+    font-size: 8.5pt !important;
+    line-height: 1 !important;
+    margin-top: .5mm !important;
+    font-weight: 750 !important;
+  }
+  body.print-ticket .ticket-total strong,
+  body.print-ticket .ticket-pay strong,
+  body.print-ticket .ticket-change strong {
+    font-size: 9pt !important;
+    font-weight: 850 !important;
+  }
+  body.print-ticket .ticket-delayed {
+    margin: 1mm 0 !important;
+    padding: 1mm 0 !important;
+  }
+  body.print-ticket .ticket-delayed h2 {
+    font-size: 8.5pt !important;
+    line-height: 1 !important;
+    margin-bottom: .6mm !important;
+    font-weight: 900 !important;
+  }
+  body.print-ticket .delayed-ticket-line strong {
+    font-size: 12pt !important;
+  }
+}
