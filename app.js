@@ -1668,8 +1668,28 @@ function delayedRowsForOrder(order) {
   return rows;
 }
 
+
+function ticketDisplayGroup(line) {
+  const product = productConfigById(line?.productId || line?.id) || productById(line?.productId || line?.id) || {};
+  const cat = String(product.cat || line?.cat || "").toLowerCase();
+  const sub = String(product.subCategory || line?.subCategory || "").toLowerCase();
+  const type = normalizeType(line?.type || product.type || "simple");
+  const name = String(line?.name || product.name || "").toLowerCase();
+  if (cat.includes("consigne") || name.includes("consigne") || Number(line?.price || 0) < 0) return 3;
+  if (cat.includes("boisson") || sub === "sans_alcool" || sub === "alcool") return 2;
+  if (type === "menu" || type === "composite" || cat.includes("restauration") || ["entree", "plat", "dessert", "fromage"].includes(sub)) return 1;
+  return 4;
+}
+
+function sortedTicketLines(lines) {
+  return (lines || [])
+    .map((line, index) => ({ line, index }))
+    .sort((a, b) => ticketDisplayGroup(a.line) - ticketDisplayGroup(b.line) || a.index - b.index)
+    .map(item => item.line);
+}
+
 function renderTicketHtml(order) {
-  const normalLines = (order.lines || []).map(line => {
+  const normalLines = sortedTicketLines(order.lines || []).map(line => {
     const sub = compactTicketSubForLine(line);
     const onlyDelayed = !sub && Boolean(line.delayedPickup);
     if (onlyDelayed) return "";

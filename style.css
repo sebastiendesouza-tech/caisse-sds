@@ -888,7 +888,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
 #saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
 
-/* v2026-04 - boutons de vente plus lisibles */
+/* v2026-07 - boutons de vente plus lisibles */
 .product-btn {
   align-items: center;
   text-align: center;
@@ -902,7 +902,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .product-btn .name { font-size: 14px; }
 .product-btn .price { font-size: 15px; }
 
-/* v2026-04 - ticket A6 restauration : priorité aux produits */
+/* v2026-07 - ticket A6 restauration : priorité aux produits */
 @media print {
   body.print-ticket .ticket.ticket-color-black { color: #000 !important; }
   body.print-ticket .ticket.ticket-color-blue { color: #0047b3 !important; }
@@ -981,4 +981,94 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   padding: 0 10px;
   font-weight: 900;
   background: white;
+}
+
+
+/* v2026-07 - ticket A6 compact : lisible sans déborder */
+@media print {
+  body.print-ticket .ticket {
+    padding: 3mm !important;
+    font-size: 10pt !important;
+    line-height: 1.02 !important;
+  }
+
+  body.print-ticket .ticket-order {
+    font-size: 9pt !important;
+    font-weight: 800 !important;
+    border-bottom: 1px dashed currentColor !important;
+    padding-bottom: .7mm !important;
+    margin-bottom: 1.4mm !important;
+    line-height: 1 !important;
+  }
+
+  body.print-ticket .ticket-section {
+    margin-top: .5mm !important;
+    padding-top: .5mm !important;
+  }
+
+  body.print-ticket .ticket-line {
+    margin-bottom: 1.1mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.print-ticket .ticket-line,
+  body.print-ticket .ticket-line strong {
+    font-size: 14pt !important;
+    line-height: 1.03 !important;
+    font-weight: 1000 !important;
+  }
+
+  body.print-ticket .ticket-line strong {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 3mm !important;
+  }
+
+  body.print-ticket .ticket-line strong em {
+    font-size: 8.5pt !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+  }
+
+  body.print-ticket .ticket-line span {
+    display: block !important;
+    font-size: 11.5pt !important;
+    line-height: 1.04 !important;
+    font-weight: 900 !important;
+    margin-left: 3mm !important;
+    margin-top: .3mm !important;
+  }
+
+  body.print-ticket .ticket-delayed {
+    margin-top: 1mm !important;
+    padding-top: .7mm !important;
+  }
+
+  body.print-ticket .ticket-delayed h2 {
+    font-size: 8pt !important;
+    line-height: 1 !important;
+    margin: .8mm 0 .7mm !important;
+    padding: .7mm !important;
+  }
+
+  body.print-ticket .ticket-caisse {
+    margin-top: 1.2mm !important;
+    padding-top: .8mm !important;
+    border-top: 1px dashed currentColor !important;
+  }
+
+  body.print-ticket .ticket-total,
+  body.print-ticket .ticket-pay,
+  body.print-ticket .ticket-change {
+    font-size: 8.5pt !important;
+    line-height: 1 !important;
+    margin-top: .4mm !important;
+  }
+
+  body.print-ticket .ticket-total strong,
+  body.print-ticket .ticket-pay strong,
+  body.print-ticket .ticket-change strong {
+    font-size: 9pt !important;
+  }
 }
