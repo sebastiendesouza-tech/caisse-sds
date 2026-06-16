@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Caisse by SDS v2026-09">
+  <meta name="apple-mobile-web-app-title" content="Caisse by SDS v2026-12">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#111827">
-  <title>Caisse by SDS v2026-09</title>
+  <title>Caisse by SDS v2026-12</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=v2026-09">
+  <link rel="stylesheet" href="style.css?v=v2026-12">
 </head>
 <body>
   <main class="app">
     <section class="panel products-panel">
       <header class="panel-header">
-        <h1>Caisse by SDS <span class="app-version">v2026-09</span></h1>
+        <h1>Caisse by SDS <span class="app-version">v2026-12</span></h1>
         <div class="header-actions">
           <button id="settingsMenuBtn" class="icon-btn" type="button" aria-label="Réglages">⚙️</button>
           <button id="fullscreenBtn" class="small-btn" type="button">Plein écran</button>
@@ -88,6 +88,7 @@
         <div class="cash-tools-row">
           <button id="historyBtn" class="small-btn" type="button">Historique</button>
           <button id="bilanBtn" class="small-btn" type="button">Bilan</button>
+          <button id="refundBtn" class="small-btn" type="button">Remboursement</button>
         </div>
         <button id="resetCashRegisterBtn" class="danger small-btn full-width" type="button">Réinitialiser caisse</button>
       </div>
@@ -229,6 +230,15 @@
           <input id="generalCashFund" inputmode="decimal" placeholder="0,00">
         </label>
         <label class="general-input-row">
+          <span>Préfixe des commandes</span>
+          <select id="generalOrderPrefix">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </label>
+        <label class="general-input-row">
           <span>Couleur du texte du ticket</span>
           <select id="generalTicketColor">
             <option value="black">Noir</option>
@@ -294,9 +304,23 @@
     </form>
   </dialog>
 
+
+  <dialog id="refundDialog" class="modal-dialog wide">
+    <form method="dialog" class="modal-panel">
+      <header class="panel-header">
+        <h2>Remboursement</h2>
+        <button class="small-btn" type="submit">Fermer</button>
+      </header>
+      <p class="stock-help">Sélectionner les produits non remis au client. Conserver le ticket client comme justificatif.</p>
+      <div id="refundContent" class="refund-content"></div>
+      <div class="total-box refund-total"><span>Total à rembourser</span><strong id="refundTotal">0,00 €</strong></div>
+      <button id="validateRefundBtn" class="danger small-btn full-width" type="button">Valider le remboursement</button>
+    </form>
+  </dialog>
+
   <div id="printArea" class="print-area"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js?v=v2026-09"></script>
+  <script src="app.js?v=v2026-12"></script>
 </body>
 </html>

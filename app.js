@@ -28,26 +28,26 @@ window.addEventListener("error", event => {
 const DEFAULT_PRODUCT_CONFIG = [
   { id: "eau50", subCategory: "sans_alcool", slot: 1, cat: "Boissons", name: "Eau 50 cl", price: 50, type: "simple" },
   { id: "eau150", subCategory: "sans_alcool", slot: 2, cat: "Boissons", name: "Eau 1,5 L", price: 150, type: "simple" },
-  { id: "soft", subCategory: "sans_alcool", slot: 3, cat: "Boissons", name: "Soft canette", price: 200, type: "simple" },
-  { id: "biere25", subCategory: "alcool", slot: 4, cat: "Boissons", name: "Bière pression 25 cl", price: 250, type: "simple" },
-  { id: "pichet", subCategory: "alcool", slot: 5, cat: "Boissons", name: "Pichet bière 1 L", price: 900, type: "simple" },
-  { id: "vin_rouge", subCategory: "alcool", slot: 6, cat: "Boissons", name: "Verre vin rouge", price: 300, type: "simple" },
-  { id: "vin_blanc", subCategory: "alcool", slot: 7, cat: "Boissons", name: "Verre vin blanc", price: 300, type: "simple" },
-  { id: "vin_rose", subCategory: "alcool", slot: 8, cat: "Boissons", name: "Verre vin rosé", price: 300, type: "simple" },
-  { id: "btvin_rouge", subCategory: "alcool", slot: 9, cat: "Boissons", name: "Bouteille rouge", price: 1100, type: "simple" },
-  { id: "btvin_blanc", subCategory: "alcool", slot: 10, cat: "Boissons", name: "Bouteille blanc", price: 1100, type: "simple" },
-  { id: "btvin_rose", subCategory: "alcool", slot: 11, cat: "Boissons", name: "Bouteille rosé", price: 1100, type: "simple" },
-  { id: "cremant", subCategory: "alcool", slot: 12, cat: "Boissons", name: "Bouteille crémant", price: 1300, type: "simple" },
-  { id: "boisson_13", slot: 13, cat: "Boissons", name: "", price: 0, type: "simple" },
-  { id: "boisson_14", slot: 14, cat: "Boissons", name: "", price: 0, type: "simple" },
+  { id: "coca", subCategory: "sans_alcool", slot: 3, cat: "Boissons", name: "Coca", price: 200, type: "simple" },
+  { id: "oasis", subCategory: "sans_alcool", slot: 4, cat: "Boissons", name: "Oasis", price: 200, type: "simple" },
+  { id: "icetea", subCategory: "sans_alcool", slot: 5, cat: "Boissons", name: "Ice Tea", price: 200, type: "simple" },
+  { id: "biere25", subCategory: "alcool", slot: 6, cat: "Boissons", name: "Bière pression 25 cl", price: 250, type: "simple" },
+  { id: "pichet", subCategory: "alcool", slot: 7, cat: "Boissons", name: "Pichet bière 1 L", price: 900, type: "simple" },
+  { id: "vin_rouge", subCategory: "alcool", slot: 8, cat: "Boissons", name: "Verre rouge", price: 300, type: "simple" },
+  { id: "vin_blanc", subCategory: "alcool", slot: 9, cat: "Boissons", name: "Verre blanc", price: 300, type: "simple" },
+  { id: "vin_rose", subCategory: "alcool", slot: 10, cat: "Boissons", name: "Verre rosé", price: 300, type: "simple" },
+  { id: "btvin_rouge", subCategory: "alcool", slot: 11, cat: "Boissons", name: "Bouteille rouge", price: 1100, type: "simple" },
+  { id: "btvin_blanc", subCategory: "alcool", slot: 12, cat: "Boissons", name: "Bouteille blanc", price: 1100, type: "simple" },
+  { id: "btvin_rose", subCategory: "alcool", slot: 13, cat: "Boissons", name: "Bouteille rosé", price: 1100, type: "simple" },
+  { id: "cremant", subCategory: "alcool", slot: 14, cat: "Boissons", name: "Bouteille crémant", price: 1300, type: "simple" },
   { id: "boisson_15", slot: 15, cat: "Boissons", name: "", price: 0, type: "simple" },
   { id: "boisson_16", slot: 16, cat: "Boissons", name: "", price: 0, type: "simple" },
 
-  { id: "assiette", slot: 1, cat: "Restauration", name: "Assiette gourmande", price: 700, type: "composite", components: [], options: { groups: { meats: { enabled: true, count: 2, choiceRequired: true, defaults: {} }, sides: { enabled: false, count: 0, choiceRequired: false, defaults: {} } }, other: { enabled: false, ids: [], supplements: {} } } },
+  { id: "assiette", slot: 1, cat: "Restauration", name: "Assiette gourmande", price: 700, type: "composite", components: [], options: { groups: { meats: { enabled: true, count: 2, choiceRequired: true, defaults: {} }, sides: { enabled: true, count: 1, choiceRequired: false, defaults: { frites: 1 } } }, other: { enabled: false, ids: [], supplements: {} } } },
   { id: "frites", slot: 2, cat: "Restauration", name: "Barquette frites", price: 250, type: "simple", subCategory: "plat" },
-  { id: "glace", slot: 3, cat: "Restauration", name: "Glace", price: 200, type: "simple", subCategory: "dessert", canDelayPickup: true },
+  { id: "glace", slot: 3, cat: "Restauration", name: "Glace", price: 200, type: "simple", subCategory: "dessert" },
   { id: "popcorn", slot: 4, cat: "Restauration", name: "Popcorn", price: 100, type: "simple", subCategory: "dessert" },
-  { id: "menu", slot: 5, cat: "Restauration", name: "Menu", price: 1000, type: "menu", components: [], options: { sections: { entree: { enabled: false, count: 0, choiceRequired: false, ids: [], defaults: {}, supplementsEnabled: false, supplements: {} }, plat: { enabled: false, count: 0, choiceRequired: false, ids: [], defaults: {}, supplementsEnabled: false, supplements: {} }, dessert: { enabled: true, count: 1, choiceRequired: true, ids: ["glace", "popcorn"], defaults: {}, supplementsEnabled: false, supplements: {} } }, groups: { meats: { enabled: true, count: 2, choiceRequired: true, defaults: {} }, sides: { enabled: true, count: 1, choiceRequired: false, defaults: { frites: 1 } } }, other: { enabled: true, count: 1, ids: ["soft", "biere25", "vin_rouge", "vin_blanc", "vin_rose"], supplementsEnabled: true, supplements: { vin_rouge: 50, vin_blanc: 50, vin_rose: 50 } } } },
+  { id: "menu", slot: 5, cat: "Restauration", name: "Menu", price: 1000, type: "menu", components: [], options: { sections: { entree: { enabled: false, count: 0, choiceRequired: false, ids: [], defaults: {}, supplementsEnabled: false, supplements: {} }, plat: { enabled: true, count: 1, choiceRequired: false, ids: ["assiette"], defaults: { assiette: 1 }, supplementsEnabled: false, supplements: {} }, dessert: { enabled: true, count: 1, choiceRequired: false, ids: ["glace"], defaults: { glace: 1 }, supplementsEnabled: false, supplements: {} }, fromage: { enabled: false, count: 0, choiceRequired: false, ids: [], defaults: {}, supplementsEnabled: false, supplements: {} }, boisson: { enabled: true, count: 1, choiceRequired: true, ids: ["coca", "oasis", "icetea", "biere25", "vin_rouge", "vin_blanc", "vin_rose"], defaults: {}, supplementsEnabled: true, supplements: { vin_rouge: 50, vin_blanc: 50, vin_rose: 50 } } }, groups: { meats: { enabled: false, count: 0, choiceRequired: false, defaults: {} }, sides: { enabled: false, count: 0, choiceRequired: false, defaults: {} } }, other: { enabled: false, count: 0, ids: [], supplementsEnabled: false, supplements: {} } } },
   { id: "rest_6", slot: 6, cat: "Restauration", name: "", price: 0, type: "simple" },
   { id: "rest_7", slot: 7, cat: "Restauration", name: "", price: 0, type: "simple" },
   { id: "rest_8", slot: 8, cat: "Restauration", name: "", price: 0, type: "simple" },
@@ -109,7 +109,8 @@ const COLOR_PALETTE = [
   { id: "purple", label: "Violet" },
   { id: "pink", label: "Rose" },
   { id: "yellow", label: "Jaune" },
-  { id: "gray", label: "Gris" }
+  { id: "gray", label: "Gris" },
+  { id: "red", label: "Rouge" }
 ];
 const VALID_COLORS = new Set(COLOR_PALETTE.map(c => c.id));
 function normalizeColor(value) { return VALID_COLORS.has(String(value || "")) ? String(value) : "white"; }
@@ -244,7 +245,7 @@ function normalizeOptions(value) {
   // Migration anciennes versions : meatChoice/drinkChoice deviennent groupes paramétrables.
   const oldDrinkIds = Array.isArray(options.drinkIds) && options.drinkIds.length
     ? options.drinkIds.map(String)
-    : ["soft", "biere25", "vin_rouge", "vin_blanc", "vin_rose"];
+    : ["coca", "oasis", "icetea", "biere25", "vin_rouge", "vin_blanc", "vin_rose"];
 
   const groups = options.groups && typeof options.groups === "object" ? options.groups : {};
   const other = options.other && typeof options.other === "object" ? options.other : {};
@@ -288,7 +289,7 @@ function normalizeType(type) {
 function cloneConfig(config) {
   return config.map(item => ({
     ...item,
-    canDelayPickup: Boolean(item.canDelayPickup ?? item.delayedPickup),
+    canDelayPickup: false,
     delayedPickup: false,
     color: defaultColorForProduct(item),
     components: normalizeComponents(item.components),
@@ -335,7 +336,7 @@ function loadProductConfig() {
         cat: defaultItem.cat,
         slot: defaultItem.slot,
         type: migratedType,
-        canDelayPickup: Boolean(savedItem.canDelayPickup ?? savedItem.delayedPickup ?? defaultItem.canDelayPickup ?? defaultItem.delayedPickup),
+        canDelayPickup: false,
         delayedPickup: false,
         color: defaultColorForProduct({ ...defaultItem, ...savedItem, type: migratedType }),
         components,
@@ -358,7 +359,7 @@ function sanitizeProductConfig(config) {
       price: Number(item.price) || 0,
       type,
       subCategory: type === "simple" ? String(item.subCategory || "") : "",
-      canDelayPickup: Boolean(item.canDelayPickup ?? item.delayedPickup),
+      canDelayPickup: false,
       delayedPickup: false,
       color: defaultColorForProduct({ ...item, type }),
       components: type === "composite" ? normalizeComponents(item.components) : [],
@@ -395,7 +396,7 @@ function buildProducts() {
       type,
       components: normalizeComponents(item.components),
       options: normalizeOptions(item.options),
-      canDelayPickup: Boolean(item.canDelayPickup ?? item.delayedPickup),
+      canDelayPickup: false,
       delayedPickup: false,
       empty: !name
     };
@@ -442,13 +443,24 @@ function componentCandidates(currentId = "") {
 
 const VALID_TICKET_COLORS = new Set(["black", "blue", "red"]);
 function normalizeTicketColor(value) { return VALID_TICKET_COLORS.has(String(value || "")) ? String(value) : "black"; }
-const DEFAULT_GENERAL_SETTINGS = { cashEnabled: true, cashFund: 0, categoryColors: DEFAULT_CATEGORY_COLORS, ticketColor: "black" };
+const VALID_ORDER_PREFIXES = new Set(["A", "B", "C", "D"]);
+function normalizeOrderPrefix(value) {
+  const prefix = String(value || "A").trim().toUpperCase();
+  return VALID_ORDER_PREFIXES.has(prefix) ? prefix : "A";
+}
+function orderDisplayNumber(order) {
+  const prefix = normalizeOrderPrefix(order?.prefix || generalSettings?.orderPrefix || "A");
+  const number = Number(order?.number) || 0;
+  return `${prefix}${String(number).padStart(2, "0")}`;
+}
+const DEFAULT_GENERAL_SETTINGS = { cashEnabled: true, cashFund: 0, categoryColors: DEFAULT_CATEGORY_COLORS, ticketColor: "black", orderPrefix: "A" };
 function loadGeneralSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem("moroges_general_settings") || "null");
     const merged = { ...DEFAULT_GENERAL_SETTINGS, ...(saved && typeof saved === "object" ? saved : {}) };
     merged.categoryColors = normalizedCategoryColors(merged.categoryColors);
     merged.ticketColor = normalizeTicketColor(merged.ticketColor);
+    merged.orderPrefix = normalizeOrderPrefix(merged.orderPrefix);
     return merged;
   } catch { return { ...DEFAULT_GENERAL_SETTINGS }; }
 }
@@ -457,6 +469,23 @@ let generalSettings = loadGeneralSettings();
 
 
 let productConfig = loadProductConfig();
+function applyV202611DefaultsOnce() {
+  const key = "moroges_v2026_12_defaults_applied";
+  if (localStorage.getItem(key) === "1") return;
+  const defaultsById = Object.fromEntries(DEFAULT_PRODUCT_CONFIG.map(item => [item.id, item]));
+  const forceIds = ["coca", "oasis", "icetea", "biere25", "pichet", "vin_rouge", "vin_blanc", "vin_rose", "btvin_rouge", "btvin_blanc", "btvin_rose", "cremant", "assiette", "glace", "menu"];
+  const existingById = Object.fromEntries(productConfig.map(item => [item.id, item]));
+  productConfig = DEFAULT_PRODUCT_CONFIG.map(defaultItem => {
+    const existing = existingById[defaultItem.id] || {};
+    if (forceIds.includes(defaultItem.id)) return cloneConfig([defaultItem])[0];
+    return existing.id ? { ...existing, cat: defaultItem.cat, slot: defaultItem.slot, canDelayPickup: false, delayedPickup: false } : cloneConfig([defaultItem])[0];
+  });
+  choiceGroups = normalizeChoiceGroups(DEFAULT_CHOICE_GROUPS);
+  saveProductConfig(productConfig);
+  saveChoiceGroups();
+  localStorage.setItem(key, "1");
+}
+applyV202611DefaultsOnce();
 let PRODUCTS = buildProducts();
 let STOCK_ITEMS = buildStockItems();
 let cart = [];
@@ -494,7 +523,7 @@ const stockItemById = id => STOCK_ITEMS.find(p => p.id === id) || productById(id
 const isWineDrink = id => id === "vin_rouge" || id === "vin_blanc" || id === "vin_rose";
 function drinkLabel(id) {
   const product = productById(id);
-  const base = product && !product.empty ? product.name : ({ soft: "Soft", biere25: "Bière", vin_rouge: "Vin rouge", vin_blanc: "Vin blanc", vin_rose: "Vin rosé" }[id] || id);
+  const base = product && !product.empty ? product.name : ({ coca: "Coca", oasis: "Oasis", icetea: "Ice Tea", soft: "Coca", biere25: "Bière pression 25 cl", vin_rouge: "Verre rouge", vin_blanc: "Verre blanc", vin_rose: "Verre rosé" }[id] || id);
   return isWineDrink(id) ? `${base} +0,50 €` : base;
 }
 const stockClass = available => available === null ? "" : available <= 0 ? "empty" : available < 10 ? "low" : "ok";
@@ -642,7 +671,6 @@ function addProduct(product) {
     return;
   }
   if (!canAddProduct(product)) return alert("Stock insuffisant pour ce produit.");
-  if (product.canDelayPickup) return openDelayedSimpleChoice(product);
   addSimpleProductToCart(product, false);
 }
 
@@ -718,8 +746,7 @@ function productConfigById(id) {
   return productConfig.find(item => item.id === id) || PRODUCTS.find(item => item.id === id);
 }
 
-function canDelayPickup(id) {
-  return Boolean(productConfigById(id)?.canDelayPickup || productConfigById(id)?.delayedPickup);
+function canDelayPickup(id) { return false;
 }
 
 function isDelayedPickup(id) {
@@ -908,11 +935,11 @@ function renderChoice() {
       const stockText = available === null ? "" : `<small>stock ${Math.max(0, available)}</small>`;
       const supplement = rule.supplements?.[product.id] || 0;
       return `<div class="choice-line">
-        <button type="button" data-choice-section="${escapeHtml(sectionId)}" data-choice-id="${escapeHtml(product.id)}" data-delta="-1">−</button>
         <strong>${escapeHtml(product.name)}</strong>
-        <small>${rule.supplementsEnabled && supplement ? `suppl. ${euro(supplement)}` : ""} ${stockText}</small>
+        <button type="button" data-choice-section="${escapeHtml(sectionId)}" data-choice-id="${escapeHtml(product.id)}" data-delta="-1">−</button>
         <span>${qty}</span>
         <button type="button" data-choice-section="${escapeHtml(sectionId)}" data-choice-id="${escapeHtml(product.id)}" data-delta="1">+</button>
+        <small>${rule.supplementsEnabled && supplement ? `suppl. ${euro(supplement)}` : ""} ${stockText}</small>
       </div>`;
     }).join("");
     sections.push(`<section class="choice-section"><h3>${escapeHtml(section?.label || sectionId)} <em>${total}/${rule.count}</em></h3>${rows || "<p>Aucun produit disponible.</p>"}</section>`);
@@ -928,11 +955,11 @@ function renderChoice() {
       const available = availableStock(item.id);
       const stockText = available === null ? "" : `<small>stock ${Math.max(0, available)}</small>`;
       return `<div class="choice-line">
-        <button type="button" data-choice-group="${escapeHtml(groupId)}" data-choice-id="${escapeHtml(item.id)}" data-delta="-1">−</button>
         <strong>${escapeHtml(item.name)}</strong>
-        ${stockText}
+        <button type="button" data-choice-group="${escapeHtml(groupId)}" data-choice-id="${escapeHtml(item.id)}" data-delta="-1">−</button>
         <span>${qty}</span>
         <button type="button" data-choice-group="${escapeHtml(groupId)}" data-choice-id="${escapeHtml(item.id)}" data-delta="1">+</button>
+        ${stockText}
       </div>`;
     }).join("");
     sections.push(`<section class="choice-section"><h3>${escapeHtml(group?.label || groupId)} <em>${total}/${rule.count}</em></h3>${rows}</section>`);
@@ -947,11 +974,11 @@ function renderChoice() {
       const stockText = available === null ? "" : `<small>stock ${Math.max(0, available)}</small>`;
       const supplement = options.other.supplements?.[product.id] || 0;
       return `<div class="choice-line">
-        <button type="button" data-choice-other="${escapeHtml(product.id)}" data-delta="-1">−</button>
         <strong>${escapeHtml(product.name)}</strong>
-        <small>${supplement ? `suppl. ${euro(supplement)}` : ""} ${stockText}</small>
+        <button type="button" data-choice-other="${escapeHtml(product.id)}" data-delta="-1">−</button>
         <span>${qty}</span>
         <button type="button" data-choice-other="${escapeHtml(product.id)}" data-delta="1">+</button>
+        <small>${supplement ? `suppl. ${euro(supplement)}` : ""} ${stockText}</small>
       </div>`;
     }).join("");
     sections.push(`<section class="choice-section"><h3>Boisson / autre <em>${otherTotal}/${otherCount}</em></h3>${rows || "<p>Aucun produit simple disponible.</p>"}</section>`);
@@ -970,11 +997,11 @@ function renderChoice() {
         const available = availableStock(item.id);
         const stockText = available === null ? "" : `<small>stock ${Math.max(0, available)}</small>`;
         return `<div class="choice-line">
-          <button type="button" data-nested-product="${escapeHtml(compositeProduct.id)}" data-nested-group="${escapeHtml(groupId)}" data-choice-id="${escapeHtml(item.id)}" data-delta="-1">−</button>
           <strong>${escapeHtml(item.name)}</strong>
-          ${stockText}
+          <button type="button" data-nested-product="${escapeHtml(compositeProduct.id)}" data-nested-group="${escapeHtml(groupId)}" data-choice-id="${escapeHtml(item.id)}" data-delta="-1">−</button>
           <span>${qty}</span>
           <button type="button" data-nested-product="${escapeHtml(compositeProduct.id)}" data-nested-group="${escapeHtml(groupId)}" data-choice-id="${escapeHtml(item.id)}" data-delta="1">+</button>
+          ${stockText}
         </div>`;
       }).join("");
       sections.push(`<section class="choice-section"><h3>${escapeHtml(compositeProduct.name)} · ${escapeHtml(group?.label || groupId)} <em>${total}/${rule.count}</em></h3>${rows || "<p>Aucun choix disponible.</p>"}</section>`);
@@ -1370,6 +1397,7 @@ function finishOrder(payment, volunteerName = "") {
 
   const order = {
     number: orders.length + 1,
+    prefix: normalizeOrderPrefix(generalSettings.orderPrefix),
     date: new Date().toISOString(),
     payment,
     volunteerName: payment === "volunteer" ? volunteerName : "",
@@ -1389,7 +1417,8 @@ function finishOrder(payment, volunteerName = "") {
   saveOrders();
   saveStock();
 
-  if (payment !== "volunteer") {
+  const isOnlyReturnConsigne = total < 0 && order.lines.every(line => line.id === "retour");
+  if (payment !== "volunteer" && !isOnlyReturnConsigne) {
     lastPrintedOrder = order;
     byId("printArea").innerHTML = renderTicketHtml(order);
     printCurrentContent("print-ticket");
@@ -1398,7 +1427,7 @@ function finishOrder(payment, volunteerName = "") {
   cart = [];
   receivedDigits = "";
   renderAll();
-  showToast(payment === "volunteer" ? `Commande n°${order.number} enregistrée pour ${volunteerName}` : `Commande n°${order.number} enregistrée`);
+  showToast(payment === "volunteer" ? `Commande ${orderDisplayNumber(order)} enregistrée pour ${volunteerName}` : `Commande ${orderDisplayNumber(order)} enregistrée`);
 }
 
 function stats() {
@@ -1406,6 +1435,7 @@ function stats() {
   const cardTotal = orders.filter(o => o.payment === "card").reduce((sum, o) => sum + o.total, 0);
   const volunteerTotal = orders.filter(o => o.payment === "volunteer").reduce((sum, o) => sum + o.total, 0);
   const volunteerUnsettledTotal = orders.filter(o => o.payment === "volunteer" && !o.volunteerSettled).reduce((sum, o) => sum + o.total, 0);
+  const refundTotal = orders.filter(o => o.kind === "refund").reduce((sum, o) => sum + Math.abs(Number(o.total) || 0), 0);
   const volunteerByName = {};
   orders.filter(o => o.payment === "volunteer").forEach(o => {
     const name = o.volunteerName || "Bénévole";
@@ -1419,7 +1449,7 @@ function stats() {
   const soldByName = {};
   const revenueByName = {};
   const comps = {};
-  const drinkChoices = { soft: 0, biere25: 0, vin_rouge: 0, vin_blanc: 0, vin_rose: 0 };
+  const drinkChoices = { coca: 0, oasis: 0, icetea: 0, soft: 0, biere25: 0, vin_rouge: 0, vin_blanc: 0, vin_rose: 0 };
   const meatChoices = { saucisse: 0, merguez: 0 };
   const choiceDetails = {};
   const addChoiceDetail = (id, qty) => {
@@ -1430,6 +1460,7 @@ function stats() {
 
   orders.forEach(order => {
     order.lines.forEach(line => {
+      if (line.kind === "refund" || order.kind === "refund") return;
       const lineQty = Number(line.qty) || 0;
       const key = line.productId || line.id;
       soldByProductId[key] = (soldByProductId[key] || 0) + lineQty;
@@ -1465,7 +1496,7 @@ function stats() {
   });
   meatChoices.saucisse = choiceDetails.saucisse || meatChoices.saucisse;
   meatChoices.merguez = choiceDetails.merguez || meatChoices.merguez;
-  return { cashTotal, cardTotal, volunteerTotal, volunteerUnsettledTotal, volunteerByName, soldByProductId, soldByName, revenueByName, comps, drinkChoices, meatChoices, choiceDetails };
+  return { cashTotal, cardTotal, volunteerTotal, volunteerUnsettledTotal, volunteerByName, refundTotal, soldByProductId, soldByName, revenueByName, comps, drinkChoices, meatChoices, choiceDetails };
 }
 
 function tableRows(rows, empty = "Aucune donnée") {
@@ -1510,6 +1541,7 @@ function renderBilan() {
       <div class="mini-stat"><span>Espèces attendues</span><strong>${euro(cashExpected)}</strong></div>
       <div class="mini-stat"><span>CB</span><strong>${euro(s.cardTotal)}</strong></div>
       <div class="mini-stat"><span>Total ventes</span><strong>${euro(total)}</strong></div>
+      <div class="mini-stat"><span>Remboursements</span><strong>${euro(s.refundTotal || 0)}</strong></div>
       <div class="mini-stat"><span>Bénévoles à régler</span><strong>${euro(s.volunteerUnsettledTotal)}</strong></div>
       <div class="mini-stat"><span>Bénévoles total</span><strong>${euro(s.volunteerTotal)}</strong></div>
     </div>
@@ -1550,7 +1582,9 @@ function exportBilanCSV() {
   PRODUCTS.filter(product => !product.empty).forEach(product => rows.push(["produit", product.name, s.soldByProductId[product.id] || 0, "", product.stockable ? (stockValue(product.id) ?? "non suivi") : ""]));
   rows.push(["choix", "saucisse", s.meatChoices.saucisse, "", stockValue("saucisse") ?? "non suivi"]);
   rows.push(["choix", "merguez", s.meatChoices.merguez, "", stockValue("merguez") ?? "non suivi"]);
-  rows.push(["choix", "menus avec soft", s.drinkChoices.soft || 0, "", ""]);
+  rows.push(["choix", "menus avec coca", s.drinkChoices.coca || s.drinkChoices.soft || 0, "", ""]);
+  rows.push(["choix", "menus avec oasis", s.drinkChoices.oasis || 0, "", ""]);
+  rows.push(["choix", "menus avec ice tea", s.drinkChoices.icetea || 0, "", ""]);
   rows.push(["choix", "menus avec biere", s.drinkChoices.biere25 || 0, "", ""]);
   rows.push(["choix", "menus avec vin rouge", s.drinkChoices.vin_rouge || 0, "", ""]);
   rows.push(["choix", "menus avec vin blanc", s.drinkChoices.vin_blanc || 0, "", ""]);
@@ -1564,7 +1598,8 @@ function renderHistory() {
   const search = (byId("historySearch")?.value || "").trim();
   let list = orders.slice().reverse();
   if (search) {
-    list = list.filter(order => String(order.number).includes(search));
+    const q = search.toUpperCase();
+    list = list.filter(order => String(order.number).includes(search) || orderDisplayNumber(order).includes(q));
   }
   if (!list.length) { root.innerHTML = `<div class="empty-history">${orders.length ? "Aucune commande trouvée" : "Aucune commande enregistrée"}</div>`; return; }
   root.innerHTML = list.map(order => {
@@ -1583,7 +1618,7 @@ function renderHistory() {
       ? `<button type="button" class="small-btn" data-toggle-volunteer="${order.number}">${order.volunteerSettled ? "Remettre à régler" : "Marquer réglé"}</button>`
       : `<button type="button" class="small-btn" data-print-order="${order.number}">Réimprimer</button>`;
     return `<article class="history-card">
-      <header><strong>Commande n°${order.number}</strong><span>${formatDateTime(order.date)}</span><span>${paymentLabel}</span><b>${euro(order.total)}</b></header>
+      <header><strong>Commande ${orderDisplayNumber(order)}</strong><span>${formatDateTime(order.date)}</span><span>${paymentLabel}</span><b>${euro(order.total)}</b></header>
       <div class="history-paid">${paid}</div>
       <ul>${lines}</ul>
       ${actions}
@@ -1638,6 +1673,7 @@ function showToast(message) {
 function orderFromCurrentCart() {
   return {
     number: orders.length + 1,
+    prefix: normalizeOrderPrefix(generalSettings.orderPrefix),
     date: new Date().toISOString(),
     payment: "non validé",
     total: getTotal(),
@@ -1660,12 +1696,7 @@ function immediateSubForLine(line) {
 }
 
 function delayedRowsForOrder(order) {
-  const rows = {};
-  (order.lines || []).forEach(line => {
-    const delayed = delayedComponentsForLine(line);
-    Object.entries(delayed).forEach(([id, qty]) => addToBucket(rows, id, (Number(qty) || 0) * (Number(line.qty) || 1)));
-  });
-  return rows;
+  return {};
 }
 
 
@@ -1688,26 +1719,83 @@ function sortedTicketLines(lines) {
     .map(item => item.line);
 }
 
-function renderTicketHtml(order) {
-  const normalLines = sortedTicketLines(order.lines || []).map(line => {
-    const sub = compactTicketSubForLine(line);
-    const onlyDelayed = !sub && Boolean(line.delayedPickup);
-    if (onlyDelayed) return "";
-    return `
-      <div class="ticket-line">
-        <strong>${line.qty} x ${escapeHtml(line.name)} <em>${euro((Number(line.price) || 0) * (Number(line.qty) || 0))}</em></strong>
-        ${sub ? `<span>${escapeHtml(sub)}</span>` : ""}
-      </div>
-    `;
-  }).filter(Boolean).join("");
+function ticketCheckboxes(qty) {
+  const count = Math.max(1, Math.min(20, Number(qty) || 1));
+  return Array.from({ length: count }, () => '<span class="ticket-box">□</span>').join('');
+}
 
-  const delayed = delayedRowsForOrder(order);
-  const delayedLines = Object.entries(delayed).map(([id, qty]) => `
-    <div class="ticket-line delayed-ticket-line"><strong>${qty} x ${escapeHtml(stockItemById(id).name)}</strong></div>
-  `).join("");
+function isTicketCheckable(line) {
+  const product = productConfigById(line?.productId || line?.id) || productById(line?.productId || line?.id) || {};
+  const cat = String(product.cat || line?.cat || "");
+  const name = String(line?.name || product.name || "").toLowerCase();
+  if (cat === "Consignes" || name.includes("consigne")) return false;
+  if (Number(line?.price || 0) <= 0) return false;
+  if (line?.kind === "refund") return false;
+  return true;
+}
+
+function ticketCheckHtml(qty, enabled = true) {
+  return enabled ? `<span class="ticket-checks">${ticketCheckboxes(qty)}</span>` : `<span class="ticket-checks empty"></span>`;
+}
+
+function selectedSectionForTicket(line, sectionId) {
+  const product = productById(line?.productId || line?.id) || {};
+  const options = normalizeOptions(product.options || {});
+  const rule = options.sections?.[sectionId];
+  if (!rule?.enabled) return {};
+  const selected = line?.selections?.sections?.[sectionId];
+  return selected && typeof selected === "object" ? selected : (rule.defaults || {});
+}
+
+function menuTicketItems(line) {
+  if (normalizeType(line?.type) !== "menu") return [];
+  const result = [];
+  const lineQty = Math.max(1, Number(line.qty) || 1);
+  ["plat", "dessert", "fromage", "boisson", "entree"].forEach(sectionId => {
+    const selected = selectedSectionForTicket(line, sectionId);
+    Object.entries(selected || {}).forEach(([id, qty]) => {
+      const amount = (Number(qty) || 0) * lineQty;
+      if (amount <= 0) return;
+      const product = productById(id) || stockItemById(id);
+      let detail = "";
+      if (sectionId === "plat" && product && normalizeType(product.type) === "composite") {
+        const nestedChoice = line.selections?.nested?.[id] || initChoice(product);
+        const nestedLine = makeCompositeLine(product, nestedChoice);
+        detail = stripDetailCategoryLabels(nestedLine.subImmediate || "");
+      }
+      result.push({ qty: amount, name: product?.name || stockItemById(id).name || id, detail });
+    });
+  });
+  return result;
+}
+
+function renderTicketLine(line) {
+  const qty = Math.max(1, Number(line.qty) || 1);
+  const lineTotal = (Number(line.price) || 0) * qty;
+  const type = normalizeType(line?.type || "simple");
+  const isMenu = type === "menu";
+  const sub = compactTicketSubForLine(line);
+  const checkable = isTicketCheckable(line);
+  const menuItems = isMenu ? menuTicketItems(line) : [];
+  if (isMenu && menuItems.length) {
+    return `<div class="ticket-line ticket-menu-line">
+      <strong><span class="ticket-main">${qty} ${escapeHtml(line.name)}</span><span class="ticket-checks empty"></span><em>${euro(lineTotal)}</em></strong>
+      <div class="ticket-menu-items">
+        ${menuItems.map(item => `<div class="ticket-menu-item"><span>${item.qty} ${escapeHtml(item.name)}</span>${ticketCheckHtml(item.qty, true)}</div>${item.detail ? `<div class="ticket-menu-detail">${escapeHtml(item.detail)}</div>` : ""}`).join("")}
+      </div>
+    </div>`;
+  }
+  return `<div class="ticket-line">
+    <strong><span class="ticket-main">${qty} ${escapeHtml(line.name)}</span>${ticketCheckHtml(qty, checkable)}<em>${euro(lineTotal)}</em></strong>
+    ${sub ? `<span>${escapeHtml(sub)}</span>` : ""}
+  </div>`;
+}
+
+function renderTicketHtml(order) {
+  const normalLines = sortedTicketLines(order.lines || []).map(renderTicketLine).filter(Boolean).join("");
 
   const isCash = order.payment === "cash";
-  const isRefund = order.total < 0;
+  const isRefund = order.total < 0 || order.kind === "refund";
   const hasCashDetails = generalSettings.cashEnabled && isCash && !isRefund;
   const received = hasCashDetails ? (order.received ?? getReceived()) : null;
   const change = hasCashDetails ? (order.change ?? Math.max(0, received - order.total)) : null;
@@ -1715,10 +1803,10 @@ function renderTicketHtml(order) {
 
   return `
     <div class="ticket compact-ticket ticket-color-${normalizeTicketColor(generalSettings.ticketColor)}">
-      <div class="ticket-order">Commande n°${order.number}</div>
+      <div class="ticket-order">Commande ${orderDisplayNumber(order)}</div>
 
       <section class="ticket-section compact-list">
-        ${normalLines || (!delayedLines ? "<p>Aucun article</p>" : "")}
+        ${normalLines || "<p>Aucun article</p>"}
       </section>
 
       <section class="ticket-caisse compact-caisse">
@@ -1729,13 +1817,6 @@ function renderTicketHtml(order) {
           <div class="ticket-pay"><span>Payé</span><strong>${euro(received)}</strong></div>
           <div class="ticket-change"><span>Monnaie</span><strong>${euro(change)}</strong></div>
         ` : `<div class="ticket-pay"><span>Paiement</span><strong>${escapeHtml(paymentLabel)}</strong></div>`}
-      </section>
-
-      <section class="ticket-delayed ticket-delayed-note">
-        <h2>À RETIRER PLUS TARD</h2>
-        ${delayedLines || ""}
-        <div class="ticket-note-line"></div>
-        <div class="ticket-note-line"></div>
       </section>
     </div>
   `;
@@ -1768,7 +1849,7 @@ function exportCSV() {
   const rows = [["numero", "date", "paiement", "benevole", "benevole_regle", "total_centimes", "recu_centimes", "monnaie_centimes", "produit", "details", "quantite", "prix_unitaire_centimes", "composants"]];
   orders.forEach(order => order.lines.forEach(line => {
     const comps = Object.entries(getLineComponents(line)).map(([id, qty]) => `${stockItemById(id).name}:${qty * line.qty}`).join(", ");
-    rows.push([order.number, order.date, order.payment, order.volunteerName || "", order.volunteerSettled ? "oui" : "non", order.total, order.received, order.change, line.name, line.sub || "", line.qty, line.price, comps]);
+    rows.push([orderDisplayNumber(order), order.date, order.payment, order.volunteerName || "", order.volunteerSettled ? "oui" : "non", order.total, order.received, order.change, line.name, line.sub || "", line.qty, line.price, comps]);
   }));
   downloadCSV(rows, `commandes-caisse-sds-${new Date().toISOString().slice(0, 10)}.csv`);
 }
@@ -2007,10 +2088,7 @@ function renderSettings() {
           <select class="settings-subcategory" title="Famille" style="display:${type === "simple" && cat !== "Consignes" ? "block" : "none"}">${subCategoryOptions}</select>
           <button class="reset-slot-btn" type="button" data-reset-button="${escapeHtml(item.id)}" title="Réinitialiser ce bouton" aria-label="Réinitialiser ce bouton">↺</button>
         </div>
-        <label class="settings-delayed" style="display:${cat !== "Consignes" ? "flex" : "none"}">
-          <input type="checkbox" ${item.canDelayPickup ? "checked" : ""}>
-          <span>Ce bouton peut être remis plus tard</span>
-        </label>
+        
         <div class="settings-composite" style="display:${(type === "composite" || type === "menu") ? "block" : "none"}">
           <div class="settings-subtitle menu-only" style="display:${type === "menu" ? "block" : "none"}">Composition du menu</div>
           <p class="settings-note menu-only" style="display:${type === "menu" ? "block" : "none"}">Pour chaque partie du menu : coche les articles possibles. Si “Choix client” est décoché, les quantités “Défaut” sont ajoutées automatiquement. Les suppléments peuvent être activés par partie.</p>
@@ -2036,7 +2114,7 @@ function renderSettings() {
     const delayed = wrap?.querySelector(".settings-delayed");
     const subcat = wrap?.querySelector(".settings-subcategory");
     if (panel) panel.style.display = isComposite ? "block" : "none";
-    if (delayed) delayed.style.display = isComposite ? "none" : "flex";
+    if (delayed) delayed.style.display = "none";
     if (subcat) subcat.style.display = (!isComposite && wrap?.closest(".settings-category")?.querySelector("h3")?.textContent !== "Consignes") ? "block" : "none";
     wrap?.querySelectorAll(".menu-only").forEach(el => el.style.display = isMenu ? (el.classList.contains("group-options-grid") ? "grid" : "block") : "none");
     wrap?.querySelectorAll(".composite-only").forEach(el => el.style.display = event.target.value === "composite" ? (el.classList.contains("group-options-grid") ? "grid" : "block") : "none");
@@ -2234,6 +2312,8 @@ function renderGeneralSettings() {
   if (cashFund) cashFund.value = eurosForInput(Number(generalSettings.cashFund) || 0);
   const ticketColor = byId("generalTicketColor");
   if (ticketColor) ticketColor.value = normalizeTicketColor(generalSettings.ticketColor);
+  const orderPrefix = byId("generalOrderPrefix");
+  if (orderPrefix) orderPrefix.value = normalizeOrderPrefix(generalSettings.orderPrefix);
   const colorRoot = byId("categoryColorsSettingsList");
   if (colorRoot) {
     const colors = normalizedCategoryColors(generalSettings.categoryColors);
@@ -2262,6 +2342,7 @@ function applyGeneralSettings() {
   generalSettings.cashEnabled = Boolean(byId("generalCashEnabled")?.checked);
   generalSettings.cashFund = centsFromInput(byId("generalCashFund")?.value || "0");
   generalSettings.ticketColor = normalizeTicketColor(byId("generalTicketColor")?.value || "black");
+  generalSettings.orderPrefix = normalizeOrderPrefix(byId("generalOrderPrefix")?.value || "A");
   const categoryColors = {};
   document.querySelectorAll("[data-category-color]").forEach(select => { categoryColors[select.dataset.categoryColor] = normalizeColor(select.value); });
   generalSettings.categoryColors = normalizedCategoryColors(categoryColors);
@@ -2313,6 +2394,75 @@ function bindSafeTap(button, handler) {
   });
 }
 
+
+let refundSelection = {};
+function refundableProducts() {
+  return PRODUCTS.filter(p => !p.empty && p.cat !== "Consignes" && Number(p.price) > 0 && normalizeType(p.type) === "simple");
+}
+function refundTotal() {
+  return Object.entries(refundSelection).reduce((sum, [id, qty]) => {
+    const p = productById(id);
+    return sum + (p ? (Number(p.price) || 0) * (Number(qty) || 0) : 0);
+  }, 0);
+}
+function renderRefundDialog() {
+  const root = byId("refundContent");
+  if (!root) return;
+  const rows = refundableProducts().map(product => {
+    const qty = Math.max(0, Number(refundSelection[product.id]) || 0);
+    return `<div class="refund-row">
+      <strong>${escapeHtml(product.name)}</strong>
+      <button type="button" data-refund-id="${escapeHtml(product.id)}" data-delta="-1">−</button>
+      <span>${qty}</span>
+      <button type="button" data-refund-id="${escapeHtml(product.id)}" data-delta="1">+</button>
+      <em>${euro(qty * (Number(product.price) || 0))}</em>
+    </div>`;
+  }).join("");
+  root.innerHTML = rows || `<p>Aucun produit remboursable.</p>`;
+  const totalEl = byId("refundTotal");
+  if (totalEl) totalEl.textContent = euro(refundTotal());
+  root.querySelectorAll("[data-refund-id]").forEach(btn => btn.addEventListener("click", () => {
+    const id = btn.dataset.refundId;
+    const delta = Number(btn.dataset.delta) || 0;
+    refundSelection[id] = Math.max(0, Math.min(99, (Number(refundSelection[id]) || 0) + delta));
+    if (!refundSelection[id]) delete refundSelection[id];
+    renderRefundDialog();
+  }));
+}
+function openRefundDialog() {
+  refundSelection = {};
+  renderRefundDialog();
+  byId("refundDialog")?.showModal();
+}
+function validateRefund() {
+  const total = refundTotal();
+  if (total <= 0) return alert("Aucun produit sélectionné.");
+  const lines = Object.entries(refundSelection).map(([id, qty]) => {
+    const product = productById(id);
+    return { id, productId: id, name: product?.name || id, price: -(Number(product?.price) || 0), qty: Number(qty) || 0, kind: "refund" };
+  }).filter(line => line.qty > 0);
+  const order = {
+    number: orders.length + 1,
+    prefix: normalizeOrderPrefix(generalSettings.orderPrefix),
+    date: new Date().toISOString(),
+    payment: "cash",
+    kind: "refund",
+    volunteerName: "",
+    volunteerSettled: false,
+    total: -total,
+    received: 0,
+    change: total,
+    lines,
+    components: {}
+  };
+  orders.push(order);
+  saveOrders();
+  byId("refundDialog")?.close();
+  refundSelection = {};
+  renderAll();
+  showToast(`Remboursement ${orderDisplayNumber(order)} enregistré : ${euro(total)}`);
+}
+
 function bindEvents() {
   byId("clearCartBtn").addEventListener("click", () => { cart = []; renderAll(); });
   const closeSettingsMenu = () => { const dialog = byId("settingsMenuDialog"); if (dialog?.open) dialog.close(); };
@@ -2331,6 +2481,8 @@ function bindEvents() {
   byId("resetSettingsBtn")?.addEventListener("click", resetProductSettings);
   byId("bilanBtn").addEventListener("click", () => { renderBilan(); byId("bilanDialog").showModal(); });
   byId("historyBtn").addEventListener("click", () => { const hs = byId("historySearch"); if (hs) hs.value = ""; renderHistory(); byId("historyDialog").showModal(); });
+  byId("refundBtn")?.addEventListener("click", openRefundDialog);
+  byId("validateRefundBtn")?.addEventListener("click", validateRefund);
   byId("historySearch")?.addEventListener("input", renderHistory);
   byId("resetCashRegisterBtn").addEventListener("click", resetCashRegister);
   byId("resetStockBtn").addEventListener("click", () => { if (confirm("Réinitialiser tous les stocks ?")) { STOCK_ITEMS.forEach(i => stock[i.id] = ""); saveStock(); renderStockList(); renderAll(); } });

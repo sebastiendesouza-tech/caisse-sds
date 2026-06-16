@@ -1,4 +1,4 @@
-const CACHE_NAME = 'caisse-by-sds-v2026-09';
+const CACHE_NAME = 'caisse-by-sds-v2026-12';
 const FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", event => {
