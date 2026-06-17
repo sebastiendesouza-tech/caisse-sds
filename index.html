@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Caisse by SDS v2026-15">
+  <meta name="apple-mobile-web-app-title" content="Caisse Manif v26.04">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#111827">
-  <title>Caisse by SDS v2026-15</title>
+  <title>Caisse Manif v26.04</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=v2026-15">
+  <link rel="stylesheet" href="style.css?v=v26.04">
 </head>
 <body>
   <main class="app">
     <section class="panel products-panel">
       <header class="panel-header">
-        <h1>Caisse by SDS <span class="app-version">v2026-15</span></h1>
+        <h1>Caisse Manif <span class="app-version">v26.04</span></h1>
         <div class="header-actions">
           <button id="settingsMenuBtn" class="icon-btn" type="button" aria-label="Réglages">⚙️</button>
           <button id="fullscreenBtn" class="small-btn" type="button">Plein écran</button>
@@ -90,7 +90,6 @@
           <button id="bilanBtn" class="small-btn" type="button">Bilan</button>
           <button id="refundBtn" class="small-btn" type="button">Remboursement</button>
         </div>
-        <button id="resetCashRegisterBtn" class="danger small-btn full-width" type="button">Réinitialiser caisse</button>
       </div>
 
     </section>
@@ -229,6 +228,10 @@
           <span>Fond de caisse initial</span>
           <input id="generalCashFund" inputmode="decimal" placeholder="0,00">
         </label>
+        <label class="general-input-row danger-zone">
+          <span>Réinitialisation caisse</span>
+          <button id="resetCashRegisterBtn" class="danger small-btn" type="button">Réinitialiser caisse</button>
+        </label>
         <label class="general-input-row">
           <span>Préfixe des commandes</span>
           <select id="generalOrderPrefix">
@@ -321,6 +324,6 @@
   <div id="printArea" class="print-area"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js?v=v2026-15"></script>
+  <script src="app.js?v=v26.04"></script>
 </body>
 </html>

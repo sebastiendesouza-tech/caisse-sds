@@ -40,7 +40,7 @@ const DEFAULT_PRODUCT_CONFIG = [
   { id: "btvin_blanc", subCategory: "alcool", slot: 12, cat: "Boissons", name: "Bouteille blanc", price: 1100, type: "simple" },
   { id: "btvin_rose", subCategory: "alcool", slot: 13, cat: "Boissons", name: "Bouteille rosé", price: 1100, type: "simple" },
   { id: "cremant", subCategory: "alcool", slot: 14, cat: "Boissons", name: "Bouteille crémant", price: 1300, type: "simple" },
-  { id: "boisson_15", slot: 15, cat: "Boissons", name: "", price: 0, type: "simple" },
+  { id: "cafe", subCategory: "chaud", slot: 15, cat: "Boissons", name: "Café", price: 100, type: "simple", stockable: true, refundable: true },
   { id: "boisson_16", slot: 16, cat: "Boissons", name: "", price: 0, type: "simple" },
 
   { id: "assiette", slot: 1, cat: "Restauration", name: "Assiette gourmande", price: 700, type: "composite", components: [], options: { groups: { meats: { enabled: true, count: 2, choiceRequired: true, defaults: {} }, sides: { enabled: true, count: 1, choiceRequired: false, defaults: { frites: 1 } } }, other: { enabled: false, ids: [], supplements: {} } } },
@@ -69,10 +69,12 @@ const TYPE_LABELS = {
 const PRODUCT_SUBCATEGORIES = [
   { id: "", label: "Autre" },
   { id: "entree", label: "Entrée" },
+  { id: "plat", label: "Plat" },
   { id: "dessert", label: "Dessert" },
   { id: "fromage", label: "Fromage" },
   { id: "sans_alcool", label: "Boisson sans alcool" },
-  { id: "alcool", label: "Boisson alcoolisée" }
+  { id: "alcool", label: "Boisson alcoolisée" },
+  { id: "chaud", label: "Boisson chaude" }
 ];
 const SUBCATEGORY_LABELS = Object.fromEntries(PRODUCT_SUBCATEGORIES.map(item => [item.id, item.label]));
 const COLOR_CATEGORIES = [
@@ -88,6 +90,7 @@ const DEFAULT_CATEGORY_COLORS = {
   fromage: "yellow",
   sans_alcool: "blue",
   alcool: "purple",
+  chaud: "brown",
   plat: "orange",
   menu: "orange",
   consigne: "gray"
@@ -97,7 +100,7 @@ const MENU_SECTIONS = [
   { id: "plat", label: "Plat", kind: "composite" },
   { id: "dessert", label: "Dessert", kind: "simple", sub: "dessert" },
   { id: "fromage", label: "Fromage", kind: "simple", sub: "fromage" },
-  { id: "boisson", label: "Boisson", kind: "simple", subs: ["sans_alcool", "alcool"] }
+  { id: "boisson", label: "Boisson", kind: "simple", subs: ["sans_alcool", "alcool", "chaud"] }
 ];
 
 
@@ -110,7 +113,8 @@ const COLOR_PALETTE = [
   { id: "pink", label: "Rose" },
   { id: "yellow", label: "Jaune" },
   { id: "gray", label: "Gris" },
-  { id: "red", label: "Rouge" }
+  { id: "red", label: "Rouge" },
+  { id: "brown", label: "Marron café" }
 ];
 const VALID_COLORS = new Set(COLOR_PALETTE.map(c => c.id));
 function normalizeColor(value) { return VALID_COLORS.has(String(value || "")) ? String(value) : "white"; }
@@ -944,7 +948,7 @@ function renderChoice() {
         <small>${rule.supplementsEnabled && supplement ? `suppl. ${euro(supplement)}` : ""} ${stockText}</small>
       </div>`;
     }).join("");
-    sections.push(`<section class="choice-section"><h3>${escapeHtml(section?.label || sectionId)} <em>${total}/${rule.count}</em></h3>${rows || "<p>Aucun produit disponible.</p>"}</section>`);
+    sections.push(`<section class="choice-section choice-section-${escapeHtml(sectionId)}"><h3>${escapeHtml(section?.label || sectionId)} <em>${total}/${rule.count}</em></h3>${rows || "<p>Aucun produit disponible.</p>"}</section>`);
   });
 
   Object.entries(options.groups).forEach(([groupId, rule]) => {
@@ -1178,7 +1182,15 @@ function renderProducts() {
     section.className = "category";
     section.innerHTML = `<h3>${cat}</h3><div class="product-grid"></div>`;
     const grid = section.querySelector(".product-grid");
-    PRODUCTS.filter(p => p.cat === cat).sort((a, b) => a.slot - b.slot).forEach(product => {
+    PRODUCTS.filter(p => p.cat === cat).sort((a, b) => {
+      const order = { sans_alcool: 1, alcool: 2, chaud: 3 };
+      if (cat === "Boissons") {
+        const oa = order[a.subCategory || ""] || 9;
+        const ob = order[b.subCategory || ""] || 9;
+        if (oa !== ob) return oa - ob;
+      }
+      return (Number(a.slot) || 0) - (Number(b.slot) || 0);
+    }).forEach(product => {
       const btn = document.createElement("button");
       if (product.empty) {
         btn.className = "product-btn empty-slot";
@@ -1708,10 +1720,16 @@ function ticketDisplayGroup(line) {
   const sub = String(product.subCategory || line?.subCategory || "").toLowerCase();
   const type = normalizeType(line?.type || product.type || "simple");
   const name = String(line?.name || product.name || "").toLowerCase();
-  if (cat.includes("consigne") || name.includes("consigne") || Number(line?.price || 0) < 0) return 3;
-  if (cat.includes("boisson") || sub === "sans_alcool" || sub === "alcool") return 2;
-  if (type === "menu" || type === "composite" || cat.includes("restauration") || ["entree", "plat", "dessert", "fromage"].includes(sub)) return 1;
-  return 4;
+  // Tri interne du ticket, sans afficher les noms de rubriques :
+  // Boissons, Menus, Entrées, Plats, Fromages, Autres, Desserts, Consignes.
+  if (cat.includes("consigne") || name.includes("consigne") || Number(line?.price || 0) < 0) return 8;
+  if (cat.includes("boisson") || sub === "sans_alcool" || sub === "alcool" || sub === "chaud") return 1;
+  if (type === "menu") return 2;
+  if (sub === "entree") return 3;
+  if (type === "composite" || sub === "plat" || cat.includes("restauration") && !["dessert", "fromage"].includes(sub)) return 4;
+  if (sub === "fromage") return 5;
+  if (sub === "dessert") return 7;
+  return 6;
 }
 
 function sortedTicketLines(lines) {
@@ -1763,7 +1781,7 @@ function menuTicketItems(line) {
   if (normalizeType(line?.type) !== "menu") return [];
   const result = [];
   const lineQty = Math.max(1, Number(line.qty) || 1);
-  ["plat", "dessert", "fromage", "boisson", "entree"].forEach(sectionId => {
+  ["plat", "boisson", "dessert", "entree", "fromage"].forEach(sectionId => {
     const selected = selectedSectionForTicket(line, sectionId);
     Object.entries(selected || {}).forEach(([id, qty]) => {
       const amount = (Number(qty) || 0) * lineQty;
