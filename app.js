@@ -1420,7 +1420,7 @@ function buildStandalonePrintHtml(mode, contentHtml) {
       line-height:1.08;
     }
     .ticket h1 { text-align:center; font-size:15pt; margin:0 0 1mm; line-height:1; font-weight:900; }
-    /* v26.15 : rendu iPad calé sur le ticket Mac : titre encadré + corps légèrement agrandi */
+    /* v26.16 : rendu iPad calé sur le ticket Mac : titre encadré + corps légèrement agrandi */
     .ticket-order {
       text-align:center;
       font-size:14pt;
@@ -1472,59 +1472,139 @@ function buildStandalonePrintHtml(mode, contentHtml) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><title>Impression</title><style>${css}</style></head><body class="${mode}">${contentHtml}</body></html>`;
 }
 
+function ensureDirectPrintStyle(mode) {
+  let style = document.getElementById("directPrintStyle");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "directPrintStyle";
+    document.head.appendChild(style);
+  }
+
+  if (mode === "print-ticket") {
+    style.textContent = `
+@media print {
+  @page { size: 105mm 148mm; margin: 0; }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 105mm !important;
+    min-width: 105mm !important;
+    max-width: 105mm !important;
+    background: #fff !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+
+  body.print-ticket > *:not(#printArea) { display: none !important; }
+  body.print-ticket #printArea {
+    display: block !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 105mm !important;
+    min-width: 105mm !important;
+    max-width: 105mm !important;
+    min-height: 148mm !important;
+    overflow: visible !important;
+  }
+
+  body.print-ticket #printArea .ticket {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 105mm !important;
+    min-width: 105mm !important;
+    max-width: 105mm !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 2mm 2.5mm !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 15pt !important;
+    font-weight: 900 !important;
+    line-height: 1.08 !important;
+    transform: none !important;
+  }
+
+  body.print-ticket #printArea .ticket h1 { text-align:center !important; font-size:15pt !important; margin:0 0 1mm !important; line-height:1 !important; font-weight:900 !important; }
+  body.print-ticket #printArea .ticket-order { text-align:center !important; font-size:14pt !important; font-weight:900 !important; border:1px solid currentColor !important; padding:.8mm 1mm .7mm !important; margin:0 0 1.2mm !important; line-height:1 !important; }
+  body.print-ticket #printArea .ticket-date { text-align:center !important; font-size:10pt !important; font-weight:800 !important; margin-bottom:1mm !important; }
+  body.print-ticket #printArea .ticket-section,
+  body.print-ticket #printArea .ticket-caisse { border-top:1px dashed currentColor !important; padding-top:.8mm !important; margin-top:1mm !important; }
+
+  body.print-ticket #printArea .ticket-line,
+  body.print-ticket #printArea .ticket-menu-line,
+  body.print-ticket #printArea .ticket-composite-line,
+  body.print-ticket #printArea .ticket-menu-item { break-inside:avoid !important; page-break-inside:avoid !important; margin-bottom:1.25mm !important; }
+
+  body.print-ticket #printArea .ticket-line strong,
+  body.print-ticket #printArea .ticket-menu-line > strong {
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto auto !important;
+    column-gap:1.7mm !important;
+    align-items:center !important;
+    font-size:17.5pt !important;
+    line-height:1.04 !important;
+    font-weight:900 !important;
+  }
+  body.print-ticket #printArea .ticket-main { min-width:0 !important; }
+  body.print-ticket #printArea .ticket-line strong em,
+  body.print-ticket #printArea .ticket-menu-line > strong em { justify-self:end !important; font-size:10.5pt !important; font-style:normal !important; font-weight:900 !important; white-space:nowrap !important; }
+
+  body.print-ticket #printArea .ticket-line-detail,
+  body.print-ticket #printArea .ticket-menu-detail,
+  body.print-ticket #printArea .ticket-line span:not(.ticket-checks):not(.ticket-box):not(.ticket-main):not(.ticket-rest) {
+    display:block !important;
+    margin-left:7mm !important;
+    margin-top:.25mm !important;
+    margin-bottom:.65mm !important;
+    font-size:10.5pt !important;
+    line-height:1.05 !important;
+    font-weight:800 !important;
+    font-style:italic !important;
+  }
+
+  body.print-ticket #printArea .ticket-checks { display:inline-block !important; white-space:nowrap !important; font-family:Arial, Helvetica, sans-serif !important; font-size:21pt !important; line-height:1 !important; letter-spacing:.35mm !important; min-width:7mm !important; text-align:right !important; }
+  body.print-ticket #printArea .ticket-checks.empty { min-width:7mm !important; }
+  body.print-ticket #printArea .ticket-box { display:inline !important; border:0 !important; width:auto !important; height:auto !important; font-size:21pt !important; line-height:1 !important; font-weight:1000 !important; }
+
+  body.print-ticket #printArea .ticket-menu-items { margin-left:7mm !important; margin-top:.4mm !important; }
+  body.print-ticket #printArea .ticket-menu-item { display:grid !important; grid-template-columns:minmax(0,1fr) auto !important; gap:1.7mm !important; align-items:center !important; font-size:15.5pt !important; line-height:1.04 !important; font-weight:900 !important; }
+  body.print-ticket #printArea .ticket-rest,
+  body.print-ticket #printArea .ticket-rest-inline { font-size:13pt !important; font-weight:900 !important; white-space:nowrap !important; font-style:normal !important; }
+  body.print-ticket #printArea .ticket-total,
+  body.print-ticket #printArea .ticket-pay,
+  body.print-ticket #printArea .ticket-change { display:flex !important; justify-content:space-between !important; gap:3mm !important; align-items:baseline !important; font-size:14pt !important; line-height:1.05 !important; margin-top:.7mm !important; font-weight:900 !important; }
+  body.print-ticket #printArea .ticket-total strong,
+  body.print-ticket #printArea .ticket-pay strong,
+  body.print-ticket #printArea .ticket-change strong { font-size:14.5pt !important; }
+  body.print-ticket #printArea .ticket-change { border-top:1px solid currentColor !important; padding-top:.8mm !important; }
+}
+`;
+  } else {
+    style.textContent = "";
+  }
+}
+
 function printCurrentContent(mode) {
-  const contentHtml = byId("printArea")?.innerHTML || "";
-  const html = buildStandalonePrintHtml(mode, contentHtml);
-
-  // v26.15 : sur iPad/AirPrint, l'iframe est parfois d'abord calculée en A4
-  // puis réduite en A6. On imprime donc depuis une vraie fenêtre A6 dédiée,
-  // ouverte directement par le clic utilisateur, pour éviter ce double recalcul.
-  let printWin = null;
-  try {
-    printWin = window.open("", "_blank");
-  } catch (err) {
-    printWin = null;
-  }
-
-  if (printWin && printWin.document) {
-    const doc = printWin.document;
-    doc.open();
-    doc.write(html);
-    doc.close();
-    const doPrint = () => {
-      try {
-        printWin.focus();
-        printWin.print();
-      } finally {
-        setTimeout(() => { try { printWin.close(); } catch (err) {} }, 30000);
-      }
-    };
-    setTimeout(doPrint, 500);
-    return;
-  }
-
-  // Secours si l'ouverture de fenêtre est bloquée : ancien mode iframe.
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.left = "0";
-  frame.style.top = "0";
-  frame.style.width = mode === "print-ticket" ? "105mm" : "210mm";
-  frame.style.height = mode === "print-ticket" ? "148mm" : "297mm";
-  frame.style.border = "0";
-  frame.style.opacity = "0";
-  document.body.appendChild(frame);
-
-  const doc = frame.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  const doPrint = () => {
-    try { frame.contentWindow.focus(); frame.contentWindow.print(); }
-    finally { setTimeout(() => frame.remove(), 30000); }
-  };
-  setTimeout(doPrint, 500);
+  // v26.16 : retour à l'impression directe de la page principale.
+  // Les versions avec iframe/fenêtre temporaire provoquaient sur iPad le passage A4 -> A6
+  // et un ticket visible à la place de l'interface. Ici, seul #printArea est rendu en mode impression.
+  ensureDirectPrintStyle(mode);
+  startPrintMode(mode);
+  setTimeout(() => {
+    try { window.print(); }
+    finally {
+      // On garde le mode assez longtemps pour laisser AirPrint finir son second rendu.
+      if (printCleanupTimer) clearTimeout(printCleanupTimer);
+      printCleanupTimer = setTimeout(cleanupPrintMode, 60000);
+    }
+  }, 250);
 }
 
 window.addEventListener("afterprint", cleanupPrintMode);
