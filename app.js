@@ -1419,39 +1419,48 @@ function buildStandalonePrintHtml(mode, contentHtml) {
       line-height:1.08;
     }
     .ticket h1 { text-align:center; font-size:15pt; margin:0 0 1mm; line-height:1; font-weight:900; }
-    .ticket-order { text-align:center; font-size:14pt; font-weight:900; border-bottom:1px dashed currentColor; padding-bottom:.8mm; margin-bottom:1.8mm; line-height:1; }
+    /* v26.10 : rendu iPad calé sur le ticket Mac : titre encadré + corps légèrement agrandi */
+    .ticket-order {
+      text-align:center;
+      font-size:14pt;
+      font-weight:900;
+      border:1px solid currentColor;
+      padding:.8mm 1mm .7mm;
+      margin:0 0 1.2mm;
+      line-height:1;
+    }
     .ticket-date { text-align:center; font-size:10pt; font-weight:800; margin-bottom:1mm; }
     .ticket-section, .ticket-caisse { border-top:1px dashed currentColor; padding-top:.8mm; margin-top:1mm; }
-    .ticket-line, .ticket-menu-line, .ticket-composite-line, .ticket-menu-item { break-inside:avoid; page-break-inside:avoid; margin-bottom:1.4mm; }
+    .ticket-line, .ticket-menu-line, .ticket-composite-line, .ticket-menu-item { break-inside:avoid; page-break-inside:avoid; margin-bottom:1.25mm; }
     .ticket-line strong, .ticket-menu-line > strong {
       display:grid;
       grid-template-columns:minmax(0,1fr) auto auto;
-      column-gap:2mm;
+      column-gap:1.7mm;
       align-items:center;
-      font-size:16pt;
-      line-height:1.08;
+      font-size:17.5pt;
+      line-height:1.04;
       font-weight:900;
     }
     .ticket-main { min-width:0; }
-    .ticket-line strong em, .ticket-menu-line > strong em { justify-self:end; font-size:14pt; font-style:normal; font-weight:900; white-space:nowrap; }
+    .ticket-line strong em, .ticket-menu-line > strong em { justify-self:end; font-size:10.5pt; font-style:normal; font-weight:900; white-space:nowrap; }
     .ticket-line-detail, .ticket-menu-detail, .ticket-line span:not(.ticket-checks):not(.ticket-box):not(.ticket-main):not(.ticket-rest) {
       display:block;
       margin-left:7mm;
-      margin-top:.3mm;
-      margin-bottom:.8mm;
-      font-size:12pt;
-      line-height:1.08;
+      margin-top:.25mm;
+      margin-bottom:.65mm;
+      font-size:10.5pt;
+      line-height:1.05;
       font-weight:800;
       font-style:italic;
     }
-    .ticket-checks { display:inline-block; white-space:nowrap; font-family: Arial, Helvetica, sans-serif; font-size:16pt; line-height:1; letter-spacing:.5mm; min-width:7mm; text-align:right; }
+    .ticket-checks { display:inline-block; white-space:nowrap; font-family: Arial, Helvetica, sans-serif; font-size:18pt; line-height:1; letter-spacing:.35mm; min-width:7mm; text-align:right; }
     .ticket-checks.empty { min-width:7mm; }
-    .ticket-box { display:inline !important; border:0 !important; width:auto !important; height:auto !important; font-size:16pt !important; line-height:1 !important; }
-    .ticket-menu-items { margin-left:7mm; margin-top:.5mm; }
-    .ticket-menu-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2mm; align-items:center; font-size:14pt; line-height:1.08; font-weight:900; }
+    .ticket-box { display:inline !important; border:0 !important; width:auto !important; height:auto !important; font-size:18pt !important; line-height:1 !important; }
+    .ticket-menu-items { margin-left:7mm; margin-top:.4mm; }
+    .ticket-menu-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:1.7mm; align-items:center; font-size:15.5pt; line-height:1.04; font-weight:900; }
     .ticket-rest, .ticket-rest-inline { font-size:13pt; font-weight:900; white-space:nowrap; font-style:normal; }
-    .ticket-total, .ticket-pay, .ticket-change { display:flex; justify-content:space-between; gap:3mm; align-items:baseline; font-size:15pt; line-height:1.05; margin-top:.8mm; font-weight:900; }
-    .ticket-total strong, .ticket-pay strong, .ticket-change strong { font-size:16pt; }
+    .ticket-total, .ticket-pay, .ticket-change { display:flex; justify-content:space-between; gap:3mm; align-items:baseline; font-size:14pt; line-height:1.05; margin-top:.7mm; font-weight:900; }
+    .ticket-total strong, .ticket-pay strong, .ticket-change strong { font-size:14.5pt; }
     .ticket-change { border-top:1px solid currentColor; padding-top:.8mm; }
     hr { border:0; border-top:1px dashed currentColor; margin:1mm 0; }
   ` : `
