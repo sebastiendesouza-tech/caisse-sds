@@ -888,7 +888,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
 #saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
 
-/* v26.17 - boutons de vente plus lisibles */
+/* v26.18 - boutons de vente plus lisibles */
 .product-btn {
   align-items: center;
   text-align: center;
@@ -902,7 +902,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .product-btn .name { font-size: 14px; }
 .product-btn .price { font-size: 15px; }
 
-/* v26.17 - ticket A6 restauration : priorité aux produits */
+/* v26.18 - ticket A6 restauration : priorité aux produits */
 @media print {
   body.print-ticket .ticket.ticket-color-black { color: #000 !important; }
   body.print-ticket .ticket.ticket-color-blue { color: #0047b3 !important; }
@@ -984,7 +984,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - ticket A6 compact : lisible sans déborder */
+/* v26.18 - ticket A6 compact : lisible sans déborder */
 @media print {
   body.print-ticket .ticket {
     padding: 3mm !important;
@@ -1074,7 +1074,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - ordre ticket : commande, total/paiement, puis zone a retirer plus tard */
+/* v26.18 - ordre ticket : commande, total/paiement, puis zone a retirer plus tard */
 @media print {
   body.print-ticket .ticket-delayed-note {
     border-top: 1px dashed currentColor !important;
@@ -1101,7 +1101,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - separation propre apres paiement avant zone a retirer plus tard */
+/* v26.18 - separation propre apres paiement avant zone a retirer plus tard */
 @media print {
   body.print-ticket .ticket-delayed-note {
     border-top: 1.8px solid currentColor !important;
@@ -1128,15 +1128,15 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   }
 }
 
-/* v26.17 - couleur supplementaire */
+/* v26.18 - couleur supplementaire */
 .product-btn.color-red { background: #fee2e2; box-shadow: inset 0 0 0 1px #fca5a5; }
 .product-btn.color-red .price { color: #7f1d1d; }
 
-/* v26.17 - suppression du remis plus tard dans l'interface */
+/* v26.18 - suppression du remis plus tard dans l'interface */
 .settings-delayed,
 #delayedSimpleDialog { display: none !important; }
 
-/* v26.17 - ticket avec cases a cocher */
+/* v26.18 - ticket avec cases a cocher */
 @media print {
   body.print-ticket .ticket-line strong {
     display: grid !important;
@@ -1158,13 +1158,13 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   }
 }
 
-/* v26.17 - choix : nom puis - 0 + */
+/* v26.18 - choix : nom puis - 0 + */
 .choice-line { grid-template-columns: 1fr auto 44px 44px !important; }
 .choice-line strong { min-width: 0; }
 .choice-line small { grid-column: 1 / -1; margin-left: 2px; }
 .choice-line span { min-width: 42px; }
 
-/* v26.17 - remboursements */
+/* v26.18 - remboursements */
 .cash-tools-row { grid-template-columns: 1fr 1fr 1fr; }
 .refund-content { display: grid; gap: 8px; max-height: 56dvh; overflow: auto; padding-right: 4px; }
 .refund-row { display: grid; grid-template-columns: 1fr 44px 44px 44px 90px; gap: 8px; align-items: center; background: white; border-radius: 12px; padding: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; }
@@ -1182,7 +1182,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 correctif ticket : cases visibles, hierarchy menu/assiette, remboursement paramétrable */
+/* v26.18 correctif ticket : cases visibles, hierarchy menu/assiette, remboursement paramétrable */
 .settings-row { grid-template-columns: 34px 1fr 84px 142px 104px 84px 42px !important; }
 .settings-refundable { display:flex; align-items:center; justify-content:center; gap:4px; height:42px; border-radius:10px; background:#f8fafc; box-shadow: inset 0 0 0 1px #e2e8f0; font-size:12px; font-weight:900; color:#334155; }
 .settings-refundable input { width:18px; height:18px; }
@@ -1254,7 +1254,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - ticket final : cases horizontales, reste > 6, hierarchie assiette/menu, blocs non coupes */
+/* v26.18 - ticket final : cases horizontales, reste > 6, hierarchie assiette/menu, blocs non coupes */
 @media print {
   body.print-ticket .ticket-line,
   body.print-ticket .ticket-menu-line,
@@ -1346,7 +1346,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   }
 }
 
-/* v26.17 - correctif cases ticket : force les cases sur une seule ligne */
+/* v26.18 - correctif cases ticket : force les cases sur une seule ligne */
 @media print {
   body.print-ticket .ticket-line strong > .ticket-checks,
   body.print-ticket .ticket-menu-item > .ticket-checks {
@@ -1391,7 +1391,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   }
 }
 
-/* v26.17 - champ Reste place juste apres le nom du produit */
+/* v26.18 - champ Reste place juste apres le nom du produit */
 @media print {
   body.print-ticket .ticket-rest-inline {
     display: inline-block !important;
@@ -1413,7 +1413,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - choix de menu : boissons sur 2 colonnes */
+/* v26.18 - choix de menu : boissons sur 2 colonnes */
 .choice-section-boisson {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -1441,7 +1441,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .danger-zone { box-shadow: inset 0 0 0 2px #fecaca !important; }
 .danger-zone .danger { width: 100%; min-height: 44px; }
 
-/* v26.17 - icône/nom final, ticket trié sans titres de catégories */
+/* v26.18 - icône/nom final, ticket trié sans titres de catégories */
 @media print {
   body.print-ticket .ticket-line,
   body.print-ticket .ticket-menu-line,
@@ -1455,7 +1455,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - securisation des sauts de page ticket A6 */
+/* v26.18 - securisation des sauts de page ticket A6 */
 @media print {
   body.print-ticket .ticket-line,
   body.print-ticket .ticket-product,
@@ -1500,7 +1500,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - marge physique haute pour AirPrint/Epson A6
+/* v26.18 - marge physique haute pour AirPrint/Epson A6
    Evite que la premiere ligne de la page 2 soit coupee. */
 @media print {
   @page {
@@ -1542,7 +1542,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - cases a cocher decalees vers la gauche pour rester dans la zone imprimable Epson/AirPrint */
+/* v26.18 - cases a cocher decalees vers la gauche pour rester dans la zone imprimable Epson/AirPrint */
 @media print {
   body.print-ticket .ticket-checks,
   body.print-ticket .ticket-checkboxes,
@@ -1596,6 +1596,23 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.17 - couleur Boisson chaude */
+/* v26.18 - couleur Boisson chaude */
 .product-btn.color-brown { background: #fde7c7; box-shadow: inset 0 0 0 1px #b45309; }
 .product-btn.color-brown .price { color: #78350f; }
+
+
+/* v26.18 - contre-marges AirPrint iPad */
+@media print {
+  @page { size: A6 portrait; margin: 0; }
+  body.print-ticket #printArea {
+    position: relative !important;
+    left: -11mm !important;
+    top: -10mm !important;
+    width: 127mm !important;
+    min-width: 127mm !important;
+    max-width: 127mm !important;
+    transform: scale(1.18) !important;
+    transform-origin: top left !important;
+    overflow: visible !important;
+  }
+}
