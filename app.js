@@ -1380,9 +1380,10 @@ function startPrintMode(mode) {
   if (printCleanupTimer) clearTimeout(printCleanupTimer);
   document.body.classList.remove("print-ticket", "print-bilan");
   document.body.classList.add(mode);
-  // Sur iPad/AirPrint, l'aperçu peut se construire lentement. Ne pas enlever
-  // le mode impression après 500 ms, sinon une page blanche peut être relancée.
-  printCleanupTimer = setTimeout(cleanupPrintMode, 60000);
+  // v26.21 : Safari iPad/AirPrint fait un deuxième rendu quand il passe de A4 à A6.
+  // Si on retire la classe print-ticket au focus/afterprint, ce deuxième rendu devient blanc.
+  // On conserve donc le mode impression longtemps ; il n'affecte pas l'écran hors @media print.
+  printCleanupTimer = setTimeout(cleanupPrintMode, 5 * 60 * 1000);
 }
 
 function buildStandalonePrintHtml(mode, contentHtml) {
@@ -1420,7 +1421,7 @@ function buildStandalonePrintHtml(mode, contentHtml) {
       line-height:1.08;
     }
     .ticket h1 { text-align:center; font-size:15pt; margin:0 0 1mm; line-height:1; font-weight:900; }
-    /* v26.20 : rendu iPad calé sur le ticket Mac : titre encadré + corps légèrement agrandi */
+    /* v26.21 : rendu iPad calé sur le ticket Mac : titre encadré + corps légèrement agrandi */
     .ticket-order {
       text-align:center;
       font-size:14pt;
@@ -1483,7 +1484,7 @@ function ensureDirectPrintStyle(mode) {
   if (mode === "print-ticket") {
     style.textContent = `
 @media print {
-  /* v26.20 : nettoyage complet du moteur ticket.
+  /* v26.21 : nettoyage complet du moteur ticket.
      Un seul @page, aucune contre-marge, aucun scale, aucun iframe/fenetre. */
   @page { size: A6 portrait; margin: 0; }
 
@@ -1615,7 +1616,7 @@ function ensureDirectPrintStyle(mode) {
 }
 
 function printCurrentContent(mode) {
-  // v26.20 : retour à l'impression directe de la page principale.
+  // v26.21 : retour à l'impression directe de la page principale.
   // Les versions avec iframe/fenêtre temporaire provoquaient sur iPad le passage A4 -> A6
   // et un ticket visible à la place de l'interface. Ici, seul #printArea est rendu en mode impression.
   ensureDirectPrintStyle(mode);
@@ -1623,17 +1624,24 @@ function printCurrentContent(mode) {
   setTimeout(() => {
     try { window.print(); }
     finally {
-      // On garde le mode assez longtemps pour laisser AirPrint finir son second rendu.
+      // v26.21 : garder le mode impression actif pendant le recalcul AirPrint A4 -> A6.
       if (printCleanupTimer) clearTimeout(printCleanupTimer);
-      printCleanupTimer = setTimeout(cleanupPrintMode, 60000);
+      printCleanupTimer = setTimeout(cleanupPrintMode, 5 * 60 * 1000);
     }
   }, 250);
 }
 
-window.addEventListener("afterprint", cleanupPrintMode);
+// v26.21 : ne pas nettoyer sur focus/afterprint.
+// Sur iPad, ces événements peuvent se déclencher avant le deuxième rendu AirPrint A6,
+// ce qui masquait #printArea et produisait une page blanche.
+window.addEventListener("afterprint", () => {
+  if (printCleanupTimer) clearTimeout(printCleanupTimer);
+  printCleanupTimer = setTimeout(cleanupPrintMode, 5 * 60 * 1000);
+});
 window.addEventListener("focus", () => {
   if (document.body.classList.contains("print-ticket") || document.body.classList.contains("print-bilan")) {
-    setTimeout(cleanupPrintMode, 800);
+    if (printCleanupTimer) clearTimeout(printCleanupTimer);
+    printCleanupTimer = setTimeout(cleanupPrintMode, 5 * 60 * 1000);
   }
 });
 
