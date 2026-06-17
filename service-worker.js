@@ -1,4 +1,4 @@
-const CACHE_NAME = 'caisse-manif-v26.21';
+const CACHE_NAME = 'caisse-manif-v26.23';
 const FILES = ["./", "index.html", "style.css", "app.js", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", event => {

@@ -1,8 +1,8 @@
 {
-  "name": "Caisse Manif v26.21",
+  "name": "Caisse Manif v26.23",
   "short_name": "Caisse Manif",
-  "start_url": "./",
-  "display": "standalone",
+  "start_url": "./index.html?v=v26.23",
+  "display": "browser",
   "orientation": "landscape",
   "background_color": "#0f172a",
   "theme_color": "#111827",
