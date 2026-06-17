@@ -112,3 +112,21 @@ dialog { border: 0; border-radius: 18px; width: min(1180px, 96vw); max-height: 9
 .choice-option input { width: auto; transform: scale(1.25); margin-right: 8px; }
 .nested-choice { margin: 4px 0 8px 24px; padding: 8px; border-left: 4px solid #d1d5db; background: #fff; }
 @media (max-width: 850px) { .product-main, .choice-rules, .menu-rules, .option-line { grid-template-columns: 1fr 1fr; } }
+.report-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.report-cards div { padding: 12px; border-radius: 12px; background: #f3f4f6; }
+.report-cards strong { display: block; color: #4b5563; font-size: 13px; }
+.report-cards span { display: block; font-size: 22px; font-weight: 900; margin-top: 6px; }
+.data-table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; }
+.data-table th, .data-table td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+.data-table td:last-child, .data-table th:last-child { text-align: right; }
+.orders-list { display: grid; gap: 8px; }
+.order-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 10px; background: white; }
+.order-card > div:first-child { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.order-card > div:first-child span { color: #6b7280; }
+.order-bottom { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+.order-bottom b { font-size: 20px; margin-right: auto; }
+.refund-card { background: #fff1f2; border-color: #fecdd3; }
+.refund-total { margin-top: 12px; padding: 12px; border-radius: 12px; background: #fee2e2; color: #991b1b; font-size: 22px; font-weight: 900; text-align: right; }
+.refund-row { grid-template-columns: 1.8fr .7fr; }
+.refund-row small { display: block; margin-top: 4px; color: #6b7280; }
+@media (max-width: 850px) { .report-cards { grid-template-columns: repeat(2, 1fr); } .top-actions { flex-wrap: wrap; justify-content: flex-end; } }

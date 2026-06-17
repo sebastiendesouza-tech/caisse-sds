@@ -215,15 +215,15 @@ function buildTicket() {
 }
 function validateSale() {
   buildTicket();
-  sales.push({ orderNumber: `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`, date: new Date().toISOString(), paymentMethod, paid: paidAmount(), change: Math.max(0, paidAmount() - total()), total: total(), items: clone(cart) });
+  sales.push({ kind: 'sale', orderNumber: `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`, date: new Date().toISOString(), paymentMethod, paid: paidAmount(), change: Math.max(0, paidAmount() - total()), total: total(), items: clone(cart), refunds: [] });
   consumeStock();
   saveSales();
   window.print();
   orderNumber += 1; saveOrderNumber(); cart = []; paidCents = 0; renderProducts(); renderCart();
 }
 function exportCsv() {
-  const rows = [['commande','date','paiement','paye','rendu','produit','quantite','prix_unitaire','total_ligne','total_commande']];
-  sales.forEach(s => s.items.forEach(i => rows.push([s.orderNumber, s.date, s.paymentMethod, s.paid || '', s.change || '', i.name, i.qty, i.price, i.qty * i.price, s.total])));
+  const rows = [['type','commande','date','paiement','paye','rendu','produit','quantite','prix_unitaire','total_ligne','total_commande','motif']];
+  sales.forEach(s => (s.items || []).forEach(i => rows.push([s.kind || 'sale', s.orderNumber, s.date, s.paymentMethod, s.paid || '', s.change || '', i.name, i.qty, i.price, i.qty * i.price, s.total, s.reason || ''])));
   const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(';')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ventes-caisse.csv'; a.click();
@@ -420,6 +420,85 @@ function saveSettings() {
   config = normalizeConfig(draftConfig); saveConfig(); renderProducts(); renderCart(); document.getElementById('settingsDialog').close();
 }
 
+
+let refundSaleIndex = null;
+function saleTotal(s) { return Number(s.total || 0); }
+function refundAmountForSale(orderNumber) { return sales.filter(x => x.kind === 'refund' && x.originalOrderNumber === orderNumber).reduce((sum, r) => sum + Math.abs(Number(r.total || 0)), 0); }
+function netSaleTotal(s) { return saleTotal(s) - refundAmountForSale(s.orderNumber); }
+function formatDate(iso) { try { return new Date(iso).toLocaleString('fr-FR'); } catch { return iso || ''; } }
+function paymentTotals() {
+  return sales.reduce((acc, s) => {
+    const method = s.paymentMethod || 'Inconnu';
+    acc[method] ||= 0;
+    acc[method] += Number(s.total || 0);
+    return acc;
+  }, {});
+}
+function openReport() {
+  const totals = paymentTotals();
+  const gross = sales.filter(s => (s.kind || 'sale') === 'sale').reduce((a,s)=>a+Number(s.total||0),0);
+  const refunds = sales.filter(s => s.kind === 'refund').reduce((a,s)=>a+Math.abs(Number(s.total||0)),0);
+  const net = gross - refunds;
+  const productMap = {};
+  sales.forEach(s => (s.items || []).forEach(i => {
+    productMap[i.name] ||= { qty: 0, total: 0 };
+    productMap[i.name].qty += Number(i.qty || 0);
+    productMap[i.name].total += Number(i.qty || 0) * Number(i.price || 0);
+  }));
+  const productRows = Object.entries(productMap).sort((a,b)=>Math.abs(b[1].total)-Math.abs(a[1].total)).map(([name,v]) => `<tr><td>${escapeHtml(name)}</td><td>${v.qty}</td><td>${fmt(v.total)}</td></tr>`).join('');
+  document.getElementById('reportContent').innerHTML = `<div class="report-cards"><div><strong>Ventes brutes</strong><span>${fmt(gross)}</span></div><div><strong>Remboursements</strong><span>${fmt(refunds)}</span></div><div><strong>Total net</strong><span>${fmt(net)}</span></div><div><strong>Commandes</strong><span>${sales.filter(s => (s.kind || 'sale') === 'sale').length}</span></div></div><h3>Par paiement</h3><table class="data-table"><tbody>${Object.entries(totals).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${fmt(v)}</td></tr>`).join('')}</tbody></table><h3>Par produit</h3><table class="data-table"><thead><tr><th>Produit</th><th>Qté</th><th>Total</th></tr></thead><tbody>${productRows || '<tr><td colspan="3">Aucune vente</td></tr>'}</tbody></table>`;
+  document.getElementById('reportDialog').showModal();
+}
+function openOrders() {
+  const saleRows = sales.map((s, idx) => {
+    const isRefund = s.kind === 'refund';
+    const items = (s.items || []).map(i => `${i.qty} x ${escapeHtml(i.name)} (${fmt(i.qty * i.price)})`).join('<br>');
+    const refundInfo = !isRefund ? `<div class="hint">Déjà remboursé : ${fmt(refundAmountForSale(s.orderNumber))} / Net : ${fmt(netSaleTotal(s))}</div>` : `<div class="hint">Remboursement de ${escapeHtml(s.originalOrderNumber || '')} - ${escapeHtml(s.reason || '')}</div>`;
+    const btn = (!isRefund && netSaleTotal(s) > 0) ? `<button class="danger" data-refund-sale="${idx}">Rembourser</button>` : '';
+    return `<div class="order-card ${isRefund ? 'refund-card' : ''}"><div><strong>${isRefund ? 'Remboursement' : 'Commande'} n° ${escapeHtml(s.orderNumber)}</strong><span>${formatDate(s.date)}</span></div><div>${items}</div><div class="order-bottom"><b>${fmt(s.total)}</b><span>${escapeHtml(s.paymentMethod || '')}</span>${btn}</div>${refundInfo}</div>`;
+  }).reverse().join('');
+  document.getElementById('ordersList').innerHTML = saleRows || '<p>Aucune commande enregistrée.</p>';
+  document.querySelectorAll('[data-refund-sale]').forEach(b => b.addEventListener('click', e => openRefund(Number(e.currentTarget.dataset.refundSale))));
+  document.getElementById('ordersDialog').showModal();
+}
+function openRefund(index) {
+  refundSaleIndex = index;
+  const s = sales[index];
+  document.getElementById('refundTitle').textContent = `Remboursement commande n° ${s.orderNumber}`;
+  document.getElementById('refundLines').innerHTML = (s.items || []).filter(i => i.refundable !== false && i.price > 0).map((i, lineIndex) => `<div class="editor-row refund-row"><div><strong>${escapeHtml(i.name)}</strong><small>${fmt(i.price)} / unité - acheté : ${i.qty}</small></div><input type="number" min="0" max="${i.qty}" value="0" data-refund-line="${lineIndex}"></div>`).join('') || '<p>Aucun produit remboursable dans cette commande.</p>';
+  document.querySelectorAll('[data-refund-line]').forEach(x => x.addEventListener('input', updateRefundTotal));
+  document.getElementById('refundReason').value = '';
+  document.getElementById('refundMethod').value = s.paymentMethod || 'Espèces';
+  updateRefundTotal();
+  document.getElementById('refundDialog').showModal();
+}
+function selectedRefundItems() {
+  const s = sales[refundSaleIndex];
+  const refundable = (s.items || []).filter(i => i.refundable !== false && i.price > 0);
+  return Array.from(document.querySelectorAll('[data-refund-line]')).map(input => {
+    const original = refundable[Number(input.dataset.refundLine)];
+    const qty = Math.max(0, Math.min(Number(input.value || 0), Number(original.qty || 0)));
+    return qty > 0 ? { ...clone(original), qty: -qty, price: Number(original.price || 0) } : null;
+  }).filter(Boolean);
+}
+function updateRefundTotal() {
+  const items = selectedRefundItems();
+  const totalRefund = Math.abs(items.reduce((sum, i) => sum + i.qty * i.price, 0));
+  document.getElementById('refundTotal').textContent = fmt(totalRefund);
+}
+function validateRefund() {
+  if (refundSaleIndex === null) return;
+  const original = sales[refundSaleIndex];
+  const items = selectedRefundItems();
+  if (!items.length) return alert('Choisis au moins un produit à rembourser.');
+  const refundTotal = items.reduce((sum, i) => sum + i.qty * i.price, 0);
+  const refundOrderNumber = `R-${original.orderNumber}-${Date.now().toString().slice(-4)}`;
+  sales.push({ kind: 'refund', orderNumber: refundOrderNumber, originalOrderNumber: original.orderNumber, date: new Date().toISOString(), paymentMethod: document.getElementById('refundMethod').value, paid: refundTotal, change: 0, total: refundTotal, reason: document.getElementById('refundReason').value.trim(), items });
+  saveSales();
+  document.getElementById('refundDialog').close();
+  openOrders();
+}
+
 document.querySelectorAll('[data-key]').forEach(btn => btn.addEventListener('click', () => pressKey(btn.dataset.key)));
 document.querySelectorAll('[data-quick]').forEach(btn => btn.addEventListener('click', () => setQuickAmount(Number(btn.dataset.quick))));
 document.getElementById('btnExact').addEventListener('click', () => setQuickAmount(total()));
@@ -427,6 +506,12 @@ document.querySelectorAll('.pay').forEach(btn => btn.addEventListener('click', (
 document.getElementById('btnPrintTicket').addEventListener('click', () => { if (cart.length) { buildTicket(); window.print(); } });
 document.getElementById('btnClear').addEventListener('click', () => { cart = []; paidCents = 0; renderCart(); });
 document.getElementById('btnExport').addEventListener('click', exportCsv);
+document.getElementById('btnOrders').addEventListener('click', openOrders);
+document.getElementById('btnReport').addEventListener('click', openReport);
+document.getElementById('btnCloseOrders').addEventListener('click', () => document.getElementById('ordersDialog').close());
+document.getElementById('btnCloseReport').addEventListener('click', () => document.getElementById('reportDialog').close());
+document.getElementById('btnCloseRefund').addEventListener('click', () => document.getElementById('refundDialog').close());
+document.getElementById('btnValidateRefund').addEventListener('click', validateRefund);
 document.getElementById('btnSettings').addEventListener('click', openSettings);
 document.getElementById('btnCloseChoice').addEventListener('click', () => document.getElementById('choiceDialog').close());
 document.getElementById('btnAddChoiceProduct').addEventListener('click', addChoiceProduct);

@@ -12,16 +12,168 @@
 </head>
 <body>
   <header class="topbar no-print">
-    <div><h1>Caisse manifestation <span class="version-badge">v7</span></h1><small id="eventName">Manifestation</small></div>
-    <div class="top-actions"><button id="btnSettings" class="secondary">Paramètres</button><button id="btnExport" class="secondary">Export CSV</button></div>
+    <div>
+      <h1>Caisse manifestation <span class="version-badge">v9</span></h1>
+      <small id="eventName">Manifestation</small>
+    </div>
+    <div class="top-actions">
+      <button id="btnSettings" class="secondary">Paramètres</button>
+      <button id="btnOrders" class="secondary">Commandes</button>
+      <button id="btnReport" class="secondary">Bilan</button>
+      <button id="btnExport" class="secondary">Export CSV</button>
+    </div>
   </header>
+
   <main class="app no-print">
-    <section class="products-zone"><h2>Produits</h2><div id="categories"></div></section>
-    <section class="cart-zone"><h2>Commande <span id="orderNumber"></span></h2><div id="cartLines" class="cart-lines empty">Aucun produit</div><div class="cart-summary">Total commande : <span id="cartTotalBottom">0,00 €</span></div><div class="cart-actions"><button id="btnClear" class="danger">Annuler</button><button id="btnPrintTicket" class="secondary">Aperçu ticket</button></div></section>
-    <section class="payment-zone"><h2>Caisse</h2><label>Somme payée</label><div id="amountPaidDisplay" class="paid-display">0,00 €</div><div class="quick-cash"><button data-quick="5">5 €</button><button data-quick="10">10 €</button><button data-quick="20">20 €</button><button data-quick="50">50 €</button><button id="btnExact" class="exact">Exact</button></div><div class="keypad"><button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="clear" class="key-clear">C</button><button data-key="0">0</button><button data-key="back" class="key-back">←</button></div><label>À rendre</label><div id="changeDue" class="money change">0,00 €</div><div class="payment-buttons"><button class="pay cash" data-method="Espèces">Espèces</button><button class="pay card" data-method="CB">CB</button></div><p class="payment-hint">Clique sur Espèces ou CB pour valider et imprimer.</p></section>
+    <section class="products-zone">
+      <h2>Produits</h2>
+      <div id="categories"></div>
+    </section>
+
+    <section class="cart-zone">
+      <h2>Commande <span id="orderNumber"></span></h2>
+      <div id="cartLines" class="cart-lines empty">Aucun produit</div>
+      <div class="cart-summary">Total commande : <span id="cartTotalBottom">0,00 €</span></div>
+      <div class="cart-actions">
+        <button id="btnClear" class="danger">Annuler</button>
+        <button id="btnPrintTicket" class="secondary">Aperçu ticket</button>
+      </div>
+    </section>
+
+    <section class="payment-zone">
+      <h2>Caisse</h2>
+      <label>Somme payée</label>
+      <div id="amountPaidDisplay" class="paid-display">0,00 €</div>
+
+      <div class="quick-cash">
+        <button data-quick="5">5 €</button>
+        <button data-quick="10">10 €</button>
+        <button data-quick="20">20 €</button>
+        <button data-quick="50">50 €</button>
+        <button id="btnExact" class="exact">Exact</button>
+      </div>
+
+      <div class="keypad">
+        <button data-key="7">7</button>
+        <button data-key="8">8</button>
+        <button data-key="9">9</button>
+        <button data-key="4">4</button>
+        <button data-key="5">5</button>
+        <button data-key="6">6</button>
+        <button data-key="1">1</button>
+        <button data-key="2">2</button>
+        <button data-key="3">3</button>
+        <button data-key="clear" class="key-clear">C</button>
+        <button data-key="0">0</button>
+        <button data-key="back" class="key-back">←</button>
+      </div>
+
+      <label>À rendre</label>
+      <div id="changeDue" class="money change">0,00 €</div>
+
+      <div class="payment-buttons">
+        <button class="pay cash" data-method="Espèces">Espèces</button>
+        <button class="pay card" data-method="CB">CB</button>
+      </div>
+
+      <p class="payment-hint">Clique sur Espèces ou CB pour valider et imprimer.</p>
+    </section>
   </main>
-  <dialog id="choiceDialog" class="no-print"><div class="settings"><div class="settings-head"><h2 id="choiceTitle">Choix</h2><button id="btnCloseChoice" class="secondary">Fermer</button></div><div id="choiceBody"></div><div class="settings-actions"><button id="btnAddChoiceProduct" class="validate">Ajouter à la commande</button></div></div></dialog>
-  <dialog id="settingsDialog" class="no-print"><div class="settings"><div class="settings-head"><h2>Paramètres</h2><button id="btnCloseSettings" class="secondary">Fermer</button></div><div class="settings-tabs"><button class="tab active" data-tab="products">Produits</button><button class="tab" data-tab="foods">Aliments</button><button class="tab" data-tab="stocks">Stocks</button><button class="tab" data-tab="general">Général</button></div><section id="tab-products" class="tab-panel active"><p class="hint">Pour un produit composé ou un menu, choisis les viandes/accompagnements proposés, le nombre à choisir, et un supplément éventuel par aliment.</p><div id="productEditor" class="editor-list"></div></section><section id="tab-foods" class="tab-panel"><button id="btnAddFood" class="secondary">Ajouter un aliment</button><div id="foodEditor" class="editor-list"></div></section><section id="tab-stocks" class="tab-panel"><p class="hint">Vide = pas de suivi. Nombre = suivi du stock.</p><div id="stockEditor" class="editor-list"></div></section><section id="tab-general" class="tab-panel"><label>Nom manifestation</label><input id="setEventName" /><label>Préfixe iPad</label><select id="setPrefix"><option>A</option><option>B</option><option>C</option><option>D</option></select><label>Couleur ticket</label><select id="setTicketColor"><option value="black">Noir</option><option value="blue">Bleu</option><option value="red">Rouge</option></select><h3>Couleur des catégories</h3><div id="categoryColorEditor" class="editor-list"></div></section><div class="settings-actions"><button id="btnReset" class="danger">Réinitialiser</button><button id="btnSaveSettings" class="validate">Enregistrer</button></div></div></dialog>
-  <section id="printArea" class="print-ticket"></section><script src="app.js"></script>
+
+  <dialog id="choiceDialog" class="no-print">
+    <div class="settings">
+      <div class="settings-head">
+        <h2 id="choiceTitle">Choix</h2>
+        <button id="btnCloseChoice" class="secondary">Fermer</button>
+      </div>
+      <div id="choiceBody"></div>
+      <div class="settings-actions">
+        <button id="btnAddChoiceProduct" class="validate">Ajouter à la commande</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="settingsDialog" class="no-print">
+    <div class="settings">
+      <div class="settings-head">
+        <h2>Paramètres</h2>
+        <button id="btnCloseSettings" class="secondary">Fermer</button>
+      </div>
+      <div class="settings-tabs">
+        <button class="tab active" data-tab="products">Produits</button>
+        <button class="tab" data-tab="foods">Aliments</button>
+        <button class="tab" data-tab="stocks">Stocks</button>
+        <button class="tab" data-tab="general">Général</button>
+      </div>
+      <section id="tab-products" class="tab-panel active">
+        <p class="hint">Pour un produit composé ou un menu, choisis les viandes/accompagnements proposés, le nombre à choisir, et un supplément éventuel par aliment.</p>
+        <div id="productEditor" class="editor-list"></div>
+      </section>
+      <section id="tab-foods" class="tab-panel">
+        <button id="btnAddFood" class="secondary">Ajouter un aliment</button>
+        <div id="foodEditor" class="editor-list"></div>
+      </section>
+      <section id="tab-stocks" class="tab-panel">
+        <p class="hint">Vide = pas de suivi. Nombre = suivi du stock.</p>
+        <div id="stockEditor" class="editor-list"></div>
+      </section>
+      <section id="tab-general" class="tab-panel">
+        <label>Nom manifestation</label>
+        <input id="setEventName" />
+        <label>Préfixe iPad</label>
+        <select id="setPrefix"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <label>Couleur ticket</label>
+        <select id="setTicketColor"><option value="black">Noir</option><option value="blue">Bleu</option><option value="red">Rouge</option></select>
+        <h3>Couleur des catégories</h3>
+        <div id="categoryColorEditor" class="editor-list"></div>
+      </section>
+      <div class="settings-actions">
+        <button id="btnReset" class="danger">Réinitialiser</button>
+        <button id="btnSaveSettings" class="validate">Enregistrer</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="ordersDialog" class="no-print">
+    <div class="settings">
+      <div class="settings-head">
+        <h2>Commandes</h2>
+        <button id="btnCloseOrders" class="secondary">Fermer</button>
+      </div>
+      <div id="ordersList" class="orders-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="reportDialog" class="no-print">
+    <div class="settings">
+      <div class="settings-head">
+        <h2>Bilan des ventes</h2>
+        <button id="btnCloseReport" class="secondary">Fermer</button>
+      </div>
+      <div id="reportContent"></div>
+    </div>
+  </dialog>
+
+  <dialog id="refundDialog" class="no-print">
+    <div class="settings">
+      <div class="settings-head">
+        <h2 id="refundTitle">Remboursement</h2>
+        <button id="btnCloseRefund" class="secondary">Fermer</button>
+      </div>
+      <p class="hint">Choisis les quantités à rembourser. Une écriture négative sera ajoutée, la commande d'origine reste conservée.</p>
+      <div id="refundLines" class="editor-list"></div>
+      <label>Mode de remboursement</label>
+      <select id="refundMethod"><option>Espèces</option><option>CB</option></select>
+      <label>Raison</label>
+      <input id="refundReason" placeholder="Exemple : rupture de stock" />
+      <div id="refundTotal" class="refund-total">0,00 €</div>
+      <div class="settings-actions">
+        <button id="btnValidateRefund" class="validate">Valider le remboursement</button>
+      </div>
+    </div>
+  </dialog>
+
+  <section id="printArea" class="print-ticket"></section>
+  <script src="app.js"></script>
 </body>
 </html>
