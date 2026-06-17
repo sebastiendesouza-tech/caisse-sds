@@ -12,7 +12,7 @@ const PALETTE = {
 };
 
 const DEFAULT_CONFIG = {
-  configVersion: 18.5,
+  configVersion: 18.8,
   eventName: 'Manifestation',
   orderPrefix: 'A',
   ticketColor: 'black',
@@ -86,6 +86,7 @@ let paymentMethod = 'Espèces';
 let paidCents = 0;
 let orderNumber = Number(localStorage.getItem('caisse_order_number') || '1');
 let sales = JSON.parse(localStorage.getItem('caisse_sales') || '[]');
+let lastTicketHtml = localStorage.getItem('caisse_last_ticket_html') || '';
 let pendingChoiceProduct = null;
 
 const fmt = n => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
@@ -95,6 +96,7 @@ function uid(prefix) { return prefix + '-' + Math.random().toString(36).slice(2,
 function saveConfig() { localStorage.setItem('caisse_config', JSON.stringify(config)); }
 function saveSales() { localStorage.setItem('caisse_sales', JSON.stringify(sales)); }
 function saveOrderNumber() { localStorage.setItem('caisse_order_number', String(orderNumber)); }
+function saveLastTicket() { localStorage.setItem('caisse_last_ticket_html', lastTicketHtml || ''); }
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 function compactChoiceOptions(choice) {
   if (!choice || !Array.isArray(choice.options)) return;
@@ -289,7 +291,7 @@ function consumeStock() {
   saveConfig();
 }
 function checkMarker(qty) {
-  return qty > 5 ? '<span class="remaining-line"></span>' : Array.from({ length: Math.max(0, qty) }, () => '☐').join(' ');
+  return qty > 5 ? '<span class="reste-label">Reste : ________</span>' : Array.from({ length: Math.max(0, qty) }, () => '☐').join(' ');
 }
 function ticketLineHtml(name, qty, price, cls = '', withChecks = true) {
   return `<div class="ticket-line ${cls}"><div>${qty || ''}</div><div class="ticket-product">${escapeHtml(name)}</div><div class="checks">${withChecks ? checkMarker(qty || 1) : ''}</div><div class="ticket-price">${price === null ? '' : fmt(price)}</div></div>`;
@@ -330,7 +332,15 @@ function buildTicket() {
     if (line.composition) html += `<div class="ticket-subline no-check"><div></div><div class="ticket-composition">(${escapeHtml(line.composition)})</div><div></div><div></div></div>`;
     return html;
   }).join('');
-  document.getElementById('printArea').innerHTML = `<div class="ticket-title">Commande n° ${number}</div>${lines}<div class="ticket-bottom">Paiement : ${paymentMethod}</div><div class="ticket-bottom">Total : ${fmt(total())}</div>`;
+  const html = `<div class="ticket-title">Commande n° ${number}</div>${lines}<div class="ticket-bottom">${paymentMethod}</div><div class="ticket-bottom">Total : ${fmt(total())}</div>`;
+  document.getElementById('printArea').innerHTML = html;
+  lastTicketHtml = html;
+  saveLastTicket();
+}
+function reprintLastTicket() {
+  if (!lastTicketHtml) { alert('Aucun ticket à réimprimer.'); return; }
+  document.getElementById('printArea').innerHTML = lastTicketHtml;
+  window.print();
 }
 function validateSale(extra = {}) {
   buildTicket();
@@ -782,8 +792,10 @@ document.querySelectorAll('[data-key]').forEach(btn => btn.addEventListener('cli
 document.querySelectorAll('[data-quick]').forEach(btn => btn.addEventListener('click', () => setQuickAmount(Number(btn.dataset.quick))));
 document.getElementById('btnExact').addEventListener('click', () => setQuickAmount(total()));
 document.querySelectorAll('.pay[data-method]').forEach(btn => btn.addEventListener('click', () => payAndPrint(btn.dataset.method)));
-document.getElementById('btnPrintTicket').addEventListener('click', () => { if (cart.length) { buildTicket(); window.print(); } });
-document.getElementById('btnClear').addEventListener('click', () => { cart = []; paidCents = 0; renderCart(); });
+const btnPrintTicket = document.getElementById('btnPrintTicket');
+if (btnPrintTicket) btnPrintTicket.addEventListener('click', () => { if (cart.length) { buildTicket(); window.print(); } });
+document.getElementById('btnClear').addEventListener('click', () => { if (cart.length && !confirm('Annuler la commande en cours ?')) return; cart = []; paidCents = 0; renderCart(); });
+document.getElementById('btnReprintLast').addEventListener('click', reprintLastTicket);
 document.getElementById('btnExport').addEventListener('click', exportCsv);
 document.getElementById('btnQuickRefund').addEventListener('click', openQuickRefund);
 document.getElementById('btnCloseQuickRefund').addEventListener('click', () => document.getElementById('quickRefundDialog').close());

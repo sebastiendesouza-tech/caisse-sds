@@ -44,14 +44,14 @@ Version simple HTML/CSS/JavaScript pour GitHub Pages et iPad.
 - Les rubriques avec un plat composé comme l’assiette gourmande repassent en affichage une colonne pour éviter les bugs de saisie.
 
 
-## v18.5
+## v18.8
 - Optimisation iPad 10 pouces paysage.
 - Suppression des mots Produits / Boissons / Restauration / Consignes dans la zone produits.
 - Restauration limitee a 8 boutons par defaut.
 - Somme payee plus compacte.
 
 
-## v18.5
+## v18.8
 
 - Texte centré dans les boutons produits.
 - Stock affiché dans le bouton quand le suivi est actif.
@@ -60,7 +60,20 @@ Version simple HTML/CSS/JavaScript pour GitHub Pages et iPad.
 - Bloc Merguez/Saucisses fixe en bas de la zone Produits.
 
 
-## v18.5
+## v18.8
 - Masque les accompagnements imposés dans les écrans de choix.
 - Trie le ticket par boissons, entrées, plats, fromages, desserts puis consignes.
 - Les menus sont imprimés directement par éléments, sans ligne de menu inutile.
+
+
+## v18.8
+- Ticket encore plus compact.
+- Titre du ticket à la même taille que le reste.
+- Suppression des lignes séparatrices et des espaces entre produits.
+- Colonne prix resserrée et alignée à droite.
+
+
+## v18.8
+- Ticket : taille des produits remise comme la version précédente.
+- Titre même taille que les produits.
+- Espacement compact conservé, sans ligne entre les produits.

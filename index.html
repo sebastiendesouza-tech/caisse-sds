@@ -13,7 +13,7 @@
 <body>
   <header class="topbar no-print">
     <div>
-      <h1>Caisse by SDS <span class="version-badge">v18.5</span></h1>
+      <h1>Caisse by SDS <span class="version-badge">v18.8</span></h1>
     </div>
     <div class="top-actions">
       <button id="btnSettings" class="secondary">Paramètres</button>
@@ -27,13 +27,13 @@
     </section>
 
     <section class="cart-zone">
-      <h2>Commande <span id="orderNumber"></span></h2>
+      <div class="cart-head">
+        <h2>Commande <span id="orderNumber"></span></h2>
+        <button id="btnClear" class="danger cart-cancel">Annuler</button>
+      </div>
       <div id="cartLines" class="cart-lines empty">Aucun produit</div>
       <div class="cart-summary">Total commande : <span id="cartTotalBottom">0,00 €</span></div>
-      <div class="cart-actions">
-        <button id="btnClear" class="danger">Annuler</button>
-        <button id="btnPrintTicket" class="secondary">Aperçu ticket</button>
-      </div>
+      <button id="btnReprintLast" class="secondary reprint-cart">Réimprimer dernier ticket</button>
     </section>
 
     <section class="payment-zone">
@@ -75,7 +75,6 @@
 
       <p class="payment-hint">Clique sur Espèces ou CB pour valider et imprimer.</p>
       <button id="btnQuickRefund" class="secondary refund-shortcut caisse-action">Remboursement</button>
-      <button id="btnReprintLast" class="secondary reprint-bottom">Réimprimer dernier ticket</button>
     </section>
   </main>
 
