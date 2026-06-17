@@ -1,0 +1,1145 @@
+* { box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%; margin: 0; overflow: hidden;
+  overscroll-behavior: none; touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0f172a; color: #111827;
+}
+button, input { font: inherit; font-size: 16px; border: 0; touch-action: manipulation; }
+button { cursor: pointer; }
+.app { height: 100dvh; display: grid; grid-template-columns: 44% 28% 28%; gap: 8px; padding: 8px; }
+.panel { background: #f8fafc; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+h1, h2 { margin: 0; font-size: 20px; }
+h3 { margin: 0 0 6px; font-size: 14px; color: #334155; }
+.header-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.small-btn { padding: 8px 10px; border-radius: 10px; background: #e5e7eb; font-weight: 800; }
+.danger { background: #fee2e2; color: #991b1b; }
+.products { display: grid; grid-template-rows: repeat(3, auto); gap: 7px; min-height: 0; }
+.category { background: #e5e7eb; border-radius: 14px; padding: 7px; }
+.product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.product-btn { min-height: 58px; border-radius: 13px; padding: 6px; background: white; color: #0f172a; box-shadow: inset 0 0 0 1px #cbd5e1; display: flex; flex-direction: column; justify-content: center; gap: 2px; font-weight: 900; }
+.product-btn .name { font-size: 13px; line-height: 1.05; }
+.product-btn .price { font-size: 15px; color: #047857; }
+.product-btn.negative .price { color: #dc2626; }
+.product-btn.out { opacity: .45; background: #f1f5f9; }
+.stock-badge { display: inline-block; align-self: center; padding: 2px 6px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 900; }
+.product-btn.out .stock-badge { background: #fee2e2; color: #991b1b; }
+.cart { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.cart.empty { align-items: center; justify-content: center; color: #64748b; font-weight: 800; }
+.cart-line { display: grid; grid-template-columns: 1fr 108px 70px; gap: 6px; align-items: center; background: white; border-radius: 12px; padding: 7px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.line-name { font-weight: 900; font-size: 14px; line-height: 1.1; }
+.line-sub { color: #64748b; font-size: 12px; margin-top: 2px; }
+.qty-box { display: grid; grid-template-columns: 34px 34px 34px; gap: 3px; }
+.qty-box button { height: 38px; border-radius: 9px; text-align: center; font-weight: 900; background: #dbeafe; color: #1d4ed8; }
+.qty-num { height: 38px; border-radius: 9px; text-align: center; font-weight: 900; background: #eff6ff; display: grid; place-items: center; }
+.line-total { text-align: right; font-weight: 900; font-size: 14px; }
+.total-box { background: #111827; color: white; border-radius: 16px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+.total-box span { font-size: 20px; font-weight: 800; }
+.total-box strong { font-size: 34px; }
+
+.meat-stock-monitor {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #166534;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+}
+.meat-stock-item { display: inline-flex; align-items: center; gap: 3px; }
+.meat-stock-item strong { font-size: 15px; font-weight: 1000; }
+.meat-stock-sep { margin: 0 6px; color: #94a3b8; }
+.meat-stock-monitor.low { background: #fffbeb; color: #92400e; box-shadow: inset 0 0 0 1px #fbbf24; }
+.meat-stock-monitor.empty { background: #fef2f2; color: #991b1b; box-shadow: inset 0 0 0 1px #fca5a5; }
+.meat-stock-monitor.untracked { background: #f1f5f9; color: #475569; box-shadow: inset 0 0 0 1px #cbd5e1; }
+
+.cash-screen { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cash-screen div { background: white; border-radius: 14px; padding: 10px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.cash-screen span, .mini-stat span { display: block; color: #64748b; font-size: 13px; font-weight: 700; }
+.cash-screen strong { font-size: 25px; }
+.quick-cash { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+.quick-cash button, .keypad button { min-height: 48px; border-radius: 12px; background: #e0f2fe; font-weight: 900; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.keypad button { min-height: 55px; font-size: 24px; background: white; box-shadow: inset 0 0 0 1px #cbd5e1; }
+.pay-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.pay { min-height: 62px; border-radius: 15px; color: white; font-weight: 1000; font-size: 20px; }
+.cash { background: #16a34a; }
+.card { background: #2563eb; }
+.full-width { width: 100%; margin-top: 10px; }
+.modal-dialog { width: min(820px, 94vw); max-height: 90dvh; border: 0; border-radius: 20px; padding: 0; background: transparent; }
+.modal-dialog.wide { width: min(980px, 96vw); }
+.modal-dialog::backdrop { background: rgba(15, 23, 42, .72); }
+.modal-panel { background: #f8fafc; border-radius: 20px; padding: 14px; color: #111827; }
+.stock-help { margin: 0 0 10px; color: #475569; font-weight: 700; }
+.stock-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 58dvh; overflow: auto; padding-right: 4px; }
+.stock-row { display: grid; grid-template-columns: 1fr 96px; gap: 8px; align-items: center; background: white; border-radius: 12px; padding: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.stock-row strong { display: block; font-size: 14px; line-height: 1.1; }
+.stock-row span { display: block; margin-top: 2px; font-size: 12px; color: #64748b; font-weight: 700; }
+.stock-row input, .choice-grid input { width: 100%; height: 42px; border: 2px solid #cbd5e1; border-radius: 10px; text-align: center; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+.stock-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.choice-block { background: white; border-radius: 14px; padding: 10px; margin-top: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.choice-grid { display: grid; grid-template-columns: 44px 1fr 70px 44px; gap: 8px; align-items: center; }
+.choice-grid button, .drink-buttons button { min-height: 44px; border-radius: 10px; background: #e0f2fe; font-weight: 900; }
+.drink-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.drink-buttons button.selected { background: #2563eb; color: white; }
+.warning { min-height: 22px; margin-top: 8px; color: #991b1b; font-weight: 900; }
+.bilan-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+.mini-stat { background: white; border-radius: 12px; padding: 10px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.mini-stat strong { font-size: 20px; }
+.bilan-table { max-height: 44dvh; overflow: auto; background: white; border-radius: 12px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 7px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+th { position: sticky; top: 0; background: #e5e7eb; }
+@media (max-height: 760px) { .product-btn { min-height: 49px; } .product-btn .name { font-size: 12px; } .product-btn .price { font-size: 13px; } .cart-line { padding: 5px; } .keypad button { min-height: 48px; } .pay { min-height: 54px; } .total-box strong { font-size: 29px; } }
+
+.print-area { display: none; }
+
+.history-list { max-height: 68dvh; overflow: auto; display: grid; gap: 8px; }
+.history-card { background: white; border-radius: 12px; padding: 10px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.history-card header { display: grid; grid-template-columns: 1.2fr 1fr .5fr .7fr; gap: 8px; align-items: center; }
+.history-card ul { margin: 8px 0; padding-left: 18px; }
+.history-card li span { color: #64748b; font-size: 12px; }
+.empty-history { background: white; border-radius: 12px; padding: 20px; text-align: center; color: #64748b; font-weight: 800; }
+.bilan-table.compact { max-height: none; }
+
+
+/* Ticket A6 compact - version corrigee */
+
+
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%) translateY(20px);
+  background: #111827;
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 900;
+  font-size: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  z-index: 9999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+
+
+
+/* Améliorations historique et alertes stock */
+.stock-badge.low { background: #fed7aa; color: #9a3412; }
+.stock-badge.empty { background: #fee2e2; color: #991b1b; }
+.product-btn.low { box-shadow: inset 0 0 0 3px #fb923c; }
+.history-tools { display: grid; grid-template-columns: 190px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; background: white; border-radius: 12px; padding: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.history-tools label { font-weight: 900; color: #334155; }
+.history-tools input { height: 42px; border: 2px solid #cbd5e1; border-radius: 10px; padding: 0 10px; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+.history-paid { margin-top: 6px; font-weight: 900; color: #0f172a; }
+.drink-buttons { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 980px) { .drink-buttons { grid-template-columns: repeat(3, 1fr); } }
+
+/* Ajustements version bénévoles */
+.pay-actions { grid-template-columns: 1fr 1fr 1fr; }
+.pay.volunteer { background: #7c3aed; }
+.volunteer-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+.volunteer-buttons button { min-height: 54px; border-radius: 12px; background: #ede9fe; color: #4c1d95; font-weight: 1000; }
+.volunteer-custom { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+.volunteer-custom input, .history-search input { width: 100%; height: 44px; border: 2px solid #cbd5e1; border-radius: 12px; padding: 0 12px; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+.history-search { margin-bottom: 10px; }
+.history-paid { font-weight: 900; color: #334155; }
+@media (max-width: 1000px) { .pay-actions { grid-template-columns: 1fr; } }
+
+
+/* Paramétrage des boutons */
+.small-btn.primary { background: #dbeafe; color: #1d4ed8; }
+.product-btn.empty-slot {
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+  opacity: .55;
+}
+.settings-content {
+  max-height: 62dvh;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding-right: 4px;
+}
+.settings-category {
+  background: #e5e7eb;
+  border-radius: 14px;
+  padding: 8px;
+}
+.settings-head,
+.settings-row {
+  display: grid;
+  grid-template-columns: 42px 1.5fr 92px 1.2fr;
+  gap: 8px;
+  align-items: center;
+}
+.settings-head {
+  padding: 0 8px 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.settings-row {
+  background: #fff;
+  border-radius: 11px;
+  padding: 7px;
+  margin-top: 6px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.settings-slot {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  display: grid;
+  place-items: center;
+  font-weight: 1000;
+  color: #334155;
+}
+.settings-row input,
+.settings-row select {
+  min-width: 0;
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 8px;
+  background: #fff;
+  font-weight: 800;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+.settings-price { text-align: right; }
+@media (max-width: 1000px) {
+  .settings-head, .settings-row { grid-template-columns: 34px 1.2fr 78px 1fr; gap: 5px; }
+  .settings-row input, .settings-row select { font-size: 14px; }
+}
+
+/* Paramétrage produit composé */
+.settings-row-wrap {
+  background: #fff;
+  border-radius: 12px;
+  margin-top: 6px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+  overflow: hidden;
+}
+.settings-row-wrap .settings-row {
+  margin-top: 0;
+  box-shadow: none;
+}
+.settings-composite {
+  border-top: 1px solid #e2e8f0;
+  padding: 8px;
+  background: #f8fafc;
+}
+.composite-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.composite-options label,
+.component-row {
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.settings-subtitle {
+  margin: 8px 0 5px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.component-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 54px;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+.component-row.compact {
+  grid-template-columns: 24px 1fr;
+}
+.component-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.component-row em {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+.component-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+}
+.component-qty {
+  height: 36px !important;
+  text-align: center;
+  padding: 0 !important;
+}
+@media (max-width: 1000px) {
+  .composite-options,
+  .components-grid { grid-template-columns: 1fr; }
+}
+
+/* Produits composés paramétrables : rubriques Viandes / Accompagnements / Autre */
+.choice-content { display: grid; gap: 8px; max-height: 58dvh; overflow: auto; padding-right: 4px; }
+.choice-section { background: white; border-radius: 14px; padding: 10px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.choice-section h3 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 16px; }
+.choice-section h3 em { font-style: normal; color: #2563eb; font-weight: 1000; }
+.choice-line { display: grid; grid-template-columns: 44px 1fr auto 42px 44px; gap: 8px; align-items: center; padding: 5px 0; border-top: 1px solid #eef2f7; }
+.choice-line:first-of-type { border-top: 0; }
+.choice-line button { height: 40px; border-radius: 10px; background: #dbeafe; color: #1d4ed8; font-weight: 1000; }
+.choice-line strong { font-size: 15px; }
+.choice-line small { color: #64748b; font-weight: 800; font-size: 12px; }
+.choice-line span { min-width: 32px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: #eff6ff; font-weight: 1000; }
+.choice-group-settings { margin-bottom: 10px; }
+.group-rule-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.group-rule-row label { display: grid; gap: 4px; font-size: 13px; color: #334155; font-weight: 900; }
+.group-rule-row input, .group-item-row input, .supplement-input { height: 38px; border: 2px solid #cbd5e1; border-radius: 10px; padding: 0 8px; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+.group-item-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; margin-top: 6px; }
+.other-row { grid-template-columns: auto 1fr 110px; }
+.other-row .supplement-input { width: 100%; }
+
+/* Séparation Paramètres boutons / Viandes et accompagnements */
+.choice-groups-manager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-height: 68dvh;
+  overflow: auto;
+  padding-right: 4px;
+}
+.group-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.group-option-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.group-option-head label {
+  font-weight: 1000;
+  color: #0f172a;
+}
+.group-rule-row.compact {
+  margin: 6px 0;
+}
+.group-rule-row.compact input {
+  height: 34px;
+  text-align: center;
+}
+.mini-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.mini-check {
+  background: #f8fafc;
+  border-radius: 9px;
+  padding: 6px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.mini-check input {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+@media (max-width: 1000px) {
+  .choice-groups-manager,
+  .group-options-grid,
+  .mini-check-grid { grid-template-columns: 1fr; }
+}
+
+/* Paramètres généraux et mode caisse désactivée */
+.cash-disabled .cash-controls,
+.cash-disabled .cash-screen,
+.cash-disabled .quick-cash,
+.cash-disabled .keypad { display: none !important; }
+.cash-disabled-notice {
+  display: none;
+  background: #f1f5f9;
+  color: #334155;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.15;
+}
+.cash-disabled .cash-disabled-notice { display: block; }
+.cash-disabled-notice small { font-size: 12px; font-weight: 800; color: #64748b; }
+.general-settings { display: grid; gap: 12px; }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.toggle-row input { width: 24px; height: 24px; }
+.volunteers-settings-list { display: grid; gap: 8px; }
+.volunteer-setting-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  background: white;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.volunteer-setting-row input {
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-weight: 900;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Menu paramètres par engrenage */
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e5e7eb;
+  font-size: 22px;
+  font-weight: 900;
+  display: inline-grid;
+  place-items: center;
+}
+.settings-menu-dialog { width: min(520px, 92vw); }
+.settings-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.settings-menu-btn {
+  min-height: 72px;
+  border-radius: 14px;
+  background: white;
+  text-align: left;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+.settings-menu-btn strong {
+  display: block;
+  font-size: 18px;
+  color: #0f172a;
+}
+.settings-menu-btn span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+/* Zone exploitation en bas de la caisse */
+.cash-tools {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+.cash-tools-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cash-tools .small-btn {
+  min-height: 44px;
+}
+.cash-tools .danger {
+  margin-top: 8px;
+}
+
+
+/* Réglages produits composés : nombre + choix/default */
+.group-default-row {
+  display: grid;
+  grid-template-columns: 1fr 70px;
+  gap: 6px;
+  align-items: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 5px;
+}
+.group-default-row input[inputmode="numeric"] {
+  width: 100%;
+  height: 34px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 900;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+.settings-note {
+  margin: 5px 0 6px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+.group-rule-row.compact {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+.group-rule-row.compact input[inputmode="numeric"] {
+  width: 64px;
+  height: 34px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 900;
+}
+
+/* Retrait plus tard */
+.settings-row { grid-template-columns: 38px 1.4fr 110px 150px 150px; }
+.settings-delayed { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900; color: #334155; }
+.settings-delayed input { width: 18px; height: 18px; }
+@media (max-width: 1050px) { .settings-row { grid-template-columns: 30px 1fr 90px 130px; } .settings-delayed { grid-column: 2 / -1; } }
+
+
+
+/* Choix du retrait plus tard à la commande */
+.delayed-choice-section {
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px #fed7aa;
+}
+.delayed-choice-line {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px;
+  border-radius: 10px;
+  background: white;
+  margin-top: 6px;
+  font-weight: 900;
+}
+.delayed-choice-line input {
+  width: 22px;
+  height: 22px;
+}
+.delayed-choice-line small {
+  color: #9a3412;
+  font-weight: 800;
+}
+
+/* Couleurs paramétrables des boutons produits */
+.product-btn.color-white { background: #ffffff; }
+.product-btn.color-blue { background: #dbeafe; box-shadow: inset 0 0 0 1px #93c5fd; }
+.product-btn.color-green { background: #dcfce7; box-shadow: inset 0 0 0 1px #86efac; }
+.product-btn.color-orange { background: #ffedd5; box-shadow: inset 0 0 0 1px #fdba74; }
+.product-btn.color-purple { background: #ede9fe; box-shadow: inset 0 0 0 1px #c4b5fd; }
+.product-btn.color-pink { background: #fce7f3; box-shadow: inset 0 0 0 1px #f9a8d4; }
+.product-btn.color-yellow { background: #fef9c3; box-shadow: inset 0 0 0 1px #fde68a; }
+.product-btn.color-gray { background: #f1f5f9; box-shadow: inset 0 0 0 1px #cbd5e1; }
+.product-btn[class*="color-"] .price { color: #064e3b; }
+.product-btn.color-purple .price, .product-btn.color-pink .price { color: #581c87; }
+.product-btn.color-blue .price { color: #1e3a8a; }
+.product-btn.color-orange .price, .product-btn.color-yellow .price { color: #7c2d12; }
+
+.settings-color {
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 8px;
+  font-weight: 900;
+  background: white;
+}
+
+/* Choix remis plus tard : boutons Oui / Non */
+.delayed-simple-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.delayed-simple-actions .pay { min-height: 72px; font-size: 24px; }
+.delayed-choice-line {
+  grid-template-columns: 1fr auto;
+}
+.delayed-choice-line > div:first-child strong { display: block; }
+.delayed-choice-buttons {
+  display: grid;
+  grid-template-columns: 68px 68px;
+  gap: 6px;
+}
+.delayed-choice-buttons button {
+  min-height: 42px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 1000;
+}
+.delayed-choice-buttons button.selected {
+  background: #2563eb;
+  color: white;
+}
+
+@media (max-width: 1050px) {
+  .settings-row { grid-template-columns: 30px 1fr 90px 120px 110px; }
+}
+
+
+/* Correction affichage option retrait plus tard dans les paramètres */
+.settings-row { grid-template-columns: 38px 1.4fr 110px 150px 150px !important; }
+.settings-delayed {
+  margin: 6px 0 0 45px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  box-shadow: inset 0 0 0 1px #fed7aa;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 1000;
+  color: #9a3412;
+}
+.settings-delayed input[type="checkbox"] {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  accent-color: #f97316;
+}
+@media (max-width: 1050px) {
+  .settings-row { grid-template-columns: 30px 1fr 90px 120px 110px !important; }
+  .settings-delayed { margin-left: 37px; }
+}
+
+/* Réinitialisation des boutons paramétrables */
+.settings-category-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0;
+}
+.settings-category-head h3 { margin: 0; }
+.reset-category-btn { white-space: nowrap; }
+.settings-row { grid-template-columns: 34px 1fr 84px 142px 104px 42px; }
+.reset-slot-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 1000;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+}
+.reset-slot-btn:active { transform: scale(.97); }
+@media (max-width: 1080px) {
+  .settings-row { grid-template-columns: 28px 1fr 76px 118px 92px 38px; }
+  .reset-slot-btn { width: 36px; height: 36px; }
+}
+
+
+.general-input-row { display: grid; grid-template-columns: 1fr 160px; gap: 10px; align-items: center; background: white; border-radius: 12px; padding: 10px; margin-top: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; font-weight: 900; }
+.general-input-row input { width: 100%; height: 42px; border: 2px solid #cbd5e1; border-radius: 10px; padding: 0 10px; text-align: right; font-weight: 900; -webkit-user-select: auto; user-select: auto; }
+
+.app-version { font-size: 13px; font-weight: 900; color: #64748b; margin-left: 4px; white-space: nowrap; }
+
+/* Retour consigne : total négatif = remboursement espèces uniquement */
+.negative-total #cardPayBtn,
+.negative-total #volunteerPayBtn { display: none !important; }
+.negative-total .pay-actions { grid-template-columns: 1fr !important; }
+.negative-total #cashPayBtn { background: #dc2626; }
+
+/* Correction affichage des totaux de ligne */
+.line-total { white-space: nowrap; align-self: center; }
+.history-card li { margin-bottom: 6px; }
+.history-line-main { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.history-line-main strong { white-space: nowrap; font-weight: 1000; color: #0f172a; }
+.history-line-title { color: #0f172a !important; font-size: 14px !important; font-weight: 900; }
+.history-line-sub { display: block; margin-top: 2px; color: #64748b; font-size: 12px; }
+.ticket-line strong { display: flex; justify-content: space-between; gap: 3mm; }
+.ticket-line strong em { font-style: normal; white-space: nowrap; }
+
+
+/* Impression ticket : réduit les marges navigateur pour éviter la ligne URL en bas */
+
+
+
+/* Correctif iPad paramètres : zone d'action stable, évite les taps captés par les listes déroulantes pendant le défilement. */
+#settingsDialog .modal-panel { max-height: 90dvh; overflow: auto; -webkit-overflow-scrolling: touch; }
+#settingsDialog .panel-header { position: sticky; top: 0; z-index: 50; background: #f8fafc; padding-bottom: 8px; }
+.settings-save-bar { position: sticky; bottom: 0; z-index: 60; display: flex; gap: 10px; justify-content: flex-end; align-items: center; padding: 10px 0 2px; margin-top: 10px; background: linear-gradient(to top, #f8fafc 82%, rgba(248,250,252,0)); }
+.settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
+#saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
+
+/* v26.23 - boutons de vente plus lisibles */
+.product-btn {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+}
+.product-btn .name,
+.product-btn .price {
+  width: 100%;
+  text-align: center;
+}
+.product-btn .name { font-size: 14px; }
+.product-btn .price { font-size: 15px; }
+
+/* v26.23 - ticket A6 restauration : priorité aux produits */
+
+.general-input-row select {
+  width: 100%;
+  height: 42px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-weight: 900;
+  background: white;
+}
+
+
+/* v26.23 - ticket A6 compact : lisible sans déborder */
+
+
+
+/* v26.23 - ordre ticket : commande, total/paiement, puis zone a retirer plus tard */
+
+
+
+/* v26.23 - separation propre apres paiement avant zone a retirer plus tard */
+
+
+/* v26.23 - couleur supplementaire */
+.product-btn.color-red { background: #fee2e2; box-shadow: inset 0 0 0 1px #fca5a5; }
+.product-btn.color-red .price { color: #7f1d1d; }
+
+/* v26.23 - suppression du remis plus tard dans l'interface */
+.settings-delayed,
+#delayedSimpleDialog { display: none !important; }
+
+/* v26.23 - ticket avec cases a cocher */
+
+
+/* v26.23 - choix : nom puis - 0 + */
+.choice-line { grid-template-columns: 1fr auto 44px 44px !important; }
+.choice-line strong { min-width: 0; }
+.choice-line small { grid-column: 1 / -1; margin-left: 2px; }
+.choice-line span { min-width: 42px; }
+
+/* v26.23 - remboursements */
+.cash-tools-row { grid-template-columns: 1fr 1fr 1fr; }
+.refund-content { display: grid; gap: 8px; max-height: 56dvh; overflow: auto; padding-right: 4px; }
+.refund-row { display: grid; grid-template-columns: 1fr 44px 44px 44px 90px; gap: 8px; align-items: center; background: white; border-radius: 12px; padding: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.refund-row strong { font-size: 15px; }
+.refund-row button { height: 42px; border-radius: 10px; background: #dbeafe; color: #1d4ed8; font-weight: 1000; }
+.refund-row span { height: 38px; display: grid; place-items: center; border-radius: 9px; background: #eff6ff; font-weight: 1000; }
+.refund-row em { font-style: normal; text-align: right; font-weight: 1000; }
+.refund-total { margin-top: 10px; }
+
+
+
+
+/* v26.23 correctif ticket : cases visibles, hierarchy menu/assiette, remboursement paramétrable */
+.settings-row { grid-template-columns: 34px 1fr 84px 142px 104px 84px 42px !important; }
+.settings-refundable { display:flex; align-items:center; justify-content:center; gap:4px; height:42px; border-radius:10px; background:#f8fafc; box-shadow: inset 0 0 0 1px #e2e8f0; font-size:12px; font-weight:900; color:#334155; }
+.settings-refundable input { width:18px; height:18px; }
+@media (max-width: 1080px) { .settings-row { grid-template-columns: 28px 1fr 76px 118px 92px 74px 38px !important; } .settings-refundable { font-size:11px; } }
+
+
+
+
+/* v26.23 - ticket final : cases horizontales, reste > 6, hierarchie assiette/menu, blocs non coupes */
+
+
+/* v26.23 - correctif cases ticket : force les cases sur une seule ligne */
+
+
+/* v26.23 - champ Reste place juste apres le nom du produit */
+
+
+
+/* v26.23 - choix de menu : boissons sur 2 colonnes */
+.choice-section-boisson {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px 8px !important;
+}
+.choice-section-boisson h3,
+.choice-section-boisson p {
+  grid-column: 1 / -1 !important;
+}
+.choice-section-boisson .choice-line {
+  min-width: 0 !important;
+  grid-template-columns: minmax(0, 1fr) 38px 38px 38px !important;
+  gap: 5px !important;
+  padding: 4px 0 !important;
+}
+.choice-section-boisson .choice-line strong {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.choice-section-boisson .choice-line small {
+  grid-column: 1 / -1 !important;
+  margin-left: 0 !important;
+}
+.danger-zone { box-shadow: inset 0 0 0 2px #fecaca !important; }
+.danger-zone .danger { width: 100%; min-height: 44px; }
+
+/* v26.23 - icône/nom final, ticket trié sans titres de catégories */
+
+
+
+/* v26.23 - securisation des sauts de page ticket A6 */
+
+
+
+/* v26.23 - marge physique haute pour AirPrint/Epson A6
+   Evite que la premiere ligne de la page 2 soit coupee. */
+
+
+
+/* v26.23 - cases a cocher decalees vers la gauche pour rester dans la zone imprimable Epson/AirPrint */
+
+
+
+/* v26.23 - couleur Boisson chaude */
+.product-btn.color-brown { background: #fde7c7; box-shadow: inset 0 0 0 1px #b45309; }
+.product-btn.color-brown .price { color: #78350f; }
+
+
+/* v26.23 - contre-marges AirPrint iPad */
+
+
+
+/* v26.23 - impression nettoyee : aucun ancien @page concurrent */
+@media print {
+  @page { size: A6 portrait; margin: 0; }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+  body > .app, body > dialog { display: none !important; }
+  body.print-ticket #printArea { display: block !important; }
+  body.print-bilan #printArea { display: block !important; }
+}
+
+
+/* v26.23 - correctif page blanche iPad : règles ticket complètes dans le CSS statique
+   La v26.19 nettoyait les @page concurrents, mais Safari iPad pouvait ouvrir l'aperçu
+   avant d'appliquer le style injecté en JavaScript. Ce bloc statique rend #printArea
+   et .ticket visibles même si l'injection dynamique arrive trop tard. */
+@media print {
+  @page { size: A6 portrait; margin: 0; }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    background: #fff !important;
+    color: #000 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+
+  body.print-ticket > *:not(#printArea),
+  body.print-bilan > *:not(#printArea) {
+    display: none !important;
+  }
+
+  body.print-ticket #printArea,
+  body.print-ticket #printArea.print-area,
+  body.print-bilan #printArea,
+  body.print-bilan #printArea.print-area {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  body.print-ticket #printArea {
+    width: 105mm !important;
+    min-width: 105mm !important;
+    max-width: 105mm !important;
+  }
+
+  body.print-ticket #printArea .ticket {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    box-sizing: border-box !important;
+    width: 105mm !important;
+    min-width: 105mm !important;
+    max-width: 105mm !important;
+    margin: 0 !important;
+    padding: 2mm 2.5mm !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    background: #fff !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 15pt !important;
+    font-weight: 900 !important;
+    line-height: 1.08 !important;
+    transform: none !important;
+  }
+
+  body.print-ticket #printArea .ticket h1 {
+    text-align: center !important;
+    font-size: 15pt !important;
+    margin: 0 0 1mm !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+  }
+
+  body.print-ticket #printArea .ticket-order {
+    display: block !important;
+    text-align: center !important;
+    font-size: 14pt !important;
+    font-weight: 900 !important;
+    border: 1px solid currentColor !important;
+    padding: .8mm 1mm .7mm !important;
+    margin: 0 0 1.2mm !important;
+    line-height: 1 !important;
+  }
+
+  body.print-ticket #printArea .ticket-date {
+    text-align: center !important;
+    font-size: 10pt !important;
+    font-weight: 800 !important;
+    margin-bottom: 1mm !important;
+  }
+
+  body.print-ticket #printArea .ticket-section,
+  body.print-ticket #printArea .ticket-caisse {
+    display: block !important;
+    border-top: 1px dashed currentColor !important;
+    padding-top: .8mm !important;
+    margin-top: 1mm !important;
+  }
+
+  body.print-ticket #printArea .ticket-line,
+  body.print-ticket #printArea .ticket-menu-line,
+  body.print-ticket #printArea .ticket-composite-line,
+  body.print-ticket #printArea .ticket-menu-item,
+  body.print-ticket #printArea .ticket-line-detail,
+  body.print-ticket #printArea .ticket-menu-detail {
+    display: block !important;
+    visibility: visible !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  body.print-ticket #printArea .ticket-line,
+  body.print-ticket #printArea .ticket-menu-line,
+  body.print-ticket #printArea .ticket-composite-line,
+  body.print-ticket #printArea .ticket-menu-item {
+    margin-bottom: 1.25mm !important;
+  }
+
+  body.print-ticket #printArea .ticket-line strong,
+  body.print-ticket #printArea .ticket-menu-line > strong {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    column-gap: 1.7mm !important;
+    align-items: center !important;
+    font-size: 17.5pt !important;
+    line-height: 1.04 !important;
+    font-weight: 900 !important;
+    color: currentColor !important;
+  }
+
+  body.print-ticket #printArea .ticket-main {
+    min-width: 0 !important;
+  }
+
+  body.print-ticket #printArea .ticket-line strong em,
+  body.print-ticket #printArea .ticket-menu-line > strong em {
+    justify-self: end !important;
+    font-size: 10.5pt !important;
+    font-style: normal !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+  }
+
+  body.print-ticket #printArea .ticket-line-detail,
+  body.print-ticket #printArea .ticket-menu-detail,
+  body.print-ticket #printArea .ticket-line span:not(.ticket-checks):not(.ticket-box):not(.ticket-main):not(.ticket-rest) {
+    display: block !important;
+    margin-left: 7mm !important;
+    margin-top: .25mm !important;
+    margin-bottom: .65mm !important;
+    font-size: 10.5pt !important;
+    line-height: 1.05 !important;
+    font-weight: 800 !important;
+    font-style: italic !important;
+  }
+
+  body.print-ticket #printArea .ticket-checks {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: .8mm !important;
+    white-space: nowrap !important;
+    min-width: 7mm !important;
+    text-align: right !important;
+  }
+
+  body.print-ticket #printArea .ticket-checks.empty {
+    min-width: 7mm !important;
+  }
+
+  body.print-ticket #printArea .ticket-box {
+    display: inline-block !important;
+    flex: 0 0 5.4mm !important;
+    width: 5.4mm !important;
+    min-width: 5.4mm !important;
+    max-width: 5.4mm !important;
+    height: 5.4mm !important;
+    min-height: 5.4mm !important;
+    max-height: 5.4mm !important;
+    border: 1.5px solid currentColor !important;
+    border-radius: .6mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    font-size: 0 !important;
+  }
+
+  body.print-ticket #printArea .ticket-menu-items {
+    margin-left: 7mm !important;
+    margin-top: .4mm !important;
+  }
+
+  body.print-ticket #printArea .ticket-menu-item {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 1.7mm !important;
+    align-items: center !important;
+    font-size: 15.5pt !important;
+    line-height: 1.04 !important;
+    font-weight: 900 !important;
+  }
+
+  body.print-ticket #printArea .ticket-rest,
+  body.print-ticket #printArea .ticket-rest-inline {
+    font-size: 13pt !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+    font-style: normal !important;
+  }
+
+  body.print-ticket #printArea .ticket-total,
+  body.print-ticket #printArea .ticket-pay,
+  body.print-ticket #printArea .ticket-change {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 3mm !important;
+    align-items: baseline !important;
+    font-size: 14pt !important;
+    line-height: 1.05 !important;
+    margin-top: .7mm !important;
+    font-weight: 900 !important;
+  }
+
+  body.print-ticket #printArea .ticket-total strong,
+  body.print-ticket #printArea .ticket-pay strong,
+  body.print-ticket #printArea .ticket-change strong {
+    font-size: 14.5pt !important;
+  }
+
+  body.print-ticket #printArea .ticket-change {
+    border-top: 1px solid currentColor !important;
+    padding-top: .8mm !important;
+  }
+}
+
+
+/* v26.23 - contournement AirPrint iPad : contre-zone apres nettoyage v26.23
+   Safari iPad garde environ 15 mm de zone blanche pour les pages web.
+   On imprime donc un ticket plus grand, decalé vers le haut/gauche, avec padding interne,
+   afin que la partie utile commence plus pres du bord A6. */
+@media print {
+  @page { size: A6 portrait; margin: 0; }
+
+  body.print-ticket #printArea,
+  body.print-ticket #printArea.print-area {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    left: -12mm !important;
+    top: -12mm !important;
+    width: 129mm !important;
+    min-width: 129mm !important;
+    max-width: 129mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    transform-origin: top left !important;
+  }
+
+  body.print-ticket #printArea .ticket {
+    width: 129mm !important;
+    min-width: 129mm !important;
+    max-width: 129mm !important;
+    margin: 0 !important;
+    padding: 14mm 14mm 4mm 14mm !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+}
