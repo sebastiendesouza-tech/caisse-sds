@@ -706,7 +706,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .settings-save-bar .small-btn { min-height: 48px; min-width: 132px; }
 #saveSettingsBtn, #settingsCloseBtn { min-height: 42px; }
 
-/* v26.25 - boutons de vente plus lisibles */
+/* v26.27 - boutons de vente plus lisibles */
 .product-btn {
   align-items: center;
   text-align: center;
@@ -720,7 +720,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .product-btn .name { font-size: 14px; }
 .product-btn .price { font-size: 15px; }
 
-/* v26.25 - ticket A6 restauration : priorité aux produits */
+/* v26.27 - ticket A6 restauration : priorité aux produits */
 
 .general-input-row select {
   width: 100%;
@@ -733,35 +733,35 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.25 - ticket A6 compact : lisible sans déborder */
+/* v26.27 - ticket A6 compact : lisible sans déborder */
 
 
 
-/* v26.25 - ordre ticket : commande, total/paiement, puis zone a retirer plus tard */
+/* v26.27 - ordre ticket : commande, total/paiement, puis zone a retirer plus tard */
 
 
 
-/* v26.25 - separation propre apres paiement avant zone a retirer plus tard */
+/* v26.27 - separation propre apres paiement avant zone a retirer plus tard */
 
 
-/* v26.25 - couleur supplementaire */
+/* v26.27 - couleur supplementaire */
 .product-btn.color-red { background: #fee2e2; box-shadow: inset 0 0 0 1px #fca5a5; }
 .product-btn.color-red .price { color: #7f1d1d; }
 
-/* v26.25 - suppression du remis plus tard dans l'interface */
+/* v26.27 - suppression du remis plus tard dans l'interface */
 .settings-delayed,
 #delayedSimpleDialog { display: none !important; }
 
-/* v26.25 - ticket avec cases a cocher */
+/* v26.27 - ticket avec cases a cocher */
 
 
-/* v26.25 - choix : nom puis - 0 + */
+/* v26.27 - choix : nom puis - 0 + */
 .choice-line { grid-template-columns: 1fr auto 44px 44px !important; }
 .choice-line strong { min-width: 0; }
 .choice-line small { grid-column: 1 / -1; margin-left: 2px; }
 .choice-line span { min-width: 42px; }
 
-/* v26.25 - remboursements */
+/* v26.27 - remboursements */
 .cash-tools-row { grid-template-columns: 1fr 1fr 1fr; }
 .refund-content { display: grid; gap: 8px; max-height: 56dvh; overflow: auto; padding-right: 4px; }
 .refund-row { display: grid; grid-template-columns: 1fr 44px 44px 44px 90px; gap: 8px; align-items: center; background: white; border-radius: 12px; padding: 8px; box-shadow: inset 0 0 0 1px #e2e8f0; }
@@ -774,7 +774,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 
 
 
-/* v26.25 correctif ticket : cases visibles, hierarchy menu/assiette, remboursement paramétrable */
+/* v26.27 correctif ticket : cases visibles, hierarchy menu/assiette, remboursement paramétrable */
 .settings-row { grid-template-columns: 34px 1fr 84px 142px 104px 84px 42px !important; }
 .settings-refundable { display:flex; align-items:center; justify-content:center; gap:4px; height:42px; border-radius:10px; background:#f8fafc; box-shadow: inset 0 0 0 1px #e2e8f0; font-size:12px; font-weight:900; color:#334155; }
 .settings-refundable input { width:18px; height:18px; }
@@ -783,17 +783,17 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 
 
 
-/* v26.25 - ticket final : cases horizontales, reste > 6, hierarchie assiette/menu, blocs non coupes */
+/* v26.27 - ticket final : cases horizontales, reste > 6, hierarchie assiette/menu, blocs non coupes */
 
 
-/* v26.25 - correctif cases ticket : force les cases sur une seule ligne */
+/* v26.27 - correctif cases ticket : force les cases sur une seule ligne */
 
 
-/* v26.25 - champ Reste place juste apres le nom du produit */
+/* v26.27 - champ Reste place juste apres le nom du produit */
 
 
 
-/* v26.25 - choix de menu : boissons sur 2 colonnes */
+/* v26.27 - choix de menu : boissons sur 2 colonnes */
 .choice-section-boisson {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -821,33 +821,33 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 .danger-zone { box-shadow: inset 0 0 0 2px #fecaca !important; }
 .danger-zone .danger { width: 100%; min-height: 44px; }
 
-/* v26.25 - icône/nom final, ticket trié sans titres de catégories */
+/* v26.27 - icône/nom final, ticket trié sans titres de catégories */
 
 
 
-/* v26.25 - securisation des sauts de page ticket A6 */
+/* v26.27 - securisation des sauts de page ticket A6 */
 
 
 
-/* v26.25 - marge physique haute pour AirPrint/Epson A6
+/* v26.27 - marge physique haute pour AirPrint/Epson A6
    Evite que la premiere ligne de la page 2 soit coupee. */
 
 
 
-/* v26.25 - cases a cocher decalees vers la gauche pour rester dans la zone imprimable Epson/AirPrint */
+/* v26.27 - cases a cocher decalees vers la gauche pour rester dans la zone imprimable Epson/AirPrint */
 
 
 
-/* v26.25 - couleur Boisson chaude */
+/* v26.27 - couleur Boisson chaude */
 .product-btn.color-brown { background: #fde7c7; box-shadow: inset 0 0 0 1px #b45309; }
 .product-btn.color-brown .price { color: #78350f; }
 
 
-/* v26.25 - contre-marges AirPrint iPad */
+/* v26.27 - contre-marges AirPrint iPad */
 
 
 
-/* v26.25 - impression nettoyee : aucun ancien @page concurrent */
+/* v26.27 - impression nettoyee : aucun ancien @page concurrent */
 @media print {
   @page { size: A6 portrait; margin: 0; }
   html, body {
@@ -863,7 +863,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.25 - correctif page blanche iPad : règles ticket complètes dans le CSS statique
+/* v26.27 - correctif page blanche iPad : règles ticket complètes dans le CSS statique
    La v26.19 nettoyait les @page concurrents, mais Safari iPad pouvait ouvrir l'aperçu
    avant d'appliquer le style injecté en JavaScript. Ce bloc statique rend #printArea
    et .ticket visibles même si l'injection dynamique arrive trop tard. */
@@ -1106,7 +1106,7 @@ th { position: sticky; top: 0; background: #e5e7eb; }
 }
 
 
-/* v26.25 - contournement AirPrint iPad : contre-zone apres nettoyage v26.25
+/* v26.27 - contournement AirPrint iPad : contre-zone apres nettoyage v26.27
    Safari iPad garde environ 15 mm de zone blanche pour les pages web.
    On imprime donc un ticket plus grand, decalé vers le haut/gauche, avec padding interne,
    afin que la partie utile commence plus pres du bord A6. */
@@ -1144,47 +1144,6 @@ th { position: sticky; top: 0; background: #e5e7eb; }
   }
 }
 
-/* v26.25 - interface fixe iPad/Chrome : bloque le glissement de la page,
-   tout en conservant le défilement des listes internes. */
-@media screen {
-  html,
-  body {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    overflow: hidden !important;
-    overscroll-behavior: none !important;
-    touch-action: manipulation !important;
-  }
 
-  .app {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    overflow: hidden !important;
-  }
-}
+/* v26.27 - verrouillage agressif retiré : il empêchait l'ouverture fiable de l'impression sur iPad. */
 
-@media print {
-  html,
-  body {
-    position: static !important;
-    inset: auto !important;
-    width: auto !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    touch-action: auto !important;
-  }
-
-  .app {
-    position: static !important;
-    inset: auto !important;
-    width: auto !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-}
