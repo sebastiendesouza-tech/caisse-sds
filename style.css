@@ -476,3 +476,49 @@ dialog { border: 0; border-radius: 18px; width: min(1180px, 96vw); max-height: 9
   .settings-options-grid,
   .settings-options-grid-3 { grid-template-columns: 1fr; }
 }
+
+/* v2026.02 - Correctif impression A6 iPad/AirPrint
+   Objectif : eviter la double marge AirPrint + CSS, surtout en mode PWA.
+   La page est declaree en A6 sans marge, puis la marge utile est geree
+   a l'interieur du ticket avec un padding. */
+@media print {
+  @page {
+    size: 105mm 148mm;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 105mm;
+    height: 148mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: hidden !important;
+  }
+
+  body > *:not(#printArea) {
+    display: none !important;
+  }
+
+  #printArea,
+  .print-ticket {
+    display: block !important;
+    width: 105mm !important;
+    min-height: 148mm !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    box-sizing: border-box !important;
+    color: var(--ticket-color, black) !important;
+    background: white !important;
+    font-size: 14px !important;
+    line-height: 1.05 !important;
+  }
+
+  .ticket {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
