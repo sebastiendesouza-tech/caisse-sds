@@ -3,8 +3,9 @@
 body { margin: 0; }
 button, input, textarea, select { font: inherit; }
 button { border: 0; border-radius: 10px; padding: 9px 10px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
-.topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #111827; color: white; }
+.topbar { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #111827; color: white; }
 h1 { margin: 0; font-size: 21px; }
+.event-title { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 21px; font-weight: 900; white-space: nowrap; pointer-events: none; }
 h2 { margin: 0 0 8px; font-size: 19px; }
 h3 { margin: 10px 0 6px; }
 .top-actions { display: flex; gap: 8px; }
@@ -64,6 +65,11 @@ dialog { border: 0; border-radius: 18px; width: min(1180px, 96vw); max-height: 9
 .editor-row { display: grid; grid-template-columns: 1.4fr .7fr .9fr 1fr 1.2fr .8fr; gap: 6px; align-items: end; padding: 7px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
 .editor-row.food { grid-template-columns: 1.4fr 1fr auto; }
 .editor-row.stock { grid-template-columns: 1.8fr .8fr; }
+#stockEditor { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stock-card { display: grid; grid-template-columns: 1fr 80px; align-items: center; gap: 6px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
+.stock-card label { margin: 0; font-weight: 800; color: #111827; line-height: 1.05; }
+.stock-card input { padding: 7px; text-align: center; font-weight: 800; }
+@media (max-width: 1050px) { #stockEditor { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .editor-row.color { grid-template-columns: 1.3fr 1fr; }
 .editor-row small { color: #6b7280; }
 .checkline { display: flex; align-items: center; gap: 6px; height: 38px; }
@@ -240,4 +246,233 @@ dialog { border: 0; border-radius: 18px; width: min(1180px, 96vw); max-height: 9
   .ticket-title { font-size:16px !important; line-height:1.05 !important; margin:0 0 2px 0 !important; }
   .ticket-product { font-size:16px !important; line-height:1.05 !important; }
   .checks { line-height:1 !important; }
+}
+
+/* v18.9 - dialogues conviviaux */
+.friendly-dialog { width: min(420px, 92vw); }
+.message-box { padding: 18px; }
+.message-box h2 { margin: 0 0 8px; font-size: 22px; }
+.message-box p { margin: 0 0 12px; font-size: 17px; line-height: 1.35; }
+.export-status { padding: 14px; border-radius: 12px; background: #ecfeff; color: #155e75; font-weight: 800; }
+
+.message-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+.message-dialog {
+  border: 0;
+  border-radius: 18px;
+  padding: 0;
+  max-width: 420px;
+  width: min(90vw, 420px);
+}
+.message-box {
+  padding: 22px;
+  background: #fff;
+  color: #111827;
+}
+.message-box h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+.message-box p {
+  margin: 0 0 18px;
+  font-size: 17px;
+  line-height: 1.35;
+}
+.message-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.message-actions button {
+  min-width: 96px;
+  min-height: 44px;
+}
+
+
+/* v18.11 - corrections ergonomie */
+#choiceDialog { width: min(720px, 92vw); }
+#choiceDialog .settings { max-height: 88vh; overflow: auto; }
+#choiceDialog .choice-block { margin: 6px 0; padding: 8px; }
+#choiceDialog .counter-choice.choice-options-grid { grid-template-columns: 1fr; }
+#choiceDialog .counter-row { grid-template-columns: 1fr 42px 46px 42px; }
+#btnQuickRefund { margin-top: auto; }
+.product-btn.empty-product span { display: none; }
+
+
+/* v18.12 - choix menu/viandes plus compact pour iPad 10 pouces paysage */
+#choiceDialog {
+  width: min(760px, 92vw);
+}
+#choiceDialog .settings {
+  max-height: 86dvh;
+  padding: 10px;
+}
+#choiceDialog .choice-block {
+  margin: 6px 0;
+  padding: 7px;
+}
+#choiceDialog .choice-block h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+}
+#choiceDialog .choice-option {
+  padding: 7px 8px;
+  margin: 0;
+  font-size: 14px;
+}
+#choiceDialog .nested-choice {
+  margin: 3px 0 0 0;
+  padding: 5px;
+  border-left: 3px solid #d1d5db;
+}
+#choiceDialog .nested-choice strong {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 13px;
+}
+#choiceDialog .nested-choice .counter-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  align-items: center;
+}
+#choiceDialog .nested-choice .counter-row {
+  grid-template-columns: 1fr 34px 34px 34px;
+  gap: 4px;
+  padding: 4px;
+  font-size: 13px;
+}
+#choiceDialog .nested-choice .counter-row button {
+  min-height: 30px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+#choiceDialog .nested-choice .counter-row input {
+  font-size: 15px;
+  padding: 3px;
+}
+#choiceDialog .nested-choice .choice-total {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  margin-top: -2px;
+}
+@media (orientation: landscape) and (max-height: 820px) {
+  #choiceDialog { width: min(700px, 90vw); }
+  #choiceDialog .settings-actions { margin-top: 6px; }
+}
+
+/* v18.16 - bénévoles en boutons 2 colonnes */
+.volunteer-button-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.volunteer-choice-btn { min-height: 52px; background: #ede9fe; color: #4c1d95; font-size: 18px; font-weight: 900; }
+@media (max-width: 700px) { .event-title { position: static; transform: none; font-size: 16px; margin-left: 10px; } }
+
+/* v2026.01 - Paramètres produits plus lisibles */
+#productEditor { gap: 12px; }
+.product-zone-editor {
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 10px;
+  border-left: 9px solid #d1d5db;
+}
+.product-zone-editor.group-boissons-editor { border-left-color: #0ea5e9; }
+.product-zone-editor.group-restauration-editor { border-left-color: #16a34a; }
+.product-zone-editor.group-consignes-editor { border-left-color: #7c3aed; }
+.product-zone-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 3px 2px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.product-zone-title strong { font-size: 18px; }
+.product-zone-title span { color: #6b7280; font-size: 13px; font-weight: 800; }
+.product-zone-list { display: grid; gap: 7px; }
+.clean-product-card {
+  border: 0 !important;
+  box-shadow: 0 1px 4px #00000012;
+  padding: 8px !important;
+}
+.clean-product-main {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  grid-template-columns: minmax(150px, 1.45fr) 86px 118px 150px 118px !important;
+  align-items: end;
+}
+.clean-product-main small { font-size: 12px; }
+.clean-product-main input,
+.clean-product-main select { padding: 7px; }
+.refundable-line { margin: 0 !important; height: 36px; justify-content: center; background: #f3f4f6; border-radius: 10px; padding: 0 8px; }
+.choice-edit, .menu-edit {
+  border: 0 !important;
+  background: #eef2ff !important;
+  margin-top: 8px !important;
+}
+.choice-edit h4, .menu-edit h4 { margin: 0 0 6px; }
+@media (max-width: 1050px) {
+  .clean-product-main { grid-template-columns: 1.3fr 80px 110px 130px 110px !important; }
+}
+
+/* v2026.01 - paramètres produits plus lisibles */
+.settings-choice-section,
+.menu-section {
+  border: 0 !important;
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 10px;
+  margin: 10px 0;
+}
+.settings-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.settings-options-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.option-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+.option-card-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.option-card-name input[type="checkbox"] {
+  width: auto;
+  transform: scale(1.15);
+  flex: 0 0 auto;
+}
+.option-card-supp {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+.option-card-supp input {
+  width: 76px;
+  padding: 5px;
+  font-size: 13px;
+}
+@media (max-width: 950px) {
+  .settings-options-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .settings-options-grid,
+  .settings-options-grid-3 { grid-template-columns: 1fr; }
 }

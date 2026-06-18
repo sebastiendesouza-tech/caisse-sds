@@ -44,14 +44,14 @@ Version simple HTML/CSS/JavaScript pour GitHub Pages et iPad.
 - Les rubriques avec un plat composé comme l’assiette gourmande repassent en affichage une colonne pour éviter les bugs de saisie.
 
 
-## v18.8
+## v18.16
 - Optimisation iPad 10 pouces paysage.
 - Suppression des mots Produits / Boissons / Restauration / Consignes dans la zone produits.
 - Restauration limitee a 8 boutons par defaut.
 - Somme payee plus compacte.
 
 
-## v18.8
+## v18.16
 
 - Texte centré dans les boutons produits.
 - Stock affiché dans le bouton quand le suivi est actif.
@@ -60,20 +60,67 @@ Version simple HTML/CSS/JavaScript pour GitHub Pages et iPad.
 - Bloc Merguez/Saucisses fixe en bas de la zone Produits.
 
 
-## v18.8
+## v18.16
 - Masque les accompagnements imposés dans les écrans de choix.
 - Trie le ticket par boissons, entrées, plats, fromages, desserts puis consignes.
 - Les menus sont imprimés directement par éléments, sans ligne de menu inutile.
 
 
-## v18.8
+## v18.16
 - Ticket encore plus compact.
 - Titre du ticket à la même taille que le reste.
 - Suppression des lignes séparatrices et des espaces entre produits.
 - Colonne prix resserrée et alignée à droite.
 
 
-## v18.8
+## v18.16
 - Ticket : taille des produits remise comme la version précédente.
 - Titre même taille que les produits.
 - Espacement compact conservé, sans ligne entre les produits.
+
+
+## v18.16
+- Dialogues personnalisées pour annulation, erreurs et confirmations.
+- Pas d’impression pour les commandes négatives ou nulles.
+- Dernier produit saisi affiché en haut de la commande.
+- Commandes et bilan affichés directement dans Paramètres.
+- Export CSV lancé directement depuis l’onglet Export CSV.
+- Remboursement espèces uniquement, sans motif.
+
+
+## v18.16
+- Correction des boutons Annuler et Espèces après ajout des dialogues personnalisés.
+- Ajout du dialogue message/confirmation manquant dans la page.
+
+
+## v18.16
+- Correction forcée des prix : assiette gourmande 7 €, consigne 2 €, retour -2 €.
+- Fenêtre de choix menu/assiette plus compacte.
+- Choix saucisse/merguez affiché sur une ligne compacte pour éviter l'ascenseur sur iPad paysage.
+
+
+## v18.16
+- Menu : boissons autorisées uniquement.
+- Eau minérale 50 cl : réduction -0,50 € dans le menu.
+- Coca, Oasis, Ice Tea et bière pression 25 cl sans supplément.
+- Verres de vin avec supplément +0,50 €.
+
+
+## v18.16 - Stocks en colonnes
+- Écran Stocks affiché en 2 ou 3 colonnes selon la largeur.
+- Affichage du nom uniquement, sans catégorie.
+
+
+## v18.16
+- Nom de manifestation affiché sur une seule ligne dans le bandeau : Comité des Fêtes.
+- Liste des bénévoles préchargée et triée alphabétiquement.
+- Sélection des bénévoles en boutons sur 2 colonnes.
+
+## v2026.01
+- Paramètres > Produits réorganisé par zones visibles : Boissons, Restauration, Consignes.
+- Présentation plus légère, moins de bordures, cartes produits plus compactes.
+
+
+## v2026.01
+- Paramètres > Produits : choix multiples affichés en 2 ou 3 colonnes.
+- Suppression de l'indication simple/composé dans les listes de choix.

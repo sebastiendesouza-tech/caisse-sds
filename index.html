@@ -13,7 +13,8 @@
 <body>
   <header class="topbar no-print">
     <div>
-      <h1>Caisse by SDS <span class="version-badge">v18.8</span></h1>
+      <h1>Caisse by SDS <span class="version-badge">v2026.01</span></h1>
+      <div id="eventTitle" class="event-title">Comité des Fêtes</div>
     </div>
     <div class="top-actions">
       <button id="btnSettings" class="secondary">Paramètres</button>
@@ -134,20 +135,20 @@
         <div id="volunteerEditor" class="editor-list"></div>
       </section>
       <section id="tab-orders" class="tab-panel">
-        <p class="hint">Accès rapide à l'historique des commandes.</p>
-        <button id="btnOrders" class="secondary">Afficher les commandes</button>
+        <p class="hint">Historique des commandes, ventes bénévoles et remboursements.</p>
+        <div id="settingsOrdersList" class="orders-list"></div>
       </section>
       <section id="tab-report" class="tab-panel">
         <p class="hint">Bilan des ventes, paiements et remboursements.</p>
-        <button id="btnReport" class="secondary">Afficher le bilan</button>
+        <div id="settingsReportContent"></div>
       </section>
       <section id="tab-export" class="tab-panel">
-        <p class="hint">Export des ventes et remboursements au format CSV.</p>
-        <button id="btnExport" class="secondary">Exporter CSV</button>
+        <p class="hint">Clique sur l'onglet pour lancer directement l'export CSV.</p>
+        <div class="export-status">L'export CSV se lance automatiquement.</div>
       </section>
       <div class="settings-actions">
         <button id="btnReset" class="danger">Réinitialiser</button>
-        <button id="btnSaveSettings" class="validate">Enregistrer</button>
+        <button id="btnCloseSettingsBottom" class="secondary">Fermer</button><button id="btnSaveSettings" class="validate">Enregistrer</button>
       </div>
     </div>
   </dialog>
@@ -182,10 +183,7 @@
       <label>Filtrer les produits</label>
       <input id="quickRefundSearch" placeholder="Exemple : bière, assiette, glace..." />
       <div id="quickRefundLines" class="editor-list"></div>
-      <label>Mode de remboursement</label>
-      <select id="quickRefundMethod"><option>Espèces</option><option>CB</option></select>
-      <label>Raison</label>
-      <input id="quickRefundReason" placeholder="Exemple : rupture de stock" />
+      <p class="hint"><strong>Remboursement en espèces uniquement.</strong></p>
       <div id="quickRefundTotal" class="refund-total">0,00 €</div>
       <div class="settings-actions">
         <button id="btnValidateQuickRefund" class="validate">Valider le remboursement</button>
@@ -201,10 +199,7 @@
       </div>
       <p class="hint">Choisis les quantités à rembourser. Une écriture négative sera ajoutée, la commande d'origine reste conservée.</p>
       <div id="refundLines" class="editor-list"></div>
-      <label>Mode de remboursement</label>
-      <select id="refundMethod"><option>Espèces</option><option>CB</option></select>
-      <label>Raison</label>
-      <input id="refundReason" placeholder="Exemple : rupture de stock" />
+      <p class="hint"><strong>Remboursement en espèces uniquement.</strong></p>
       <div id="refundTotal" class="refund-total">0,00 €</div>
       <div class="settings-actions">
         <button id="btnValidateRefund" class="validate">Valider le remboursement</button>
@@ -218,10 +213,9 @@
         <h2>Commande bénévole</h2>
         <button id="btnCloseVolunteer" class="secondary">Fermer</button>
       </div>
-      <p class="hint">Le bénévole prend sa commande maintenant et paiera à la fin de la manifestation.</p>
-      <label>Bénévole</label>
-      <select id="volunteerSelect"></select>
-      <div class="settings-actions">
+      <div id="volunteerButtons" class="volunteer-button-grid"></div>
+      <select id="volunteerSelect" style="display:none"></select>
+      <div class="settings-actions" style="display:none">
         <button id="btnValidateVolunteer" class="validate">Valider commande bénévole</button>
       </div>
     </div>
@@ -241,6 +235,19 @@
       </div>
     </div>
   </dialog>
+
+  
+  <dialog id="messageDialog" class="no-print message-dialog">
+    <div class="message-box">
+      <h2 id="messageTitle">Information</h2>
+      <p id="messageText"></p>
+      <div class="message-actions">
+        <button id="messageCancel" class="secondary" type="button">Non</button>
+        <button id="messageOk" class="validate" type="button">OK</button>
+      </div>
+    </div>
+  </dialog>
+
 
   <section id="printArea" class="print-ticket"></section>
   <script src="app.js"></script>

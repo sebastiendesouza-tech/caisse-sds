@@ -12,11 +12,21 @@ const PALETTE = {
 };
 
 const DEFAULT_CONFIG = {
-  configVersion: 18.8,
-  eventName: 'Manifestation',
+  configVersion: 18.17,
+  eventName: 'Comité des Fêtes-Moroges',
   orderPrefix: 'A',
   ticketColor: 'black',
-  volunteers: [{ id: 'vol-ben-1', name: 'Bénévole 1', active: true }],
+  volunteers: [
+    { id: 'vol-daudey', name: 'Daudey', active: true },
+    { id: 'vol-de-souza', name: 'De Souza', active: true },
+    { id: 'vol-dufour', name: 'Dufour', active: true },
+    { id: 'vol-griveaux', name: 'Griveaux', active: true },
+    { id: 'vol-lessaque', name: 'Lessaque', active: true },
+    { id: 'vol-lonjarret', name: 'Lonjarret', active: true },
+    { id: 'vol-millot', name: 'Millot', active: true },
+    { id: 'vol-renaud', name: 'Renaud', active: true },
+    { id: 'vol-venot', name: 'Venot', active: true }
+  ],
   categoryColors: {
     'Boissons sans alcool': 'bleu',
     'Boissons avec alcool': 'orange',
@@ -52,7 +62,7 @@ const DEFAULT_CONFIG = {
     { id: 'p-cafe', group: 'Boissons', category: 'Boissons chaudes', name: 'Café', price: 1, type: 'simple', components: [], refundable: true, stock: '' },
     { id: 'p-boisson-libre', group: 'Boissons', category: 'Boissons sans alcool', name: '', price: 0, type: 'simple', components: [], refundable: true, stock: '' },
 
-    { id: 'p-assiette-gourmande', group: 'Restauration', category: 'Plat', name: 'Assiette gourmande', price: 8, type: 'compose', components: [], choices: [
+    { id: 'p-assiette-gourmande', group: 'Restauration', category: 'Plat', name: 'Assiette gourmande', price: 7, type: 'compose', components: [], choices: [
       { category: 'Viande', min: 2, max: 2, clientChoice: true, options: [{ foodId: 'food-saucisse', supplement: 0 }, { foodId: 'food-merguez', supplement: 0 }] },
       { category: 'Accompagnement', min: 1, max: 1, clientChoice: false, options: [{ foodId: 'food-frites', supplement: 0 }] }
     ], refundable: true, stock: '' },
@@ -62,7 +72,8 @@ const DEFAULT_CONFIG = {
     { id: 'p-frites', group: 'Restauration', category: 'Plat', name: 'Barquette de frites', price: 2.50, type: 'simple', components: [], refundable: true, stock: '' },
     { id: 'p-menu', group: 'Restauration', category: 'Plat', name: 'Menu', price: 10, type: 'menu', components: [], refundable: true, stock: '', menuSections: [
       { section: 'Boissons', clientChoice: true, max: 1, options: [
-        { productId: 'p-eau-50', supplement: 0 }, { productId: 'p-eau-150', supplement: 0 }, { productId: 'p-coca', supplement: 0 }, { productId: 'p-oasis', supplement: 0 }, { productId: 'p-ice-tea', supplement: 0 },
+        { productId: 'p-eau-50', supplement: -0.50 },
+        { productId: 'p-coca', supplement: 0 }, { productId: 'p-oasis', supplement: 0 }, { productId: 'p-ice-tea', supplement: 0 }, { productId: 'p-biere-25', supplement: 0 },
         { productId: 'p-verre-rose', supplement: 0.50 }, { productId: 'p-verre-blanc', supplement: 0.50 }, { productId: 'p-verre-rouge', supplement: 0.50 }
       ]},
       { section: 'Plat', clientChoice: false, max: 1, options: [{ productId: 'p-assiette-gourmande', supplement: 0 }] },
@@ -71,8 +82,8 @@ const DEFAULT_CONFIG = {
     { id: 'p-restau-libre-1', group: 'Restauration', category: 'Plat', name: '', price: 0, type: 'simple', components: [], refundable: true, stock: '' },
     { id: 'p-restau-libre-2', group: 'Restauration', category: 'Dessert', name: '', price: 0, type: 'simple', components: [], refundable: true, stock: '' },
 
-    { id: 'p-consigne', group: 'Consignes', category: 'Consigne', name: 'Consigne gobelet', price: 1, type: 'simple', components: [], refundable: true, stock: '' },
-    { id: 'p-retour-consigne', group: 'Consignes', category: 'Retour consigne', name: 'Retour gobelet', price: -1, type: 'simple', components: [], refundable: false, stock: '' }
+    { id: 'p-consigne', group: 'Consignes', category: 'Consigne', name: 'Consigne gobelet', price: 2, type: 'simple', components: [], refundable: true, stock: '' },
+    { id: 'p-retour-consigne', group: 'Consignes', category: 'Retour consigne', name: 'Retour gobelet', price: -2, type: 'simple', components: [], refundable: false, stock: '' }
   ]
 };
 
@@ -98,6 +109,33 @@ function saveSales() { localStorage.setItem('caisse_sales', JSON.stringify(sales
 function saveOrderNumber() { localStorage.setItem('caisse_order_number', String(orderNumber)); }
 function saveLastTicket() { localStorage.setItem('caisse_last_ticket_html', lastTicketHtml || ''); }
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+function showMessage(title, text) {
+  const dlg = document.getElementById('messageDialog');
+  if (!dlg) { window.alert((title ? title + '\n' : '') + (text || '')); return; }
+  document.getElementById('messageTitle').textContent = title || 'Information';
+  document.getElementById('messageText').textContent = text || '';
+  document.getElementById('messageCancel').style.display = 'none';
+  const ok = document.getElementById('messageOk');
+  ok.textContent = 'OK';
+  ok.onclick = () => dlg.close();
+  dlg.showModal();
+}
+function showConfirm(title, text, onConfirm) {
+  const dlg = document.getElementById('messageDialog');
+  if (!dlg) { if (window.confirm((title ? title + '\n' : '') + (text || ''))) { if (typeof onConfirm === 'function') onConfirm(); } return; }
+  document.getElementById('messageTitle').textContent = title || 'Confirmation';
+  document.getElementById('messageText').textContent = text || '';
+  const cancel = document.getElementById('messageCancel');
+  const ok = document.getElementById('messageOk');
+  cancel.style.display = '';
+  cancel.textContent = 'Non';
+  ok.textContent = 'Oui';
+  cancel.onclick = () => dlg.close();
+  ok.onclick = () => { dlg.close(); if (typeof onConfirm === 'function') onConfirm(); };
+  dlg.showModal();
+}
+function clearCurrentCart() { cart = []; paidCents = 0; renderCart(); }
+
 function compactChoiceOptions(choice) {
   if (!choice || !Array.isArray(choice.options)) return;
   const byFood = new Map();
@@ -133,18 +171,48 @@ function limitEmptyRestorationSlots(c) {
 function normalizeConfig(c) {
   const base = clone(DEFAULT_CONFIG);
   if (!c) return base;
+  const previousVersion = Number(c.configVersion || 0);
   if (Array.isArray(c.products) && c.products[0] && !c.products[0].id) {
     c.products = c.products.map((p, i) => ({ id: 'p' + (i + 1), group: displayGroup(p.category), category: p.category || 'Plat', name: p.name || '', price: Number(p.price || 0), type: 'simple', components: [], refundable: true, stock: '' }));
   }
-  c.configVersion = 18.5;
-  c.eventName ||= base.eventName;
+  c.configVersion = 18.17;
+  c.eventName = base.eventName;
   c.orderPrefix ||= 'A';
   c.ticketColor ||= 'black';
   c.baseFoods ||= base.baseFoods;
   c.volunteers ||= base.volunteers;
+  if (previousVersion < 18.17) {
+    c.eventName = base.eventName;
+    c.volunteers = clone(base.volunteers);
+  }
   c.categoryColors ||= base.categoryColors;
   c.products ||= base.products;
   c.products.forEach((p, i) => { p.id ||= 'p' + (i + 1); p.group ||= displayGroup(p.category); p.type ||= 'simple'; p.components ||= []; p.choices ||= []; p.menuSections ||= []; p.refundable = p.refundable !== false; p.stock ??= ''; });
+  // v18.14 : correction forcée des prix et des boissons du menu même si une ancienne configuration est déjà enregistrée sur l'iPad.
+  const forcedPriceUpdates = { 'p-assiette-gourmande': 7, 'p-consigne': 2, 'p-retour-consigne': -2 };
+  c.products.forEach(p => {
+    if (Object.prototype.hasOwnProperty.call(forcedPriceUpdates, p.id)) p.price = forcedPriceUpdates[p.id];
+  });
+
+  // v18.14 : le menu ne propose que les boissons autorisées.
+  const menu = c.products.find(p => p.id === 'p-menu');
+  if (menu) {
+    menu.menuSections ||= [];
+    let drinks = menu.menuSections.find(sec => sec.section === 'Boissons');
+    if (!drinks) { drinks = { section: 'Boissons', clientChoice: true, max: 1, options: [] }; menu.menuSections.unshift(drinks); }
+    drinks.clientChoice = true;
+    drinks.max = 1;
+    drinks.options = [
+      { productId: 'p-eau-50', supplement: -0.50 },
+      { productId: 'p-coca', supplement: 0 },
+      { productId: 'p-oasis', supplement: 0 },
+      { productId: 'p-ice-tea', supplement: 0 },
+      { productId: 'p-biere-25', supplement: 0 },
+      { productId: 'p-verre-rose', supplement: 0.50 },
+      { productId: 'p-verre-blanc', supplement: 0.50 },
+      { productId: 'p-verre-rouge', supplement: 0.50 }
+    ];
+  }
   c.baseFoods.forEach(f => { f.id ||= uid('food'); f.category ||= 'Viande'; f.stock ??= ''; });
   c.volunteers.forEach(v => { v.id ||= uid('vol'); v.name ||= 'Bénévole'; v.active = v.active !== false; });
   compactAllChoices(c);
@@ -200,6 +268,8 @@ function ticketSortIndex(category) {
 }
 
 function renderProducts() {
+  const eventTitle = document.getElementById('eventTitle');
+  if (eventTitle) eventTitle.textContent = config.eventName || 'Comité des Fêtes';
   document.documentElement.style.setProperty('--ticket-color', config.ticketColor);
   const wrap = document.getElementById('categories');
   const meat = document.getElementById('meatStock');
@@ -224,7 +294,7 @@ function renderMeatStockBox() {
 function productButtonHtml(p) {
   const col = colorFor(p.category);
   const style = `background:${col.bg};color:${col.fg}`;
-  if (!p.name) return `<button class="product-btn empty-product" style="${style}" disabled><strong>Libre</strong><span>A paramétrer</span></button>`;
+  if (!p.name) return `<button class="product-btn empty-product" style="${style}" disabled><strong>Libre</strong></button>`;
   const out = !stockAvailable(p);
   const stockLabel = isTracked(p.stock) ? `<em class="btn-stock">Stock ${Number(p.stock)}</em>` : '';
   const sub = `${fmt(p.price)}${out ? ' - rupture' : ''}`;
@@ -252,7 +322,7 @@ function renderCart() {
   if (!cart.length) { list.className = 'cart-lines empty'; list.textContent = 'Aucun produit'; }
   else {
     list.className = 'cart-lines';
-    list.innerHTML = cart.map((item, index) => `<div class="cart-line"><div><div class="cart-name">${escapeHtml(item.name)}</div>${item.detail ? `<div class="cart-detail">${escapeHtml(item.detail)}</div>` : ''}<div class="cart-unit">${fmt(item.price)} / unité</div></div><div class="qty-actions"><button data-action="minus" data-index="${index}">-</button><span class="qty-value">${item.qty}</span><button data-action="plus" data-index="${index}">+</button><button data-action="delete" data-index="${index}">x</button></div><div class="cart-total">${fmt(item.qty * item.price)}</div></div>`).join('');
+    list.innerHTML = cart.map((item, index) => ({ item, index })).reverse().map(({ item, index }) => `<div class="cart-line"><div><div class="cart-name">${escapeHtml(item.name)}</div>${item.detail ? `<div class="cart-detail">${escapeHtml(item.detail)}</div>` : ''}<div class="cart-unit">${fmt(item.price)} / unité</div></div><div class="qty-actions"><button data-action="minus" data-index="${index}">-</button><span class="qty-value">${item.qty}</span><button data-action="plus" data-index="${index}">+</button><button data-action="delete" data-index="${index}">x</button></div><div class="cart-total">${fmt(item.qty * item.price)}</div></div>`).join('');
   }
   document.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', updateLine));
   updatePayment();
@@ -273,7 +343,15 @@ function updatePayment() {
 }
 function pressKey(key) { if (key === 'clear') paidCents = 0; else if (key === 'back') paidCents = Math.floor(paidCents / 10); else if (key === '00') paidCents = Math.min(999999, paidCents * 100); else paidCents = Math.min(999999, paidCents * 10 + Number(key)); updatePayment(); }
 function setQuickAmount(amount) { paidCents = Math.round(amount * 100); updatePayment(); }
-function payAndPrint(method) { if (!cart.length) return alert('Commande vide'); paymentMethod = method; if (method === 'CB') paidCents = Math.round(total() * 100); if (method === 'Espèces' && paidAmount() < total()) return alert('Le montant payé est inférieur au total dû.'); updatePayment(); validateSale(); }
+function payAndPrint(method) {
+  if (!cart.length) return showMessage('Commande vide', 'Ajoute au moins un produit avant de valider.');
+  paymentMethod = method;
+  if (total() <= 0) paidCents = 0;
+  else if (method === 'CB') paidCents = Math.round(total() * 100);
+  if (method === 'Espèces' && total() > 0 && paidAmount() < total()) return showMessage('Montant insuffisant', 'La somme payée est inférieure au total dû. Ajoute le montant reçu ou utilise Exact.');
+  updatePayment();
+  validateSale();
+}
 
 function consumeStock() {
   const consumeProduct = (id, qty) => {
@@ -338,17 +416,18 @@ function buildTicket() {
   saveLastTicket();
 }
 function reprintLastTicket() {
-  if (!lastTicketHtml) { alert('Aucun ticket à réimprimer.'); return; }
+  if (!lastTicketHtml) { showMessage('Aucun ticket', 'Aucun dernier ticket à réimprimer.'); return; }
   document.getElementById('printArea').innerHTML = lastTicketHtml;
   window.print();
 }
 function validateSale(extra = {}) {
-  buildTicket();
+  const shouldPrint = total() > 0 && extra.print !== false;
+  if (shouldPrint) buildTicket();
   const kind = extra.kind || 'sale';
   sales.push({ kind, orderNumber: `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`, date: new Date().toISOString(), paymentMethod: extra.paymentMethod || paymentMethod, paid: extra.paid ?? paidAmount(), change: extra.change ?? Math.max(0, paidAmount() - total()), total: total(), items: clone(cart), volunteerId: extra.volunteerId || '', volunteerName: extra.volunteerName || '', settled: extra.settled ?? true, refunds: [] });
   consumeStock();
   saveSales();
-  window.print();
+  if (shouldPrint) window.print();
   orderNumber += 1; saveOrderNumber(); cart = []; paidCents = 0; renderProducts(); renderCart();
 }
 function exportCsv() {
@@ -365,17 +444,17 @@ function exportCsv() {
 function renderChoiceControls(choice, foods, mode, prefix) {
   const required = Number(choice.max || 0);
   if (!choice.clientChoice) {
-    const html = foods.map(({ opt, food }) => `<label class="choice-option"><input type="checkbox" data-${mode}-fixed="${prefix}" data-food-id="${food.id}" checked disabled> <span>${escapeHtml(food.name)}</span> ${opt.supplement ? `<strong>+${fmt(opt.supplement)}</strong>` : ''}</label>`).join('');
+    const html = foods.map(({ opt, food }) => `<label class="choice-option"><input type="checkbox" data-${mode}-fixed="${prefix}" data-food-id="${food.id}" checked disabled> <span>${escapeHtml(food.name)}</span> ${opt.supplement ? `<strong>${opt.supplement > 0 ? '+' : ''}${fmt(opt.supplement)}</strong>` : ''}</label>`).join('');
     return `<div class="choice-options-grid">${html}</div>`;
   }
   if (required <= 1) {
-    const html = foods.map(({ opt, food }, idx) => `<label class="choice-option"><input type="radio" name="${mode}-${prefix}" data-${mode}-single="${prefix}" data-food-id="${food.id}" ${idx === 0 ? 'checked' : ''}> <span>${escapeHtml(food.name)}</span> ${opt.supplement ? `<strong>+${fmt(opt.supplement)}</strong>` : ''}</label>`).join('');
+    const html = foods.map(({ opt, food }, idx) => `<label class="choice-option"><input type="radio" name="${mode}-${prefix}" data-${mode}-single="${prefix}" data-food-id="${food.id}" ${idx === 0 ? 'checked' : ''}> <span>${escapeHtml(food.name)}</span> ${opt.supplement ? `<strong>${opt.supplement > 0 ? '+' : ''}${fmt(opt.supplement)}</strong>` : ''}</label>`).join('');
     return `<div class="choice-options-grid">${html}</div>`;
   }
   const group = `${mode}-${prefix}`;
   return `<div class="counter-choice choice-options-grid" data-required="${required}" data-counter-group="${group}">${foods.map(({ opt, food }) => {
     const inputId = `${group}-${food.id}`;
-    return `<div class="counter-row"><span>${escapeHtml(food.name)} ${opt.supplement ? `<strong>+${fmt(opt.supplement)}</strong>` : ''}</span><button type="button" data-count-delta="-1" data-counter-target="${inputId}" data-counter-group-ref="${group}">-</button><input readonly data-${mode}-count="${prefix}" data-counter-member="${group}" data-food-id="${food.id}" id="${inputId}" value="0"><button type="button" data-count-delta="1" data-counter-target="${inputId}" data-counter-group-ref="${group}">+</button></div>`;
+    return `<div class="counter-row"><span>${escapeHtml(food.name)} ${opt.supplement ? `<strong>${opt.supplement > 0 ? '+' : ''}${fmt(opt.supplement)}</strong>` : ''}</span><button type="button" data-count-delta="-1" data-counter-target="${inputId}" data-counter-group-ref="${group}">-</button><input readonly data-${mode}-count="${prefix}" data-counter-member="${group}" data-food-id="${food.id}" id="${inputId}" value="0"><button type="button" data-count-delta="1" data-counter-target="${inputId}" data-counter-group-ref="${group}">+</button></div>`;
   }).join('')}<div class="choice-total">Total : <span data-counter-total="${group}">0</span> / ${required}</div></div>`;
 }
 function readChoiceSelection(choice, foods, mode, prefix, productName) {
@@ -427,7 +506,7 @@ function addChoiceProduct() {
       const result = readChoiceSelection(choice, foods, 'choice', String(ci), p.name);
       selectedFoods.push(...result.selectedFoods); supplements += result.supplements; details.push(...result.details);
     }
-  } catch (err) { return alert(err.message); }
+  } catch (err) { return showMessage('Choix incomplet', err.message); }
   addCartLine({ id: p.id, name: p.name, category: p.category, detail: summarizeNames(details), ticketChildren: [{ name: '', composition: summarizeNames(details), withCheck: false, category: p.category }], price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods });
   document.getElementById('choiceDialog').close();
   pendingChoiceProduct = null;
@@ -465,7 +544,7 @@ function openMenuDialog(product) {
       const checked = !section.clientChoice ? 'checked disabled' : '';
       const defaultChecked = section.clientChoice && required <= 1 && oi === 0 ? 'checked' : '';
       const nested = product.type === 'compose' ? renderComposeChoiceHtml(product, `menu-${si}-${oi}`) : '';
-      return `<div class="menu-option-cell"><label class="choice-option"><input type="${inputType}"${inputName} data-menu-select="${si}" data-product-id="${product.id}" data-menu-opt="${si}-${oi}" ${checked} ${defaultChecked}> <span>${escapeHtml(product.name)}</span> ${opt.supplement ? `<strong>+${fmt(opt.supplement)}</strong>` : ''}</label>${nested}</div>`;
+      return `<div class="menu-option-cell"><label class="choice-option"><input type="${inputType}"${inputName} data-menu-select="${si}" data-product-id="${product.id}" data-menu-opt="${si}-${oi}" ${checked} ${defaultChecked}> <span>${escapeHtml(product.name)}</span> ${opt.supplement ? `<strong>${opt.supplement > 0 ? '+' : ''}${fmt(opt.supplement)}</strong>` : ''}</label>${nested}</div>`;
     }).join('')}</div></div>`;
   }).join('');
   document.getElementById('choiceDialog').showModal();
@@ -477,7 +556,7 @@ function addMenuProduct() {
     for (let si = 0; si < (p.menuSections || []).length; si++) {
       const section = p.menuSections[si], required = section.max || 1;
       const checkedInputs = Array.from(document.querySelectorAll(`[data-menu-select="${si}"]:checked`));
-      if (section.clientChoice && checkedInputs.length !== required) return alert(`Il faut choisir ${required} produit(s) pour ${section.section}.`);
+      if (section.clientChoice && checkedInputs.length !== required) return showMessage('Choix incomplet', `Il faut choisir ${required} produit(s) pour ${section.section}.`);
       checkedInputs.forEach(input => {
         const product = config.products.find(prod => prod.id === input.dataset.productId);
         const opt = (section.options || []).find(o => o.productId === input.dataset.productId);
@@ -497,19 +576,42 @@ function addMenuProduct() {
         if (product.type !== 'compose') ticketChildren.push({ qtyLabel: '1', name: `${product.name}`, category: product.category });
       });
     }
-  } catch (err) { return alert(err.message); }
+  } catch (err) { return showMessage('Choix incomplet', err.message); }
   addCartLine({ id: p.id, name: p.name, type: 'menu', category: p.category, detail: details.join(' / '), ticketChildren, price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods, selectedProducts });
   document.getElementById('choiceDialog').close();
   pendingChoiceProduct = null;
 }
 
 function openSettings() { draftConfig = clone(config); renderSettings(); document.getElementById('settingsDialog').showModal(); }
-function renderSettings() { renderProductEditor(); renderFoodEditor(); renderStockEditor(); renderGeneralEditor(); renderVolunteerEditor(); }
+function renderSettings() { renderProductEditor(); renderFoodEditor(); renderStockEditor(); renderGeneralEditor(); renderVolunteerEditor(); renderSettingsOrders(); renderSettingsReport(); }
 function renderProductEditor() {
   const el = document.getElementById('productEditor');
-  el.innerHTML = draftConfig.products.map((p, i) => {
+  const zones = ['Boissons', 'Restauration', 'Consignes'];
+  const byZone = Object.fromEntries(zones.map(z => [z, []]));
+  (draftConfig.products || []).forEach((p, i) => {
+    const zone = p.group || displayGroup(p.category);
+    (byZone[zone] ||= []).push({ p, i });
+  });
+
+  function productCard(p, i) {
     const detail = p.type === 'compose' ? renderChoiceEditor(p, i) : (p.type === 'menu' ? renderMenuEditor(p, i) : '');
-    return `<div class="product-edit-card"><div class="editor-row product-main"><div><small>Nom</small><input data-product="name" data-i="${i}" value="${escapeHtml(p.name)}"></div><div><small>Prix de base</small><input type="number" step="0.01" data-product="price" data-i="${i}" value="${p.price}"></div><div><small>Type</small><select data-product="type" data-i="${i}"><option value="simple" ${p.type === 'simple' ? 'selected' : ''}>produit simple</option><option value="compose" ${p.type === 'compose' ? 'selected' : ''}>produit composé</option><option value="menu" ${p.type === 'menu' ? 'selected' : ''}>menu</option></select></div><div><small>Catégorie</small><select data-product="category" data-i="${i}">${options(CATEGORIES, p.category)}</select></div><div class="checkline"><input type="checkbox" data-product="refundable" data-i="${i}" ${p.refundable ? 'checked' : ''}> Remboursable</div></div>${detail}</div>`;
+    return `<article class="product-edit-card clean-product-card">
+      <div class="editor-row product-main clean-product-main">
+        <div class="field-name"><small>Nom</small><input data-product="name" data-i="${i}" value="${escapeHtml(p.name)}"></div>
+        <div class="field-price"><small>Prix</small><input type="number" step="0.01" data-product="price" data-i="${i}" value="${p.price}"></div>
+        <div><small>Type</small><select data-product="type" data-i="${i}"><option value="simple" ${p.type === 'simple' ? 'selected' : ''}>simple</option><option value="compose" ${p.type === 'compose' ? 'selected' : ''}>composé</option><option value="menu" ${p.type === 'menu' ? 'selected' : ''}>menu</option></select></div>
+        <div><small>Catégorie</small><select data-product="category" data-i="${i}">${options(CATEGORIES, p.category)}</select></div>
+        <label class="checkline refundable-line"><input type="checkbox" data-product="refundable" data-i="${i}" ${p.refundable ? 'checked' : ''}> Remboursable</label>
+      </div>${detail}
+    </article>`;
+  }
+
+  el.innerHTML = zones.map(zone => {
+    const rows = byZone[zone] || [];
+    return `<section class="product-zone-editor ${groupClass(zone)}-editor">
+      <div class="product-zone-title"><strong>${zone}</strong><span>${rows.length} bouton${rows.length > 1 ? 's' : ''}</span></div>
+      <div class="product-zone-list">${rows.map(({ p, i }) => productCard(p, i)).join('')}</div>
+    </section>`;
   }).join('');
   el.querySelectorAll('[data-product]').forEach(x => x.addEventListener('change', updateProductDraft));
   el.querySelectorAll('[data-choice-field]').forEach(x => x.addEventListener('change', updateChoiceDraft));
@@ -520,15 +622,17 @@ function renderChoiceEditor(p, i) {
   return `<div class="choice-edit"><h4>Réglage produit composé</h4>${groups.map(cat => {
     let choice = (p.choices || []).find(c => c.category === cat) || { category: cat, min: 0, max: 0, clientChoice: false, options: [] };
     const foods = draftConfig.baseFoods.filter(f => f.category === cat);
-    return `<div><h4>${cat}</h4><div class="choice-rules"><label><input type="checkbox" data-choice-field="clientChoice" data-i="${i}" data-cat="${cat}" ${choice.clientChoice ? 'checked' : ''}> Choix laissé au client</label><label>Nombre à choisir <input type="number" min="0" data-choice-field="max" data-i="${i}" data-cat="${cat}" value="${choice.max || 0}"></label></div>${foods.map(f => { const opt = (choice.options || []).find(o => o.foodId === f.id); return `<div class="option-line"><label><input type="checkbox" data-choice-field="option" data-i="${i}" data-cat="${cat}" data-food-id="${f.id}" ${opt ? 'checked' : ''}> ${escapeHtml(f.name)}</label><label>Supplément <input type="number" step="0.01" data-choice-field="supplement" data-i="${i}" data-cat="${cat}" data-food-id="${f.id}" value="${opt?.supplement || 0}"></label></div>`; }).join('')}</div>`;
+    const gridClass = foods.length >= 4 ? 'settings-options-grid settings-options-grid-3' : 'settings-options-grid';
+    return `<div class="settings-choice-section"><h4>${cat}</h4><div class="choice-rules"><label><input type="checkbox" data-choice-field="clientChoice" data-i="${i}" data-cat="${cat}" ${choice.clientChoice ? 'checked' : ''}> Choix laissé au client</label><label>Nombre à choisir <input type="number" min="0" data-choice-field="max" data-i="${i}" data-cat="${cat}" value="${choice.max || 0}"></label></div><div class="${gridClass}">${foods.map(f => { const opt = (choice.options || []).find(o => o.foodId === f.id); return `<div class="option-card"><label class="option-card-name"><input type="checkbox" data-choice-field="option" data-i="${i}" data-cat="${cat}" data-food-id="${f.id}" ${opt ? 'checked' : ''}> ${escapeHtml(f.name)}</label><label class="option-card-supp">Suppl. <input type="number" step="0.01" data-choice-field="supplement" data-i="${i}" data-cat="${cat}" data-food-id="${f.id}" value="${opt?.supplement || 0}"></label></div>`; }).join('')}</div></div>`;
   }).join('')}</div>`;
 }
 function renderMenuEditor(p, i) {
   const sections = ['Boissons', 'Entrée', 'Plat', 'Fromage', 'Dessert'];
-  return `<div class="menu-edit"><h4>Réglage menu</h4><p class="hint">Chaque rubrique peut être fixe ou laissée au choix du client. Le plat peut être un produit simple ou un produit composé déjà paramétré.</p>${sections.map(section => {
+  return `<div class="menu-edit"><h4>Réglage menu</h4><p class="hint">Chaque rubrique peut être fixe ou laissée au choix du client. Le plat peut être un produit simple ou composé déjà paramétré.</p>${sections.map(section => {
     let cfg = (p.menuSections || []).find(c => c.section === section) || { section, clientChoice: false, max: 1, options: [] };
     const candidates = draftConfig.products.filter(prod => prod.id !== p.id && prod.name && (prod.category === section || (section === 'Boissons' && displayGroup(prod.category) === 'Boissons')));
-    return `<div class="menu-section"><h4>${section}</h4><div class="menu-rules"><label><input type="checkbox" data-menu-field="clientChoice" data-i="${i}" data-section="${section}" ${cfg.clientChoice ? 'checked' : ''}> Choix laissé au client</label><label>Nombre à choisir <input type="number" min="0" data-menu-field="max" data-i="${i}" data-section="${section}" value="${cfg.max || 1}"></label></div>${candidates.length ? candidates.map(prod => { const opt = (cfg.options || []).find(o => o.productId === prod.id); return `<div class="option-line"><label><input type="checkbox" data-menu-field="option" data-i="${i}" data-section="${section}" data-product-id="${prod.id}" ${opt ? 'checked' : ''}> ${escapeHtml(prod.name)} <small>(${prod.type === 'compose' ? 'composé' : 'simple'})</small></label><label>Supplément <input type="number" step="0.01" data-menu-field="supplement" data-i="${i}" data-section="${section}" data-product-id="${prod.id}" value="${opt?.supplement || 0}"></label></div>`; }).join('') : '<p class="hint">Aucun produit dans cette catégorie.</p>'}</div>`;
+    const gridClass = candidates.length >= 5 ? 'settings-options-grid settings-options-grid-3' : 'settings-options-grid';
+    return `<div class="menu-section"><h4>${section}</h4><div class="menu-rules"><label><input type="checkbox" data-menu-field="clientChoice" data-i="${i}" data-section="${section}" ${cfg.clientChoice ? 'checked' : ''}> Choix laissé au client</label><label>Nombre à choisir <input type="number" min="0" data-menu-field="max" data-i="${i}" data-section="${section}" value="${cfg.max || 1}"></label></div>${candidates.length ? `<div class="${gridClass}">${candidates.map(prod => { const opt = (cfg.options || []).find(o => o.productId === prod.id); return `<div class="option-card"><label class="option-card-name"><input type="checkbox" data-menu-field="option" data-i="${i}" data-section="${section}" data-product-id="${prod.id}" ${opt ? 'checked' : ''}> ${escapeHtml(prod.name)}</label><label class="option-card-supp">Suppl. <input type="number" step="0.01" data-menu-field="supplement" data-i="${i}" data-section="${section}" data-product-id="${prod.id}" value="${opt?.supplement || 0}"></label></div>`; }).join('')}</div>` : '<p class="hint">Aucun produit dans cette catégorie.</p>'}</div>`;
   }).join('')}</div>`;
 }
 function ensureChoice(p, cat) {
@@ -595,10 +699,19 @@ function renderVolunteerEditor() {
 }
 function renderStockEditor() {
   const el = document.getElementById('stockEditor');
-  const productRows = draftConfig.products.filter(p => p.name && p.type === 'simple').map(p => ({ kind: 'product', id: p.id, label: 'Produit simple - ' + p.name, value: p.stock }));
-  const foodRows = draftConfig.baseFoods.map(f => ({ kind: 'food', id: f.id, label: 'Aliment - ' + f.name, value: f.stock }));
-  el.innerHTML = [...productRows, ...foodRows].map(r => `<div class="editor-row stock"><div>${escapeHtml(r.label)}</div><input placeholder="vide = pas de suivi" data-stock-kind="${r.kind}" data-stock-id="${r.id}" value="${r.value ?? ''}"></div>`).join('');
-  el.querySelectorAll('[data-stock-kind]').forEach(x => x.addEventListener('change', e => { const kind = e.currentTarget.dataset.stockKind, id = e.currentTarget.dataset.stockId; const obj = kind === 'product' ? draftConfig.products.find(p => p.id === id) : draftConfig.baseFoods.find(f => f.id === id); obj.stock = e.currentTarget.value.trim(); }));
+  const productRows = draftConfig.products
+    .filter(p => p.name && p.type === 'simple')
+    .map(p => ({ kind: 'product', id: p.id, label: p.name, value: p.stock }));
+  const foodRows = draftConfig.baseFoods
+    .filter(f => f.name)
+    .map(f => ({ kind: 'food', id: f.id, label: f.name, value: f.stock }));
+  const rows = [...productRows, ...foodRows];
+  el.innerHTML = rows.map(r => `<div class="stock-card"><label>${escapeHtml(r.label)}</label><input inputmode="numeric" placeholder="vide = pas de suivi" data-stock-kind="${r.kind}" data-stock-id="${r.id}" value="${r.value ?? ''}"></div>`).join('');
+  el.querySelectorAll('[data-stock-kind]').forEach(x => x.addEventListener('change', e => {
+    const kind = e.currentTarget.dataset.stockKind, id = e.currentTarget.dataset.stockId;
+    const obj = kind === 'product' ? draftConfig.products.find(p => p.id === id) : draftConfig.baseFoods.find(f => f.id === id);
+    obj.stock = e.currentTarget.value.trim();
+  }));
 }
 function renderGeneralEditor() {
   document.getElementById('setEventName').value = draftConfig.eventName;
@@ -609,7 +722,10 @@ function renderGeneralEditor() {
   document.querySelectorAll('[data-cat-color]').forEach(x => x.addEventListener('change', e => { draftConfig.categoryColors[e.currentTarget.dataset.catColor] = e.currentTarget.value; }));
 }
 function saveSettings() {
-  draftConfig.eventName = document.getElementById('setEventName').value.trim() || 'Manifestation';
+  draftConfig.eventName = document.getElementById('setEventName').value.trim() || 'Comité des Fêtes-Moroges';
+  if (Array.isArray(draftConfig.volunteers)) {
+    draftConfig.volunteers.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'fr', { sensitivity: 'base' }));
+  }
   draftConfig.orderPrefix = document.getElementById('setPrefix').value;
   draftConfig.ticketColor = document.getElementById('setTicketColor').value;
   config = normalizeConfig(draftConfig); saveConfig(); renderProducts(); renderCart(); document.getElementById('settingsDialog').close();
@@ -617,20 +733,31 @@ function saveSettings() {
 
 
 
+function sortedVolunteers() {
+  return (config.volunteers || [])
+    .filter(v => v.active !== false)
+    .slice()
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'fr', { sensitivity: 'base' }));
+}
 function openVolunteerDialog() {
-  if (!cart.length) return alert('Commande vide');
-  const active = (config.volunteers || []).filter(v => v.active !== false);
-  if (!active.length) return alert('Ajoute au moins un bénévole dans Paramètres > Bénévoles.');
-  document.getElementById('volunteerSelect').innerHTML = active.map(v => `<option value="${escapeHtml(v.id)}">${escapeHtml(v.name)}</option>`).join('');
+  if (!cart.length) return showMessage('Commande vide', 'Ajoute au moins un produit avant de l’attribuer à un bénévole.');
+  const active = sortedVolunteers();
+  if (!active.length) return showMessage('Aucun bénévole', 'Ajoute au moins un bénévole dans Paramètres > Bénévoles.');
+  const select = document.getElementById('volunteerSelect');
+  if (select) select.innerHTML = active.map(v => `<option value="${escapeHtml(v.id)}">${escapeHtml(v.name)}</option>`).join('');
+  const grid = document.getElementById('volunteerButtons');
+  if (grid) {
+    grid.innerHTML = active.map(v => `<button type="button" class="volunteer-choice-btn" data-volunteer-id="${escapeHtml(v.id)}">${escapeHtml(v.name)}</button>`).join('');
+    grid.querySelectorAll('[data-volunteer-id]').forEach(btn => btn.addEventListener('click', e => validateVolunteerOrder(e.currentTarget.dataset.volunteerId)));
+  }
   document.getElementById('volunteerDialog').showModal();
 }
-function validateVolunteerOrder() {
-  const id = document.getElementById('volunteerSelect').value;
-  const v = (config.volunteers || []).find(x => x.id === id);
-  if (!v) return alert('Bénévole introuvable.');
+function validateVolunteerOrder(id) {
+  const selectedId = id || (document.getElementById('volunteerSelect') || {}).value;
+  const v = (config.volunteers || []).find(x => x.id === selectedId);
+  if (!v) return showMessage('Bénévole introuvable', 'Sélectionne un bénévole valide.');
   paymentMethod = 'Bénévole';
   paidCents = 0;
-  updatePayment();
   document.getElementById('volunteerDialog').close();
   validateSale({ kind: 'volunteer', paymentMethod: 'Bénévole - à régler', paid: 0, change: 0, volunteerId: v.id, volunteerName: v.name, settled: false });
 }
@@ -648,7 +775,7 @@ function openVolunteerPayment(volunteerId) {
 function validateVolunteerPayment() {
   const volunteerId = volunteerPayOrderNumber;
   const amount = volunteerPendingAmount(volunteerId);
-  if (!amount) return alert('Rien à régler.');
+  if (!amount) return showMessage('Rien à régler', 'Ce bénévole n’a pas de solde à payer.');
   const method = document.getElementById('volunteerPayMethod').value;
   sales.forEach(s => { if (s.kind === 'volunteer' && s.volunteerId === volunteerId && s.settled === false) { s.settled = true; s.paymentMethod = `Bénévole réglé ${method}`; } });
   sales.push({ kind: 'volunteer_payment', orderNumber: `BEN-${Date.now().toString().slice(-6)}`, date: new Date().toISOString(), paymentMethod: method, paid: amount, change: 0, total: amount, volunteerId, volunteerName: ((config.volunteers || []).find(v => v.id === volunteerId) || {}).name || '', items: [{ name: 'Règlement bénévole', qty: 1, price: amount, refundable: false }] });
@@ -665,8 +792,6 @@ function quickRefundProducts() {
 function openQuickRefund() {
   quickRefundFilter = '';
   document.getElementById('quickRefundSearch').value = '';
-  document.getElementById('quickRefundMethod').value = 'Espèces';
-  document.getElementById('quickRefundReason').value = 'Rupture de stock';
   renderQuickRefundLines();
   document.getElementById('quickRefundDialog').showModal();
 }
@@ -691,12 +816,13 @@ function updateQuickRefundTotal() {
 }
 function validateQuickRefund() {
   const items = selectedQuickRefundItems();
-  if (!items.length) return alert('Choisis au moins un produit à rembourser.');
+  if (!items.length) return showMessage('Remboursement vide', 'Choisis au moins un produit à rembourser.');
   const refundTotal = items.reduce((sum, i) => sum + i.qty * i.price, 0);
-  sales.push({ kind: 'refund', orderNumber: `RAP-${Date.now().toString().slice(-6)}`, originalOrderNumber: '', date: new Date().toISOString(), paymentMethod: document.getElementById('quickRefundMethod').value, paid: refundTotal, change: 0, total: refundTotal, reason: document.getElementById('quickRefundReason').value.trim() || 'Remboursement rapide', items });
+  sales.push({ kind: 'refund', orderNumber: `RAP-${Date.now().toString().slice(-6)}`, originalOrderNumber: '', date: new Date().toISOString(), paymentMethod: 'Espèces', paid: refundTotal, change: 0, total: refundTotal, reason: '', items });
   saveSales();
   document.getElementById('quickRefundDialog').close();
-  openReport();
+  renderSettingsReport();
+  showMessage('Remboursement enregistré', 'Le remboursement a été enregistré en espèces.');
 }
 
 let refundSaleIndex = null;
@@ -714,9 +840,7 @@ function paymentTotals() {
     return acc;
   }, {});
 }
-function openReport() {
-  const settingsDialog = document.getElementById('settingsDialog');
-  if (settingsDialog && settingsDialog.open) settingsDialog.close();
+function reportHtml() {
   const totals = paymentTotals();
   const gross = sales.filter(s => (s.kind || 'sale') === 'sale').reduce((a,s)=>a+Number(s.total||0),0);
   const refunds = sales.filter(s => s.kind === 'refund').reduce((a,s)=>a+Math.abs(Number(s.total||0)),0);
@@ -729,25 +853,45 @@ function openReport() {
     productMap[i.name].total += Number(i.qty || 0) * Number(i.price || 0);
   }));
   const productRows = Object.entries(productMap).sort((a,b)=>Math.abs(b[1].total)-Math.abs(a[1].total)).map(([name,v]) => `<tr><td>${escapeHtml(name)}</td><td>${v.qty}</td><td>${fmt(v.total)}</td></tr>`).join('');
-  document.getElementById('reportContent').innerHTML = `<div class="report-cards"><div><strong>Ventes brutes</strong><span>${fmt(gross)}</span></div><div><strong>Remboursements</strong><span>${fmt(refunds)}</span></div><div><strong>Total net encaissé</strong><span>${fmt(net)}</span></div><div><strong>Bénévoles à régler</strong><span>${fmt(volunteerPending)}</span></div><div><strong>Commandes</strong><span>${sales.filter(s => (s.kind || 'sale') === 'sale').length}</span></div></div><h3>Par paiement</h3><table class="data-table"><tbody>${Object.entries(totals).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${fmt(v)}</td></tr>`).join('')}</tbody></table><h3>Par produit</h3><table class="data-table"><thead><tr><th>Produit</th><th>Qté</th><th>Total</th></tr></thead><tbody>${productRows || '<tr><td colspan="3">Aucune vente</td></tr>'}</tbody></table>`;
   const volunteerRows = (config.volunteers || []).map(v => ({ v, amount: volunteerPendingAmount(v.id) })).filter(x => x.amount > 0).map(x => `<tr><td>${escapeHtml(x.v.name)}</td><td>${fmt(x.amount)}</td><td><button class="validate" data-pay-volunteer="${escapeHtml(x.v.id)}">Régler</button></td></tr>`).join('');
-  document.getElementById('reportContent').insertAdjacentHTML('beforeend', `<h3>Bénévoles à régler</h3><table class="data-table"><tbody>${volunteerRows || '<tr><td>Aucun montant en attente</td></tr>'}</tbody></table>`);
-  document.querySelectorAll('[data-pay-volunteer]').forEach(b => b.addEventListener('click', e => openVolunteerPayment(e.currentTarget.dataset.payVolunteer)));
+  return `<div class="report-cards"><div><strong>Ventes brutes</strong><span>${fmt(gross)}</span></div><div><strong>Remboursements</strong><span>${fmt(refunds)}</span></div><div><strong>Total net encaissé</strong><span>${fmt(net)}</span></div><div><strong>Bénévoles à régler</strong><span>${fmt(volunteerPending)}</span></div><div><strong>Commandes</strong><span>${sales.filter(s => (s.kind || 'sale') === 'sale').length}</span></div></div><h3>Par paiement</h3><table class="data-table"><tbody>${Object.entries(totals).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${fmt(v)}</td></tr>`).join('')}</tbody></table><h3>Par produit</h3><table class="data-table"><thead><tr><th>Produit</th><th>Qté</th><th>Total</th></tr></thead><tbody>${productRows || '<tr><td colspan="3">Aucune vente</td></tr>'}</tbody></table><h3>Bénévoles à régler</h3><table class="data-table"><tbody>${volunteerRows || '<tr><td>Aucun montant en attente</td></tr>'}</tbody></table>`;
+}
+function bindVolunteerPayButtons(root = document) {
+  root.querySelectorAll('[data-pay-volunteer]').forEach(b => b.addEventListener('click', e => openVolunteerPayment(e.currentTarget.dataset.payVolunteer)));
+}
+function renderSettingsReport() {
+  const el = document.getElementById('settingsReportContent');
+  if (!el) return;
+  el.innerHTML = reportHtml();
+  bindVolunteerPayButtons(el);
+}
+function openReport() {
+  document.getElementById('reportContent').innerHTML = reportHtml();
+  bindVolunteerPayButtons(document.getElementById('reportContent'));
   document.getElementById('reportDialog').showModal();
 }
-function openOrders() {
-  const settingsDialog = document.getElementById('settingsDialog');
-  if (settingsDialog && settingsDialog.open) settingsDialog.close();
-  const saleRows = sales.map((s, idx) => {
+function ordersHtml() {
+  return sales.map((s, idx) => {
     const isRefund = s.kind === 'refund';
     const isVolunteer = s.kind === 'volunteer';
     const items = (s.items || []).map(i => `${i.qty} x ${escapeHtml(i.name)} (${fmt(i.qty * i.price)})`).join('<br>');
-    const refundInfo = isVolunteer ? `<div class="hint">Bénévole : ${escapeHtml(s.volunteerName || '')} - ${s.settled === false ? 'à régler' : 'réglé'}</div>` : (!isRefund ? `<div class="hint">Déjà remboursé : ${fmt(refundAmountForSale(s.orderNumber))} / Net : ${fmt(netSaleTotal(s))}</div>` : `<div class="hint">Remboursement de ${escapeHtml(s.originalOrderNumber || '')} - ${escapeHtml(s.reason || '')}</div>`);
+    const refundInfo = isVolunteer ? `<div class="hint">Bénévole : ${escapeHtml(s.volunteerName || '')} - ${s.settled === false ? 'à régler' : 'réglé'}</div>` : (!isRefund ? `<div class="hint">Déjà remboursé : ${fmt(refundAmountForSale(s.orderNumber))} / Net : ${fmt(netSaleTotal(s))}</div>` : `<div class="hint">Remboursement en espèces</div>`);
     const btn = (!isRefund && !isVolunteer && netSaleTotal(s) > 0) ? `<button class="danger" data-refund-sale="${idx}">Rembourser</button>` : '';
     return `<div class="order-card ${isRefund ? 'refund-card' : ''}"><div><strong>${isRefund ? 'Remboursement' : 'Commande'} n° ${escapeHtml(s.orderNumber)}</strong><span>${formatDate(s.date)}</span></div><div>${items}</div><div class="order-bottom"><b>${fmt(s.total)}</b><span>${escapeHtml(s.paymentMethod || '')}</span>${btn}</div>${refundInfo}</div>`;
-  }).reverse().join('');
-  document.getElementById('ordersList').innerHTML = saleRows || '<p>Aucune commande enregistrée.</p>';
-  document.querySelectorAll('[data-refund-sale]').forEach(b => b.addEventListener('click', e => openRefund(Number(e.currentTarget.dataset.refundSale))));
+  }).reverse().join('') || '<p>Aucune commande enregistrée.</p>';
+}
+function bindRefundButtons(root = document) {
+  root.querySelectorAll('[data-refund-sale]').forEach(b => b.addEventListener('click', e => openRefund(Number(e.currentTarget.dataset.refundSale))));
+}
+function renderSettingsOrders() {
+  const el = document.getElementById('settingsOrdersList');
+  if (!el) return;
+  el.innerHTML = ordersHtml();
+  bindRefundButtons(el);
+}
+function openOrders() {
+  document.getElementById('ordersList').innerHTML = ordersHtml();
+  bindRefundButtons(document.getElementById('ordersList'));
   document.getElementById('ordersDialog').showModal();
 }
 function openRefund(index) {
@@ -756,8 +900,6 @@ function openRefund(index) {
   document.getElementById('refundTitle').textContent = `Remboursement commande n° ${s.orderNumber}`;
   document.getElementById('refundLines').innerHTML = (s.items || []).filter(i => i.refundable !== false && i.price > 0).map((i, lineIndex) => `<div class="editor-row refund-row"><div><strong>${escapeHtml(i.name)}</strong><small>${fmt(i.price)} / unité - acheté : ${i.qty}</small></div><input type="number" min="0" max="${i.qty}" value="0" data-refund-line="${lineIndex}"></div>`).join('') || '<p>Aucun produit remboursable dans cette commande.</p>';
   document.querySelectorAll('[data-refund-line]').forEach(x => x.addEventListener('input', updateRefundTotal));
-  document.getElementById('refundReason').value = '';
-  document.getElementById('refundMethod').value = s.paymentMethod || 'Espèces';
   updateRefundTotal();
   document.getElementById('refundDialog').showModal();
 }
@@ -779,13 +921,15 @@ function validateRefund() {
   if (refundSaleIndex === null) return;
   const original = sales[refundSaleIndex];
   const items = selectedRefundItems();
-  if (!items.length) return alert('Choisis au moins un produit à rembourser.');
+  if (!items.length) return showMessage('Remboursement vide', 'Choisis au moins un produit à rembourser.');
   const refundTotal = items.reduce((sum, i) => sum + i.qty * i.price, 0);
   const refundOrderNumber = `R-${original.orderNumber}-${Date.now().toString().slice(-4)}`;
-  sales.push({ kind: 'refund', orderNumber: refundOrderNumber, originalOrderNumber: original.orderNumber, date: new Date().toISOString(), paymentMethod: document.getElementById('refundMethod').value, paid: refundTotal, change: 0, total: refundTotal, reason: document.getElementById('refundReason').value.trim(), items });
+  sales.push({ kind: 'refund', orderNumber: refundOrderNumber, originalOrderNumber: original.orderNumber, date: new Date().toISOString(), paymentMethod: 'Espèces', paid: refundTotal, change: 0, total: refundTotal, reason: '', items });
   saveSales();
   document.getElementById('refundDialog').close();
-  openOrders();
+  renderSettingsOrders();
+  renderSettingsReport();
+  showMessage('Remboursement enregistré', 'Le remboursement a été enregistré en espèces.');
 }
 
 document.querySelectorAll('[data-key]').forEach(btn => btn.addEventListener('click', () => pressKey(btn.dataset.key)));
@@ -794,9 +938,9 @@ document.getElementById('btnExact').addEventListener('click', () => setQuickAmou
 document.querySelectorAll('.pay[data-method]').forEach(btn => btn.addEventListener('click', () => payAndPrint(btn.dataset.method)));
 const btnPrintTicket = document.getElementById('btnPrintTicket');
 if (btnPrintTicket) btnPrintTicket.addEventListener('click', () => { if (cart.length) { buildTicket(); window.print(); } });
-document.getElementById('btnClear').addEventListener('click', () => { if (cart.length && !confirm('Annuler la commande en cours ?')) return; cart = []; paidCents = 0; renderCart(); });
+document.getElementById('btnClear').addEventListener('click', () => { if (!cart.length) return; showConfirm('Annuler la commande', 'Supprimer toute la commande en cours ?', clearCurrentCart); });
 document.getElementById('btnReprintLast').addEventListener('click', reprintLastTicket);
-document.getElementById('btnExport').addEventListener('click', exportCsv);
+const btnExport = document.getElementById('btnExport'); if (btnExport) btnExport.addEventListener('click', exportCsv);
 document.getElementById('btnQuickRefund').addEventListener('click', openQuickRefund);
 document.getElementById('btnCloseQuickRefund').addEventListener('click', () => document.getElementById('quickRefundDialog').close());
 document.getElementById('btnValidateQuickRefund').addEventListener('click', validateQuickRefund);
@@ -806,8 +950,8 @@ document.getElementById('btnCloseVolunteer').addEventListener('click', () => doc
 document.getElementById('btnValidateVolunteer').addEventListener('click', validateVolunteerOrder);
 document.getElementById('btnCloseVolunteerPay').addEventListener('click', () => document.getElementById('volunteerPayDialog').close());
 document.getElementById('btnValidateVolunteerPayment').addEventListener('click', validateVolunteerPayment);
-document.getElementById('btnOrders').addEventListener('click', openOrders);
-document.getElementById('btnReport').addEventListener('click', openReport);
+const btnOrders = document.getElementById('btnOrders'); if (btnOrders) btnOrders.addEventListener('click', openOrders);
+const btnReport = document.getElementById('btnReport'); if (btnReport) btnReport.addEventListener('click', openReport);
 document.getElementById('btnCloseOrders').addEventListener('click', () => document.getElementById('ordersDialog').close());
 document.getElementById('btnCloseReport').addEventListener('click', () => document.getElementById('reportDialog').close());
 document.getElementById('btnCloseRefund').addEventListener('click', () => document.getElementById('refundDialog').close());
@@ -838,8 +982,19 @@ document.getElementById('btnCloseSettings').addEventListener('click', () => docu
 document.getElementById('btnSaveSettings').addEventListener('click', saveSettings);
 document.getElementById('btnAddFood').addEventListener('click', () => { draftConfig.baseFoods.push({ id: uid('food'), name: 'Nouvel aliment', category: 'Viande', stock: '' }); renderSettings(); });
 document.getElementById('btnAddVolunteer').addEventListener('click', () => { draftConfig.volunteers ||= []; draftConfig.volunteers.push({ id: uid('vol'), name: 'Nouveau bénévole', active: true }); renderVolunteerEditor(); });
-document.getElementById('btnReset').addEventListener('click', () => { if (confirm('Réinitialiser tous les paramètres ?')) { draftConfig = clone(DEFAULT_CONFIG); renderSettings(); } });
-document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.tab').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active')); btn.classList.add('active'); document.getElementById('tab-' + btn.dataset.tab).classList.add('active'); }));
+document.getElementById('btnReset').addEventListener('click', () => showConfirm('Réinitialiser les paramètres', 'Remettre tous les réglages par défaut ?', () => { draftConfig = clone(DEFAULT_CONFIG); renderSettings(); }));
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  if (btn.dataset.tab === 'orders') renderSettingsOrders();
+  if (btn.dataset.tab === 'report') renderSettingsReport();
+  if (btn.dataset.tab === 'export') exportCsv();
+}));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 renderProducts();
 renderCart();
+
+
+document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('btnCloseSettingsBottom'); if(b){b.addEventListener('click',()=>document.getElementById('settingsDialog')?.close());}});
