@@ -184,7 +184,7 @@ function normalizeConfig(c) {
   if (Array.isArray(c.products) && c.products[0] && !c.products[0].id) {
     c.products = c.products.map((p, i) => ({ id: 'p' + (i + 1), group: displayGroup(p.category), category: p.category || 'Plat', name: p.name || '', price: Number(p.price || 0), type: 'simple', components: [], refundable: true, stock: '' }));
   }
-  c.configVersion = 2026.11;
+  c.configVersion = 2026.12;
   c.eventName = base.eventName;
   c.orderPrefix ||= 'A';
   c.ticketColor ||= 'black';
@@ -224,7 +224,9 @@ function normalizeConfig(c) {
     });
   }
 
-  // v18.14 : le menu ne propose que les boissons autorisées.
+  // v2026.12 : le menu garde les suppléments modifiés dans les paramètres.
+  // Avant, cette étape réécrivait toujours les boissons du menu avec les prix par défaut,
+  // donc un supplément changé puis enregistré revenait à l'ancien prix.
   const menu = c.products.find(p => p.id === 'p-menu');
   if (menu) {
     menu.menuSections ||= [];
@@ -232,7 +234,7 @@ function normalizeConfig(c) {
     if (!drinks) { drinks = { section: 'Boissons', clientChoice: true, max: 1, options: [] }; menu.menuSections.unshift(drinks); }
     drinks.clientChoice = true;
     drinks.max = 1;
-    drinks.options = [
+    const defaultDrinkOptions = [
       { productId: 'p-eau-50', supplement: -0.50 },
       { productId: 'p-coca', supplement: 0 },
       { productId: 'p-oasis', supplement: 0 },
@@ -242,6 +244,11 @@ function normalizeConfig(c) {
       { productId: 'p-verre-blanc', supplement: 0.50 },
       { productId: 'p-verre-rouge', supplement: 0.50 }
     ];
+    const savedDrinkOptions = new Map((drinks.options || []).map(opt => [opt.productId, opt]));
+    drinks.options = defaultDrinkOptions.map(def => {
+      const saved = savedDrinkOptions.get(def.productId);
+      return { productId: def.productId, supplement: Number(saved?.supplement ?? def.supplement ?? 0) };
+    });
     let dessert = menu.menuSections.find(sec => sec.section === 'Dessert');
     if (dessert) dessert.options = (dessert.options || []).filter(o => o.productId !== 'p-glace-eau');
   }
