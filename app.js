@@ -519,13 +519,54 @@ function renderCart() {
   document.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', updateLine));
   updatePayment();
 }
+function restoreStock(productId, qty) {
+  const p = config.products.find(x => x.id === productId);
+  if (!p) return;
+  p.stock = Number(p.stock || 0) + Number(qty || 0);
+}
+
+function reserveStock(productId, qty) {
+  const p = config.products.find(x => x.id === productId);
+  if (!p) return false;
+
+  if (Number(p.stock || 0) < Number(qty || 0)) {
+    alert('Stock insuffisant pour ' + p.name);
+    renderProducts();
+    return false;
+  }
+
+  p.stock = Number(p.stock || 0) - Number(qty || 0);
+  return true;
+}
+
 function updateLine(e) {
   const index = Number(e.currentTarget.dataset.index);
   const action = e.currentTarget.dataset.action;
-  if (action === 'plus') cart[index].qty += 1;
-  if (action === 'minus') cart[index].qty -= 1;
-  if (action === 'delete' || cart[index].qty <= 0) cart.splice(index, 1);
+  const line = cart[index];
+  if (!line) return;
+
+  if (action === 'plus') {
+    if (!reserveStock(line.id, 1)) return;
+    line.qty += 1;
+  }
+
+  if (action === 'minus') {
+    restoreStock(line.id, 1);
+    line.qty -= 1;
+  }
+
+  if (action === 'delete') {
+    restoreStock(line.id, line.qty);
+    cart.splice(index, 1);
+  } else if (line.qty <= 0) {
+    cart.splice(index, 1);
+  }
+
+  saveConfig();
+
   if (paymentMethod === 'CB') paidCents = Math.round(total() * 100);
+
+  renderProducts();
   renderCart();
 }
 function updatePayment() {
