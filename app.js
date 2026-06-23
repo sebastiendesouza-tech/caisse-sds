@@ -466,17 +466,46 @@ function productButtonHtml(p) {
 function addProduct(id) {
   const p = config.products.find(x => x.id === id);
   if (!p || !p.name) return;
+
+  if (Number(p.stock || 0) <= 0) {
+    alert('Stock insuffisant pour ' + p.name);
+    renderProducts();
+    return;
+  }
+
   if (p.type === 'compose' && (p.choices || []).length) return openChoiceDialog(p);
   if (p.type === 'menu' && (p.menuSections || []).length) return openMenuDialog(p);
-  addCartLine({ id: p.id, name: p.name, category: p.category, price: p.price, qty: 1, refundable: p.refundable, selectedFoods: [] });
+
+  p.stock = Math.max(0, Number(p.stock || 0) - 1);
+  saveConfig();
+
+  addCartLine({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    price: p.price,
+    qty: 1,
+    refundable: p.refundable,
+    selectedFoods: []
+  });
+
+  renderProducts();
 }
+
 function addCartLine(lineData) {
-  const foodKey = (lineData.selectedFoods || []).map(x => `${x.foodId}:${x.qty || 1}`).sort().join(',');
+  const foodKey = (lineData.selectedFoods || [])
+    .map(x => `${x.foodId}:${x.qty || 1}`)
+    .sort()
+    .join(',');
+
   const key = lineData.id + '|' + foodKey + '|' + (lineData.detail || '') + '|' + lineData.price;
   const line = cart.find(i => i.key === key);
+
   if (line) line.qty += 1;
   else cart.push({ key, ...lineData });
+
   if (paymentMethod === 'CB') paidCents = Math.round(total() * 100);
+
   renderCart();
 }
 function renderCart() {
