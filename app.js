@@ -92,7 +92,6 @@ const GROUP_ORDER = ['Boissons', 'Restauration', 'Consignes'];
 const CATEGORIES = ['Boissons sans alcool', 'Boissons avec alcool', 'Boissons chaudes', 'Boissons', 'Entrée', 'Plat', 'Fromage', 'Dessert', 'Consigne', 'Retour consigne'];
 
 // === Connexion Supabase ===
-// Remplacez la valeur ci-dessous par votre Publishable key Supabase.
 const SUPABASE_URL = 'https://rounfqdogmrynvznqimv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Fq68zylBMnVFXrV7CvGMSg_qWNOKrZr';
 const SUPABASE_CONFIG_TABLE = 'caisse_config';
@@ -105,38 +104,6 @@ const supabaseClient = (window.supabase && SUPABASE_KEY)
 let supabaseReady = false;
 let supabaseSaving = false;
 let supabaseReceiving = false;
-
-if (supabaseClient) {
-  supabaseClient
-    .channel('caisse_config_realtime')
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: SUPABASE_CONFIG_TABLE,
-        filter: `id=eq.${SUPABASE_CONFIG_ID}`
-      },
-      (payload) => {
-        console.log('Mise à jour Supabase reçue', payload);
-
-        if (supabaseSaving) return;
-        if (!payload.new || !payload.new.data) return;
-
-        supabaseReceiving = true;
-        config = payload.new.data;
-        localStorage.setItem('caisse_config', JSON.stringify(config));
-
-        setTimeout(() => {
-          supabaseReceiving = false;
-          location.reload();
-        }, 300);
-      }
-    )
-    .subscribe((status) => {
-      console.log('Realtime Supabase:', status);
-    });
-}
 
 let storedConfig = JSON.parse(localStorage.getItem('caisse_config') || 'null');
 let config = normalizeConfig((!storedConfig || Number(storedConfig.configVersion || 0) < 13) ? DEFAULT_CONFIG : storedConfig);
@@ -155,6 +122,7 @@ const fmt = n => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: '
 const total = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 const paidAmount = () => paidCents / 100;
 function uid(prefix) { return prefix + '-' + Math.random().toString(36).slice(2, 8); }
+
 function saveConfig() {
   localStorage.setItem('caisse_config', JSON.stringify(config));
   saveConfigToSupabase();
@@ -162,9 +130,10 @@ function saveConfig() {
 
 async function loadConfigFromSupabase() {
   if (!supabaseClient) {
-    console.warn('Supabase non configuré : renseignez SUPABASE_KEY dans app.js');
+    console.warn('Supabase non configuré');
     return;
   }
+
   const { data, error } = await supabaseClient
     .from(SUPABASE_CONFIG_TABLE)
     .select('data')
@@ -175,21 +144,29 @@ async function loadConfigFromSupabase() {
     console.error('Erreur chargement Supabase', error);
     return;
   }
+
   if (data && data.data) {
     config = normalizeConfig(data.data);
     localStorage.setItem('caisse_config', JSON.stringify(config));
+
     if (draftConfig) draftConfig = clone(config);
+
     renderProducts();
     renderCart();
+
     const settingsDialog = document.getElementById('settingsDialog');
     if (settingsDialog && settingsDialog.open) renderSettings();
   }
+
   supabaseReady = true;
 }
 
 async function saveConfigToSupabase() {
+  if (supabaseReceiving) return;
   if (!supabaseClient || supabaseSaving) return;
+
   supabaseSaving = true;
+
   const { error } = await supabaseClient
     .from(SUPABASE_CONFIG_TABLE)
     .upsert({
@@ -197,35 +174,59 @@ async function saveConfigToSupabase() {
       data: config,
       updated_at: new Date().toISOString()
     });
+
   supabaseSaving = false;
+
   if (error) console.error('Erreur sauvegarde Supabase', error);
 }
 
 function startSupabaseRealtime() {
   if (!supabaseClient) return;
+
   supabaseClient
     .channel('caisse-config-sync')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: SUPABASE_CONFIG_TABLE,
-      filter: `id=eq.${SUPABASE_CONFIG_ID}`
-    }, payload => {
-      const remoteConfig = payload.new && payload.new.data;
-      if (!remoteConfig) return;
-      config = normalizeConfig(remoteConfig);
-      localStorage.setItem('caisse_config', JSON.stringify(config));
-      if (draftConfig) draftConfig = clone(config);
-      renderProducts();
-      renderCart();
-      const settingsDialog = document.getElementById('settingsDialog');
-      if (settingsDialog && settingsDialog.open) renderSettings();
-    })
-    .subscribe();
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: SUPABASE_CONFIG_TABLE,
+        filter: `id=eq.${SUPABASE_CONFIG_ID}`
+      },
+      payload => {
+        if (supabaseSaving) return;
+
+        const remoteConfig = payload.new && payload.new.data;
+        if (!remoteConfig) return;
+
+        console.log('Mise à jour Supabase reçue');
+
+        supabaseReceiving = true;
+
+        config = normalizeConfig(remoteConfig);
+        localStorage.setItem('caisse_config', JSON.stringify(config));
+
+        if (draftConfig) draftConfig = clone(config);
+
+        renderProducts();
+        renderCart();
+
+        const settingsDialog = document.getElementById('settingsDialog');
+        if (settingsDialog && settingsDialog.open) renderSettings();
+
+        setTimeout(() => {
+          supabaseReceiving = false;
+        }, 500);
+      }
+    )
+    .subscribe(status => {
+      console.log('Realtime Supabase:', status);
+    });
 }
 
 async function initSupabaseSync() {
   await loadConfigFromSupabase();
+
   if (supabaseClient) {
     if (!supabaseReady) await saveConfigToSupabase();
     startSupabaseRealtime();
