@@ -267,8 +267,23 @@ function showConfirm(title, text, onConfirm) {
   ok.onclick = () => { dlg.close(); if (typeof onConfirm === 'function') onConfirm(); };
   dlg.showModal();
 }
-function clearCurrentCart() { cart = []; paidCents = 0; renderCart(); }
+function clearCurrentCart() {
 
+  cart.forEach(line => {
+    const p = config.products.find(x => x.id === line.id);
+    if (p) {
+      p.stock = Number(p.stock || 0) + Number(line.qty || 0);
+    }
+  });
+
+  saveConfig();
+
+  cart = [];
+  paidCents = 0;
+
+  renderProducts();
+  renderCart();
+}
 function compactChoiceOptions(choice) {
   if (!choice || !Array.isArray(choice.options)) return;
   const byFood = new Map();
