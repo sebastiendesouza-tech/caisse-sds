@@ -230,6 +230,10 @@ async function initSupabaseSync() {
   if (supabaseClient) {
     if (!supabaseReady) await saveConfigToSupabase();
     startSupabaseRealtime();
+
+    setTimeout(() => {
+      loadConfigFromSupabase();
+    }, 1500);
   }
 }
 function saveSales() { localStorage.setItem('caisse_sales', JSON.stringify(sales)); }
