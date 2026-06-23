@@ -12,7 +12,7 @@ const PALETTE = {
 };
 
 const DEFAULT_CONFIG = {
-  configVersion: 2026.11,
+  configVersion: 2026.13,
   eventName: 'Comité des Fêtes-Moroges',
   orderPrefix: 'A',
   ticketColor: 'black',
@@ -91,7 +91,7 @@ const DEFAULT_CONFIG = {
 const GROUP_ORDER = ['Boissons', 'Restauration', 'Consignes'];
 const CATEGORIES = ['Boissons sans alcool', 'Boissons avec alcool', 'Boissons chaudes', 'Boissons', 'Entrée', 'Plat', 'Fromage', 'Dessert', 'Consigne', 'Retour consigne'];
 let storedConfig = JSON.parse(localStorage.getItem('caisse_config') || 'null');
-let config = normalizeConfig((!storedConfig || Number(storedConfig.configVersion || 0) < 12) ? DEFAULT_CONFIG : storedConfig);
+let config = normalizeConfig((!storedConfig || Number(storedConfig.configVersion || 0) < 13) ? DEFAULT_CONFIG : storedConfig);
 let draftConfig = null;
 let cart = [];
 let paymentMethod = 'Espèces';
@@ -337,7 +337,7 @@ function productButtonHtml(p) {
   const out = !stockAvailable(p);
   const stockLabel = isTracked(p.stock) ? `<em class="btn-stock">Stock ${Number(p.stock)}</em>` : '';
   const sub = `${fmt(p.price)}${out ? ' - rupture' : ''}`;
-  return `<button class="product-btn ${out ? 'out-stock' : ''}" style="${style}" data-id="${p.id}" ${out ? 'disabled' : ''}><strong>${escapeHtml(p.name)}</strong><span>${sub}</span>${stockLabel}</button>`;
+  return `<button class="product-btn ${out ? 'out-stock stock-warning' : ''}" style="${style}" data-id="${p.id}"><strong>${escapeHtml(p.name)}</strong><span>${sub}</span>${stockLabel}</button>`;
 }
 function addProduct(id) {
   const p = config.products.find(x => x.id === id);
@@ -384,11 +384,9 @@ function pressKey(key) { if (key === 'clear') paidCents = 0; else if (key === 'b
 function setQuickAmount(amount) { paidCents = Math.round(amount * 100); updatePayment(); }
 function payAndPrint(method) {
   if (!cart.length) return showMessage('Commande vide', 'Ajoute au moins un produit avant de valider.');
-  if (method === 'CB' && total() < 0) return showMessage('Rendu impossible en CB', 'Un remboursement ou un retour consigne se fait uniquement en espèces.');
   paymentMethod = method;
   if (total() <= 0) paidCents = 0;
   else if (method === 'CB') paidCents = Math.round(total() * 100);
-  if (method === 'Espèces' && total() > 0 && paidAmount() < total()) return showMessage('Montant insuffisant', 'La somme payée est inférieure au total dû. Ajoute le montant reçu ou utilise Exact.');
   updatePayment();
   validateSale();
 }
@@ -422,11 +420,10 @@ function ticketLineBlock(line) {
 function ticketItemCompare(a, b) {
   return ticketSortIndex(a.category) - ticketSortIndex(b.category) || a.order - b.order;
 }
-function buildTicket() {
-  const number = `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`;
+function ticketHtmlFromData(number, items, method, totalAmount, paidValue = 0, changeValue = 0) {
   const regularLines = [];
   const menuBlocks = [];
-  cart.forEach((item, cartIndex) => {
+  (items || []).forEach((item, cartIndex) => {
     if (item.type === 'menu') {
       const children = (item.ticketChildren || []).map((child, childIndex) => ({
         order: childIndex,
@@ -472,7 +469,19 @@ function buildTicket() {
     ...regularLines.map(ticketLineBlock),
     ...menuBlocks.map(block => ticketLineBlock(block.main) + block.children.map(ticketLineBlock).join(''))
   ].join('');
-  const html = `<div class="ticket-title">Commande n° ${number}</div>${lines}<div class="ticket-bottom">${paymentMethod}</div><div class="ticket-bottom">Total : ${fmt(total())}</div>`;
+  const cashDetails = method === 'Espèces' ? `<div class="ticket-bottom">Payé : ${fmt(paidValue)}</div><div class="ticket-bottom">À rendre : ${fmt(changeValue)}</div>` : '';
+  return `<div class="ticket-title">Commande n° ${escapeHtml(number)}</div>${lines}<div class="ticket-bottom">${escapeHtml(method || '')}</div><div class="ticket-bottom">Total : ${fmt(totalAmount)}</div>${cashDetails}`;
+}
+function printTicketForSale(sale) {
+  const html = ticketHtmlFromData(sale.orderNumber, sale.items || [], sale.paymentMethod || paymentMethod, Number(sale.total || 0), Number(sale.paid || 0), Number(sale.change || 0));
+  document.getElementById('printArea').innerHTML = html;
+  lastTicketHtml = html;
+  saveLastTicket();
+  window.print();
+}
+function buildTicket() {
+  const number = `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`;
+  const html = ticketHtmlFromData(number, cart, paymentMethod, total(), paidAmount(), Math.max(0, paidAmount() - total()));
   document.getElementById('printArea').innerHTML = html;
   lastTicketHtml = html;
   saveLastTicket();
@@ -482,11 +491,15 @@ function reprintLastTicket() {
   document.getElementById('printArea').innerHTML = lastTicketHtml;
   window.print();
 }
+function saleTimestampParts(date = new Date()) {
+  return { date: date.toISOString(), hour: date.getHours(), hourLabel: `${String(date.getHours()).padStart(2, '0')}h-${String(date.getHours() + 1).padStart(2, '0')}h` };
+}
 function validateSale(extra = {}) {
-  const shouldPrint = total() > 0 && extra.print !== false;
+  const shouldPrint = extra.print !== false;
   if (shouldPrint) buildTicket();
   const kind = extra.kind || 'sale';
-  sales.push({ kind, orderNumber: `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`, date: new Date().toISOString(), paymentMethod: extra.paymentMethod || paymentMethod, paid: extra.paid ?? paidAmount(), change: extra.change ?? Math.max(0, paidAmount() - total()), total: total(), items: clone(cart), volunteerId: extra.volunteerId || '', volunteerName: extra.volunteerName || '', settled: extra.settled ?? true, refunds: [] });
+  const stamp = saleTimestampParts();
+  sales.push({ kind, orderNumber: `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`, date: stamp.date, hour: stamp.hour, hourLabel: stamp.hourLabel, paymentMethod: extra.paymentMethod || paymentMethod, paid: extra.paid ?? paidAmount(), change: extra.change ?? Math.max(0, paidAmount() - total()), total: total(), items: clone(cart), volunteerId: extra.volunteerId || '', volunteerName: extra.volunteerName || '', settled: extra.settled ?? true, refunds: [] });
   consumeStock();
   saveSales();
   if (shouldPrint) window.print();
@@ -495,8 +508,8 @@ function validateSale(extra = {}) {
 function exportCsv() {
   const settingsDialog = document.getElementById('settingsDialog');
   if (settingsDialog && settingsDialog.open) settingsDialog.close();
-  const rows = [['type','commande','date','paiement','benevole','regle','paye','rendu','produit','quantite','prix_unitaire','total_ligne','total_commande','motif']];
-  sales.forEach(s => (s.items || []).forEach(i => rows.push([s.kind || 'sale', s.orderNumber, s.date, s.paymentMethod, s.volunteerName || '', s.settled === false ? 'non' : 'oui', s.paid || '', s.change || '', i.name, i.qty, i.price, i.qty * i.price, s.total, s.reason || ''])));
+  const rows = [['type','commande','date','heure','paiement','benevole','regle','paye','rendu','produit','quantite','prix_unitaire','total_ligne','total_commande','motif']];
+  sales.forEach(s => (s.items || []).forEach(i => rows.push([s.kind || 'sale', s.orderNumber, s.date, s.hourLabel || orderHourLabel(s), s.paymentMethod, s.volunteerName || '', s.settled === false ? 'non' : 'oui', s.paid || '', s.change || '', i.name, i.qty, i.price, i.qty * i.price, s.total, s.reason || ''])));
   const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(';')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ventes-caisse.csv'; a.click();
@@ -896,8 +909,11 @@ function validateVolunteerPayment() {
   if (!amount) return showMessage('Rien à régler', 'Ce bénévole n’a pas de solde à payer.');
   const method = document.getElementById('volunteerPayMethod').value;
   sales.forEach(s => { if (s.kind === 'volunteer' && s.volunteerId === volunteerId && s.settled === false) { s.settled = true; s.paymentMethod = `Bénévole réglé ${method}`; } });
-  sales.push({ kind: 'volunteer_payment', orderNumber: `BEN-${Date.now().toString().slice(-6)}`, date: new Date().toISOString(), paymentMethod: method, paid: amount, change: 0, total: amount, volunteerId, volunteerName: ((config.volunteers || []).find(v => v.id === volunteerId) || {}).name || '', items: [{ name: 'Règlement bénévole', qty: 1, price: amount, refundable: false }] });
+  const stamp = saleTimestampParts();
+  const paymentSale = { kind: 'volunteer_payment', orderNumber: `BEN-${Date.now().toString().slice(-6)}`, date: stamp.date, hour: stamp.hour, hourLabel: stamp.hourLabel, paymentMethod: method, paid: amount, change: 0, total: amount, volunteerId, volunteerName: ((config.volunteers || []).find(v => v.id === volunteerId) || {}).name || '', items: [{ name: 'Règlement bénévole', qty: 1, price: amount, refundable: true }] };
+  sales.push(paymentSale);
   saveSales();
+  printTicketForSale(paymentSale);
   document.getElementById('volunteerPayDialog').close();
   openReport();
 }
@@ -905,7 +921,7 @@ function validateVolunteerPayment() {
 let quickRefundFilter = '';
 function quickRefundProducts() {
   const q = quickRefundFilter.trim().toLowerCase();
-  return (config.products || []).filter(p => p.name && p.refundable !== false && Number(p.price || 0) > 0 && (!q || p.name.toLowerCase().includes(q) || String(p.category || '').toLowerCase().includes(q)));
+  return (config.products || []).filter(p => p.name && Number(p.price || 0) !== 0 && (!q || p.name.toLowerCase().includes(q) || String(p.category || '').toLowerCase().includes(q)));
 }
 function openQuickRefund() {
   quickRefundFilter = '';
@@ -936,8 +952,11 @@ function validateQuickRefund() {
   const items = selectedQuickRefundItems();
   if (!items.length) return showMessage('Remboursement vide', 'Choisis au moins un produit à rembourser.');
   const refundTotal = items.reduce((sum, i) => sum + i.qty * i.price, 0);
-  sales.push({ kind: 'refund', orderNumber: `RAP-${Date.now().toString().slice(-6)}`, originalOrderNumber: '', date: new Date().toISOString(), paymentMethod: 'Espèces', paid: refundTotal, change: 0, total: refundTotal, reason: '', items });
+  const stamp = saleTimestampParts();
+  const refundSale = { kind: 'refund', orderNumber: `RAP-${Date.now().toString().slice(-6)}`, originalOrderNumber: '', date: stamp.date, hour: stamp.hour, hourLabel: stamp.hourLabel, paymentMethod: 'Espèces', paid: refundTotal, change: 0, total: refundTotal, reason: '', items };
+  sales.push(refundSale);
   saveSales();
+  printTicketForSale(refundSale);
   document.getElementById('quickRefundDialog').close();
   renderSettingsReport();
   showMessage('Remboursement enregistré', 'Le remboursement a été enregistré en espèces.');
@@ -948,6 +967,7 @@ function saleTotal(s) { return Number(s.total || 0); }
 function refundAmountForSale(orderNumber) { return sales.filter(x => x.kind === 'refund' && x.originalOrderNumber === orderNumber).reduce((sum, r) => sum + Math.abs(Number(r.total || 0)), 0); }
 function netSaleTotal(s) { return saleTotal(s) - refundAmountForSale(s.orderNumber); }
 function formatDate(iso) { try { return new Date(iso).toLocaleString('fr-FR'); } catch { return iso || ''; } }
+function orderHourLabel(s) { const d = new Date(s.date || 0); return Number.isFinite(d.getTime()) ? `${String(d.getHours()).padStart(2, '0')}h-${String(d.getHours() + 1).padStart(2, '0')}h` : ''; }
 function salesForReport() {
   if (!reportResetAt) return sales;
   const limit = new Date(reportResetAt).getTime();
@@ -958,26 +978,43 @@ function salesForReport() {
 }
 function computeReportData(list = salesForReport()) {
   const totals = {};
+  const productMap = {};
+  const foodMap = {};
+  const hourMap = {};
+  (config.products || []).filter(p => p.name).forEach(p => { productMap[p.name] ||= { qty: 0, total: 0 }; });
+  (config.baseFoods || []).filter(f => f.name).forEach(f => { foodMap[f.name] ||= { qty: 0 }; });
   list.forEach(s => {
     const kind = s.kind || 'sale';
-    if (kind === 'volunteer') return;
-    const method = s.paymentMethod || 'Inconnu';
-    totals[method] ||= 0;
-    totals[method] += Number(s.total || 0);
+    if (kind !== 'volunteer') {
+      const method = s.paymentMethod || 'Inconnu';
+      totals[method] ||= 0;
+      totals[method] += Number(s.total || 0);
+    }
+    if (kind === 'sale' || kind === 'volunteer') {
+      const h = s.hourLabel || orderHourLabel(s) || 'Heure inconnue';
+      hourMap[h] ||= { orders: 0, total: 0 };
+      hourMap[h].orders += 1;
+      hourMap[h].total += Number(s.total || 0);
+    }
+    (s.items || []).forEach(i => {
+      const name = i.name || 'Produit sans nom';
+      productMap[name] ||= { qty: 0, total: 0 };
+      productMap[name].qty += Number(i.qty || 0);
+      productMap[name].total += Number(i.qty || 0) * Number(i.price || 0);
+      (i.selectedFoods || []).forEach(f => {
+        const fname = f.name || ((config.baseFoods || []).find(x => x.id === f.foodId) || {}).name || f.foodId || 'Aliment';
+        foodMap[fname] ||= { qty: 0 };
+        foodMap[fname].qty += Number(i.qty || 0) * Number(f.qty || 1);
+      });
+    });
   });
   const gross = list.filter(s => (s.kind || 'sale') === 'sale').reduce((a,s)=>a+Number(s.total||0),0);
   const refunds = list.filter(s => s.kind === 'refund').reduce((a,s)=>a+Math.abs(Number(s.total||0)),0);
   const volunteerPending = list.filter(s => s.kind === 'volunteer' && s.settled === false).reduce((a,s)=>a+Number(s.total||0),0);
-  const productMap = {};
-  list.forEach(s => (s.items || []).forEach(i => {
-    productMap[i.name] ||= { qty: 0, total: 0 };
-    productMap[i.name].qty += Number(i.qty || 0);
-    productMap[i.name].total += Number(i.qty || 0) * Number(i.price || 0);
-  }));
-  return { totals, gross, refunds, volunteerPending, productMap, orderCount: list.filter(s => (s.kind || 'sale') === 'sale').length };
+  return { totals, gross, refunds, volunteerPending, productMap, foodMap, hourMap, orderCount: list.filter(s => (s.kind || 'sale') === 'sale').length };
 }
 function mergeReportData(a, b) {
-  const out = { totals: {}, gross: 0, refunds: 0, volunteerPending: 0, productMap: {}, orderCount: 0 };
+  const out = { totals: {}, gross: 0, refunds: 0, volunteerPending: 0, productMap: {}, foodMap: {}, hourMap: {}, orderCount: 0 };
   [a, b].filter(Boolean).forEach(src => {
     out.gross += Number(src.gross || 0);
     out.refunds += Number(src.refunds || 0);
@@ -989,7 +1026,18 @@ function mergeReportData(a, b) {
       out.productMap[name].qty += Number(v.qty || 0);
       out.productMap[name].total += Number(v.total || 0);
     });
+    Object.entries(src.foodMap || {}).forEach(([name,v]) => {
+      out.foodMap[name] ||= { qty: 0 };
+      out.foodMap[name].qty += Number(v.qty || 0);
+    });
+    Object.entries(src.hourMap || {}).forEach(([name,v]) => {
+      out.hourMap[name] ||= { orders: 0, total: 0 };
+      out.hourMap[name].orders += Number(v.orders || 0);
+      out.hourMap[name].total += Number(v.total || 0);
+    });
   });
+  (config.products || []).filter(p => p.name).forEach(p => { out.productMap[p.name] ||= { qty: 0, total: 0 }; });
+  (config.baseFoods || []).filter(f => f.name).forEach(f => { out.foodMap[f.name] ||= { qty: 0 }; });
   return out;
 }
 function visibleReportData() {
@@ -1005,9 +1053,11 @@ function reportHtml() {
   const refunds = Number(data.refunds || 0);
   const volunteerPending = Number(data.volunteerPending || 0);
   const net = gross - refunds;
-  const productRows = Object.entries(data.productMap || {}).sort((a,b)=>Math.abs(b[1].total)-Math.abs(a[1].total)).map(([name,v]) => `<tr><td>${escapeHtml(name)}</td><td>${v.qty}</td><td>${fmt(v.total)}</td></tr>`).join('');
+  const productRows = Object.entries(data.productMap || {}).sort((a,b)=>a[0].localeCompare(b[0], 'fr')).map(([name,v]) => `<tr><td>${escapeHtml(name)}</td><td>${v.qty}</td><td>${fmt(v.total)}</td></tr>`).join('');
+  const foodRows = Object.entries(data.foodMap || {}).sort((a,b)=>a[0].localeCompare(b[0], 'fr')).map(([name,v]) => `<tr><td>${escapeHtml(name)}</td><td>${v.qty}</td></tr>`).join('');
+  const hourRows = Object.entries(data.hourMap || {}).sort((a,b)=>a[0].localeCompare(b[0], 'fr')).map(([hour,v]) => `<tr><td>${escapeHtml(hour)}</td><td>${v.orders}</td><td>${fmt(v.total)}</td></tr>`).join('');
   const volunteerRows = (config.volunteers || []).map(v => ({ v, amount: volunteerPendingAmount(v.id) })).filter(x => x.amount > 0).map(x => `<tr><td>${escapeHtml(x.v.name)}</td><td>${fmt(x.amount)}</td><td><button class="validate" data-pay-volunteer="${escapeHtml(x.v.id)}">Régler</button></td></tr>`).join('');
-  return `<div class="report-cards"><div><strong>Ventes brutes</strong><span>${fmt(gross)}</span></div><div><strong>Remboursements</strong><span>${fmt(refunds)}</span></div><div><strong>Total net encaissé</strong><span>${fmt(net)}</span></div><div><strong>Bénévoles à régler</strong><span>${fmt(volunteerPending)}</span></div><div><strong>Commandes</strong><span>${data.orderCount || 0}</span></div></div><h3>Par paiement</h3><table class="data-table"><tbody>${Object.entries(totals).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${fmt(v)}</td></tr>`).join('')}</tbody></table><h3>Par produit</h3><table class="data-table"><thead><tr><th>Produit</th><th>Qté</th><th>Total</th></tr></thead><tbody>${productRows || '<tr><td colspan="3">Aucune vente</td></tr>'}</tbody></table><h3>Bénévoles à régler</h3><table class="data-table"><tbody>${volunteerRows || '<tr><td>Aucun montant en attente</td></tr>'}</tbody></table>`;
+  return `<div class="report-cards"><div><strong>Ventes brutes</strong><span>${fmt(gross)}</span></div><div><strong>Remboursements</strong><span>${fmt(refunds)}</span></div><div><strong>Total net encaissé</strong><span>${fmt(net)}</span></div><div><strong>Bénévoles à régler</strong><span>${fmt(volunteerPending)}</span></div><div><strong>Commandes</strong><span>${data.orderCount || 0}</span></div></div><h3>Par paiement</h3><table class="data-table"><tbody>${Object.entries(totals).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${fmt(v)}</td></tr>`).join('')}</tbody></table><h3>Statistiques horaires des commandes</h3><table class="data-table"><thead><tr><th>Heure</th><th>Commandes</th><th>Total</th></tr></thead><tbody>${hourRows || '<tr><td colspan="3">Aucune commande</td></tr>'}</tbody></table><h3>Tous les produits</h3><table class="data-table"><thead><tr><th>Produit</th><th>Qté</th><th>Total</th></tr></thead><tbody>${productRows || '<tr><td colspan="3">Aucun produit</td></tr>'}</tbody></table><h3>Tous les aliments</h3><table class="data-table"><thead><tr><th>Aliment</th><th>Qté utilisée</th></tr></thead><tbody>${foodRows || '<tr><td colspan="2">Aucun aliment</td></tr>'}</tbody></table><h3>Bénévoles à régler</h3><table class="data-table"><tbody>${volunteerRows || '<tr><td>Aucun montant en attente</td></tr>'}</tbody></table>`;
 }
 function bindVolunteerPayButtons(root = document) {
   root.querySelectorAll('[data-pay-volunteer]').forEach(b => b.addEventListener('click', e => openVolunteerPayment(e.currentTarget.dataset.payVolunteer)));
@@ -1041,7 +1091,7 @@ function ordersHtml() {
     const volunteerToggle = isVolunteer ? `<button class="secondary" data-toggle-volunteer-order="${idx}">${s.settled === false ? 'Marquer réglé' : 'Marquer à régler'}</button>` : '';
     const refundInfo = isVolunteer ? `<div class="hint">Bénévole : ${escapeHtml(s.volunteerName || '')} - ${s.settled === false ? 'à régler' : 'réglé'}</div>` : (!isRefund ? `<div class="hint">Déjà remboursé : ${fmt(refundAmountForSale(s.orderNumber))} / Net : ${fmt(netSaleTotal(s))}</div>` : `<div class="hint">Remboursement en espèces</div>`);
     const btn = (!isRefund && !isVolunteer && netSaleTotal(s) > 0) ? `<button class="danger" data-refund-sale="${idx}">Rembourser</button>` : volunteerToggle;
-    return `<div class="order-card ${isRefund ? 'refund-card' : ''}"><div><strong>${isRefund ? 'Remboursement' : 'Commande'} n° ${escapeHtml(s.orderNumber)}</strong><span>${formatDate(s.date)}</span></div><div>${items}</div><div class="order-bottom"><b>${fmt(s.total)}</b><span>${escapeHtml(s.paymentMethod || '')}</span>${btn}</div>${refundInfo}</div>`;
+    return `<div class="order-card ${isRefund ? 'refund-card' : ''}"><div><strong>${isRefund ? 'Remboursement' : 'Commande'} n° ${escapeHtml(s.orderNumber)}</strong><span>${formatDate(s.date)} - ${escapeHtml(s.hourLabel || orderHourLabel(s))}</span></div><div>${items}</div><div class="order-bottom"><b>${fmt(s.total)}</b><span>${escapeHtml(s.paymentMethod || '')}</span>${btn}</div>${refundInfo}</div>`;
   }).reverse().join('') || '<p>Aucune commande enregistrée.</p>';
 }
 function bindRefundButtons(root = document) {
@@ -1064,14 +1114,14 @@ function openRefund(index) {
   refundSaleIndex = index;
   const s = sales[index];
   document.getElementById('refundTitle').textContent = `Remboursement commande n° ${s.orderNumber}`;
-  document.getElementById('refundLines').innerHTML = (s.items || []).filter(i => i.refundable !== false && i.price > 0).map((i, lineIndex) => `<div class="editor-row refund-row"><div><strong>${escapeHtml(i.name)}</strong><small>${fmt(i.price)} / unité - acheté : ${i.qty}</small></div><input type="number" min="0" max="${i.qty}" value="0" data-refund-line="${lineIndex}"></div>`).join('') || '<p>Aucun produit remboursable dans cette commande.</p>';
+  document.getElementById('refundLines').innerHTML = (s.items || []).filter(i => Number(i.price || 0) !== 0).map((i, lineIndex) => `<div class="editor-row refund-row"><div><strong>${escapeHtml(i.name)}</strong><small>${fmt(i.price)} / unité - acheté : ${i.qty}</small></div><input type="number" min="0" max="${i.qty}" value="0" data-refund-line="${lineIndex}"></div>`).join('') || '<p>Aucun produit remboursable dans cette commande.</p>';
   document.querySelectorAll('[data-refund-line]').forEach(x => x.addEventListener('input', updateRefundTotal));
   updateRefundTotal();
   document.getElementById('refundDialog').showModal();
 }
 function selectedRefundItems() {
   const s = sales[refundSaleIndex];
-  const refundable = (s.items || []).filter(i => i.refundable !== false && i.price > 0);
+  const refundable = (s.items || []).filter(i => Number(i.price || 0) !== 0);
   return Array.from(document.querySelectorAll('[data-refund-line]')).map(input => {
     const original = refundable[Number(input.dataset.refundLine)];
     const qty = Math.max(0, Math.min(Number(input.value || 0), Number(original.qty || 0)));
@@ -1090,8 +1140,11 @@ function validateRefund() {
   if (!items.length) return showMessage('Remboursement vide', 'Choisis au moins un produit à rembourser.');
   const refundTotal = items.reduce((sum, i) => sum + i.qty * i.price, 0);
   const refundOrderNumber = `R-${original.orderNumber}-${Date.now().toString().slice(-4)}`;
-  sales.push({ kind: 'refund', orderNumber: refundOrderNumber, originalOrderNumber: original.orderNumber, date: new Date().toISOString(), paymentMethod: 'Espèces', paid: refundTotal, change: 0, total: refundTotal, reason: '', items });
+  const stamp = saleTimestampParts();
+  const refundSale = { kind: 'refund', orderNumber: refundOrderNumber, originalOrderNumber: original.orderNumber, date: stamp.date, hour: stamp.hour, hourLabel: stamp.hourLabel, paymentMethod: 'Espèces', paid: refundTotal, change: 0, total: refundTotal, reason: '', items };
+  sales.push(refundSale);
   saveSales();
+  printTicketForSale(refundSale);
   document.getElementById('refundDialog').close();
   renderSettingsOrders();
   renderSettingsReport();
