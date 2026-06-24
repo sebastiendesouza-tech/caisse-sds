@@ -276,9 +276,17 @@ function startSupabaseRealtime() {
         console.log('Mise à jour Supabase reçue');
 
         supabaseReceiving = true;
+        console.log('remoteConfig eventName =', remoteConfig.eventName);
+console.log('remoteConfig currentEventId =', remoteConfig.currentEventId);
+config = normalizeConfig(remoteConfig);
 
-        config = normalizeConfig(remoteConfig);
-        localStorage.setItem('caisse_config', JSON.stringify(config));
+if (config.currentEventId) {
+  currentEventId = config.currentEventId;
+  localStorage.setItem('caisse_event_id', currentEventId);
+}
+
+localStorage.setItem('caisse_config', JSON.stringify(config));
+renderEventTitle();
 
         if (draftConfig) draftConfig = clone(config);
 
