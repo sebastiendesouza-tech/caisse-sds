@@ -1407,6 +1407,8 @@ async function renderSettingsReport() {
 async function openOrders() {
   await loadSalesFromSupabase();
 
+  console.log('Ventes Supabase chargées', supabaseSales);
+
   const previousSales = sales;
 
   if (supabaseSales.length) {
