@@ -1413,6 +1413,26 @@ async function openReport() {
 
   sales = previousSales;
 }
+function startNewEvent() {
+  if (!confirm('Démarrer une nouvelle manifestation ? Les ventes locales seront remises à zéro.')) return;
+
+  const name = prompt('Nom de la manifestation ?', 'Nouvelle manifestation');
+  if (!name) return;
+
+  currentEventId = 'event-' + Date.now();
+  localStorage.setItem('caisse_event_id', currentEventId);
+
+  sales = [];
+  localStorage.setItem('caisse_sales', JSON.stringify(sales));
+
+  orderNumber = 1;
+  saveOrderNumber();
+
+  alert('Nouvelle manifestation créée : ' + name);
+}
+
+
+
 function ordersHtml() {
   return sales.map((s, idx) => {
     const isRefund = s.kind === 'refund';
