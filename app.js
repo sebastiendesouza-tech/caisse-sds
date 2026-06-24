@@ -162,7 +162,33 @@ async function loadSalesFromSupabase() {
     .map(row => row.sale_data)
     .filter(Boolean);
 }
+async function syncOrderNumberFromSupabase() {
+  if (!supabaseClient) return;
 
+  const { data, error } = await supabaseClient
+    .from('sales')
+    .select('order_number')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error('Erreur lecture dernier ticket', error);
+    return;
+  }
+
+  if (!data || !data.length) return;
+
+  const lastOrder = data[0].order_number || '';
+
+  const match = lastOrder.match(/(\d+)$/);
+  if (!match) return;
+
+  orderNumber = Number(match[1]) + 1;
+
+  saveOrderNumber();
+
+  console.log('Prochain ticket :', orderNumber);
+}
 
 async function loadConfigFromSupabase() {
   if (!supabaseClient) {
