@@ -1380,12 +1380,22 @@ function ordersHtml() {
 function bindRefundButtons(root = document) {
   root.querySelectorAll('[data-refund-sale]').forEach(b => b.addEventListener('click', e => openRefund(Number(e.currentTarget.dataset.refundSale))));
 }
-function renderSettingsOrders() {
-  const el = document.getElementById('settingsOrdersList');
+async function renderSettingsReport() {
+  const el = document.getElementById('settingsReportContent');
   if (!el) return;
-  el.innerHTML = ordersHtml();
-  bindRefundButtons(el);
+
+  await loadSalesFromSupabase();
+
+  const previousSales = sales;
+
+  if (supabaseSales.length) {
+    sales = supabaseSales;
+  }
+
+  el.innerHTML = reportHtml();
   bindVolunteerPayButtons(el);
+
+  sales = previousSales;
 }
 function openOrders() {
   document.getElementById('ordersList').innerHTML = ordersHtml();
