@@ -117,7 +117,7 @@ let reportArchive = JSON.parse(localStorage.getItem('caisse_report_archive') || 
 let reportResetAt = localStorage.getItem('caisse_report_reset_at') || '';
 let lastTicketHtml = localStorage.getItem('caisse_last_ticket_html') || '';
 let pendingChoiceProduct = null;
-
+let currentEventId = localStorage.getItem('caisse_event_id') || 'event-1';
 const fmt = n => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 const total = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 const paidAmount = () => paidCents / 100;
@@ -138,7 +138,8 @@ async function saveSaleToSupabase(sale) {
       hour: sale.hour,
       payment_method: sale.paymentMethod,
       total: sale.total,
-      sale_data: sale
+      sale_data: sale,
+      event_id: currentEventId
     });
 
   if (error) {
