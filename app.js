@@ -410,15 +410,15 @@ function normalizeConfig(c) {
     c.products = c.products.map((p, i) => ({ id: 'p' + (i + 1), group: displayGroup(p.category), category: p.category || 'Plat', name: p.name || '', price: Number(p.price || 0), type: 'simple', components: [], refundable: true, stock: '' }));
   }
   c.configVersion = 2026.12;
-  c.eventName = base.eventName;
+c.eventName ||= base.eventName;
   c.orderPrefix ||= 'A';
   c.ticketColor ||= 'black';
   c.baseFoods ||= base.baseFoods;
   c.volunteers ||= base.volunteers;
-  if (previousVersion < 18.17) {
-    c.eventName = base.eventName;
-    c.volunteers = clone(base.volunteers);
-  }
+if (previousVersion < 18.17) {
+  c.eventName ||= base.eventName;
+  c.volunteers ||= clone(base.volunteers);
+}
   c.categoryColors ||= base.categoryColors;
   c.products ||= base.products;
   c.products.forEach((p, i) => { p.id ||= 'p' + (i + 1); p.group ||= displayGroup(p.category); p.type ||= 'simple'; p.components ||= []; p.choices ||= []; p.menuSections ||= []; p.refundable = p.refundable !== false; p.stock ??= ''; });
