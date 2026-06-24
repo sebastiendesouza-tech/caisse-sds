@@ -288,7 +288,7 @@ function startSupabaseRealtime() {
 
 async function initSupabaseSync() {
   await loadConfigFromSupabase();
-
+await syncOrderNumberFromSupabase();
   if (supabaseClient) {
     if (!supabaseReady) await saveConfigToSupabase();
     startSupabaseRealtime();
