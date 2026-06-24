@@ -104,7 +104,7 @@ const supabaseClient = (window.supabase && SUPABASE_KEY)
 let supabaseReady = false;
 let supabaseSaving = false;
 let supabaseReceiving = false;
-
+let supabaseSales = [];
 let storedConfig = JSON.parse(localStorage.getItem('caisse_config') || 'null');
 let config = normalizeConfig((!storedConfig || Number(storedConfig.configVersion || 0) < 13) ? DEFAULT_CONFIG : storedConfig);
 let draftConfig = null;
