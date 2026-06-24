@@ -745,6 +745,30 @@ dialog { border: 0; border-radius: 18px; width: min(1180px, 96vw); max-height: 9
   box-shadow: none !important;
   border-top: 1px solid #e5e7eb;
 }
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
 
+.dashboard-card {
+  background: #111827;
+  color: white;
+  border-radius: 16px;
+  padding: 18px;
+  text-align: center;
+}
+
+.dashboard-card strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.dashboard-card span {
+  font-size: 28px;
+  font-weight: 800;
+}
 
 .ticket-subline .ticket-product{padding-left:24px;font-size:.95em;}
