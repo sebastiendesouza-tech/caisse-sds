@@ -933,9 +933,22 @@ function addMenuProduct() {
 function renderSettingsOrders() {
   const el = document.getElementById('settingsOrdersList');
   if (!el) return;
-  el.innerHTML = ordersHtml();
-  bindRefundButtons(el);
-  bindVolunteerPayButtons(el);
+
+  el.innerHTML = '<p>Chargement des commandes...</p>';
+
+  loadSalesFromSupabase().then(() => {
+    const previousSales = sales;
+
+    if (supabaseSales.length) {
+      sales = supabaseSales;
+    }
+
+    el.innerHTML = ordersHtml();
+    bindRefundButtons(el);
+    bindVolunteerPayButtons(el);
+
+    sales = previousSales;
+  });
 }
 function openSettings() { draftConfig = clone(config); renderSettings(); updateSettingsResetButton(); document.getElementById('settingsDialog').showModal(); }
 function renderSettings() { renderProductEditor(); renderFoodEditor(); renderStockEditor(); renderGeneralEditor(); renderVolunteerEditor(); renderSettingsOrders(); renderSettingsReport(); }
