@@ -1431,9 +1431,8 @@ localStorage.setItem('caisse_event_id', currentEventId);
 
 config.currentEventId = currentEventId;
 config.eventName = name;
-  renderEventTitle();
 saveConfig();
-
+ renderEventTitle();
   sales = [];
   localStorage.setItem('caisse_sales', JSON.stringify(sales));
 
