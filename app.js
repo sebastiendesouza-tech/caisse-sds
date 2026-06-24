@@ -118,7 +118,7 @@ let reportResetAt = localStorage.getItem('caisse_report_reset_at') || '';
 let lastTicketHtml = localStorage.getItem('caisse_last_ticket_html') || '';
 let pendingChoiceProduct = null;
 let currentEventId = localStorage.getItem('caisse_event_id') || 'event-1';
-const fmt = n => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
+const fmt = n => new Intl.NumberFormat('fr-FR', { : 'currency', currency: 'EUR' }).format(n || 0);
 const total = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 const paidAmount = () => paidCents / 100;
 function uid(prefix) { return prefix + '-' + Math.random().toString(36).slice(2, 8); }
@@ -333,7 +333,7 @@ function showMessage(title, text) {
   if (!dlg) { window.alert((title ? title + '\n' : '') + (text || '')); return; }
   document.getElementById('messageTitle').textContent = title || 'Information';
   document.getElementById('messageText').textContent = text || '';
-  document.getElementById('messageCancel').style.display = 'none';
+  document.getElementById('messageCancel')..display = 'none';
   const ok = document.getElementById('messageOk');
   ok.textContent = 'OK';
   ok.onclick = () => dlg.close();
@@ -346,7 +346,7 @@ function showConfirm(title, text, onConfirm) {
   document.getElementById('messageText').textContent = text || '';
   const cancel = document.getElementById('messageCancel');
   const ok = document.getElementById('messageOk');
-  cancel.style.display = '';
+  cancel..display = '';
   cancel.textContent = 'Non';
   ok.textContent = 'Oui';
   cancel.onclick = () => dlg.close();
@@ -535,7 +535,7 @@ function renderProducts() {
   console.log('renderProducts eventName =', config.eventName);
   const eventTitle = document.getElementById('eventTitle');
   if (eventTitle) eventTitle.textContent = config.eventName || 'Comité des Fêtes';
-  document.documentElement.style.setProperty('--ticket-color', config.ticketColor);
+  document.documentElement..setProperty('--ticket-color', config.ticketColor);
   const wrap = document.getElementById('categories');
   const meat = document.getElementById('meatStock');
   const groups = {};
@@ -558,7 +558,7 @@ function renderMeatStockBox() {
 }
 function productButtonHtml(p) {
   const col = colorFor(p.category);
-  const style = `background:${col.bg};color:${col.fg}`;
+  const  = `background:${col.bg};color:${col.fg}`;
   if (!p.name) return `<button class="product-btn empty-product" style="${style}" disabled><strong>Libre</strong></button>`;
   const out = !stockAvailable(p);
   const stockLabel = isTracked(p.stock) ? `<em class="btn-stock">Stock ${Number(p.stock)}</em>` : '';
