@@ -213,6 +213,11 @@ async function loadConfigFromSupabase() {
 
   if (data && data.data) {
     config = normalizeConfig(data.data);
+    renderEventTitle();
+    if (config.currentEventId) {
+  currentEventId = config.currentEventId;
+  localStorage.setItem('caisse_event_id', currentEventId);
+}
     localStorage.setItem('caisse_config', JSON.stringify(config));
 
     if (draftConfig) draftConfig = clone(config);
@@ -1421,9 +1426,13 @@ function startNewEvent() {
 
   const name = prompt('Nom de la manifestation ?', 'Nouvelle manifestation');
   if (!name) return;
+currentEventId = 'event-' + Date.now();
+localStorage.setItem('caisse_event_id', currentEventId);
 
-  currentEventId = 'event-' + Date.now();
-  localStorage.setItem('caisse_event_id', currentEventId);
+config.currentEventId = currentEventId;
+config.eventName = name;
+  renderEventTitle();
+saveConfig();
 
   sales = [];
   localStorage.setItem('caisse_sales', JSON.stringify(sales));
@@ -1434,7 +1443,10 @@ function startNewEvent() {
   alert('Nouvelle manifestation créée : ' + name);
 }
 
-
+function renderEventTitle() {
+  const el = document.getElementById('eventTitle');
+  if (el) el.textContent = config.eventName || 'Caisse';
+}
 
 function ordersHtml() {
   return sales.map((s, idx) => {
@@ -1680,6 +1692,7 @@ function resetWholeApplication() {
   saveLastTicket();
   renderSettings();
   renderProducts();
+  renderEventTitle();
   renderCart();
   updatePayment();
   showMessage('Application réinitialisée', "L'application est revenue aux réglages par défaut.");
