@@ -624,7 +624,7 @@ function payAndPrint(method) {
   if (total() <= 0) paidCents = 0;
   else if (method === 'CB') paidCents = Math.round(total() * 100);
   updatePayment();
-  ();
+  validateSale({ paymentMethod: method });
 }
 
 function consumeStock() {
