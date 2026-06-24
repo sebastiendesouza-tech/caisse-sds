@@ -524,6 +524,7 @@ function ticketSortIndex(category) {
 }
 
 function renderProducts() {
+  console.log('renderProducts eventName =', config.eventName);
   const eventTitle = document.getElementById('eventTitle');
   if (eventTitle) eventTitle.textContent = config.eventName || 'Comité des Fêtes';
   document.documentElement.style.setProperty('--ticket-color', config.ticketColor);
@@ -1434,6 +1435,7 @@ localStorage.setItem('caisse_event_id', currentEventId);
 
 config.currentEventId = currentEventId;
 config.eventName = name;
+  console.log('Nouveau nom manifestation =', config.eventName);
 saveConfig();
  renderEventTitle();
   sales = [];
