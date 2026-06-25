@@ -118,7 +118,10 @@ let reportResetAt = localStorage.getItem('caisse_report_reset_at') || '';
 let lastTicketHtml = localStorage.getItem('caisse_last_ticket_html') || '';
 let pendingChoiceProduct = null;
 let currentEventId = localStorage.getItem('caisse_event_id') || 'event-1';
-const fmt = n => new Intl.NumberFormat('fr-FR', { : 'currency', currency: 'EUR' }).format(n || 0);
+const fmt = n => new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR'
+}).format(n || 0);
 const total = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 const paidAmount = () => paidCents / 100;
 function uid(prefix) { return prefix + '-' + Math.random().toString(36).slice(2, 8); }
