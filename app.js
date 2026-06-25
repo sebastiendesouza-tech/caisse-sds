@@ -368,16 +368,20 @@ renderEventTitle();
 
 async function initSupabaseSync() {
   await loadConfigFromSupabase();
-await syncOrderNumberFromSupabase();
+  await syncOrderNumberFromSupabase();
+  await registerDevice();
+
   if (supabaseClient) {
     if (!supabaseReady) await saveConfigToSupabase();
     startSupabaseRealtime();
 
     setTimeout(() => {
       loadConfigFromSupabase();
+      registerDevice();
     }, 1500);
   }
 }
+
 function saveSales() { localStorage.setItem('caisse_sales', JSON.stringify(sales)); }
 function saveReportState() {
   if (reportArchive) localStorage.setItem('caisse_report_archive', JSON.stringify(reportArchive));
