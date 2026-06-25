@@ -384,7 +384,7 @@ function showConfirm(title, text, onConfirm) {
   document.getElementById('messageText').textContent = text || '';
   const cancel = document.getElementById('messageCancel');
   const ok = document.getElementById('messageOk');
-  cancel..display = '';
+  cancel.style.display = '';
   cancel.textContent = 'Non';
   ok.textContent = 'Oui';
   cancel.onclick = () => dlg.close();
