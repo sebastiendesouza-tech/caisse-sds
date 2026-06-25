@@ -1810,10 +1810,6 @@ document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', (
   updateSettingsResetButton();
 }));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-renderProducts();
-renderCart();
-initSupabaseSync();
-
 function initDeviceSetupDialog() {
   const dialog = document.getElementById('deviceSetupDialog');
   const btnSave = document.getElementById('btnSaveDeviceConfig');
@@ -1848,4 +1844,13 @@ function initDeviceSetupDialog() {
     dialog.showModal();
   }
 }
+renderProducts();
+renderCart();
+initSupabaseSync();
+renderProducts();
+renderCart();
+initSupabaseSync();
+initDeviceSetupDialog();
+
+
 document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('btnCloseSettingsBottom'); if(b){b.addEventListener('click',()=>document.getElementById('settingsDialog')?.close());}});
