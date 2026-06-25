@@ -226,7 +226,26 @@ function getDeviceCode() {
   const deviceConfig = getDeviceConfig();
   return deviceConfig?.deviceCode || config?.orderPrefix || 'A';
 }
+async function isDeviceCodeAvailable(deviceCode) {
+  if (!supabaseClient) return true;
 
+  const { data, error } = await supabaseClient
+    .from('devices')
+    .select('device_name,current_device')
+    .eq('device_code', deviceCode)
+    .single();
+
+  if (error || !data) return true;
+
+  // Si le poste est libre
+  if (!data.current_device) return true;
+
+  // Si c'est déjà CE même appareil (redémarrage)
+  if (data.current_device === getDeviceInstanceId()) return true;
+
+  // Sinon il est occupé
+  return false;
+}
 function getDeviceName() {
   const deviceConfig = getDeviceConfig();
   return deviceConfig?.deviceName || 'Appareil inconnu';
