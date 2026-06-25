@@ -249,20 +249,44 @@
     </div>
   </dialog>
 
-  
-  <dialog id="messageDialog" class="no-print message-dialog">
-    <div class="message-box">
-      <h2 id="messageTitle">Information</h2>
-      <p id="messageText"></p>
-      <div class="message-actions">
-        <button id="messageCancel" class="secondary" type="button">Non</button>
-        <button id="messageOk" class="validate" type="button">OK</button>
-      </div>
-    </div>
-  </dialog>
-
-
   <section id="printArea" class="print-ticket"></section>
+
+<dialog id="deviceSetupDialog" class="no-print">
+  <div class="settings">
+    <div class="settings-head">
+      <h2>Configuration de l'appareil</h2>
+    </div>
+
+    <p class="hint">
+      Cette configuration est propre à cet appareil et ne sera pas synchronisée avec les autres caisses.
+    </p>
+
+    <label>Nom de l'appareil</label>
+    <input id="deviceName" placeholder="Exemple : PC Bar ou iPad Entrée">
+
+    <label>Poste de caisse</label>
+    <select id="deviceCode">
+      <option value="A">A - Caisse centrale</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+    </select>
+
+    <label>Mode d'impression</label>
+    <select id="devicePrintMode">
+      <option value="central">Centralisée</option>
+      <option value="direct">Directe (secours)</option>
+      <option value="none">Aucune</option>
+    </select>
+
+    <div class="settings-actions">
+      <button id="btnSaveDeviceConfig" class="validate">
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</dialog>  
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
