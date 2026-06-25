@@ -205,7 +205,16 @@ function getDeviceConfig() {
     return null;
   }
 }
+function getDeviceInstanceId() {
+  let id = localStorage.getItem('sds_device_instance_id');
 
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('sds_device_instance_id', id);
+  }
+
+  return id;
+}
 function saveDeviceConfig(deviceConfig) {
   localStorage.setItem(DEVICE_CONFIG_KEY, JSON.stringify(deviceConfig));
 }
