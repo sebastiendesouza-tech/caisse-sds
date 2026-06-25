@@ -1814,5 +1814,38 @@ renderProducts();
 renderCart();
 initSupabaseSync();
 
+function initDeviceSetupDialog() {
+  const dialog = document.getElementById('deviceSetupDialog');
+  const btnSave = document.getElementById('btnSaveDeviceConfig');
 
+  if (!dialog || !btnSave) return;
+
+  btnSave.addEventListener('click', () => {
+    const deviceName = document.getElementById('deviceName').value.trim();
+    const deviceCode = document.getElementById('deviceCode').value;
+    const printMode = document.getElementById('devicePrintMode').value;
+
+    if (!deviceName) {
+      showMessage('Configuration incomplète', 'Indique un nom pour cet appareil.');
+      return;
+    }
+
+    saveDeviceConfig({
+      deviceName,
+      deviceCode,
+      printMode
+    });
+
+    dialog.close();
+
+    showMessage(
+      'Appareil configuré',
+      `Cet appareil est configuré comme caisse ${deviceCode}.`
+    );
+  });
+
+  if (!getDeviceConfig()) {
+    dialog.showModal();
+  }
+}
 document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('btnCloseSettingsBottom'); if(b){b.addEventListener('click',()=>document.getElementById('settingsDialog')?.close());}});
