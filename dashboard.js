@@ -5,14 +5,14 @@
 // Initialisation
 
 // Fonctions publiques
-function updateCentralDashboard() {
-
+ffunction updateCentralDashboard() {
     const panel = document.getElementById("centralDashboard");
 
     if (!panel) return;
 
     if (getDeviceCode() !== "A") {
         panel.style.display = "none";
+        panel.innerHTML = "";
         return;
     }
 

@@ -1890,7 +1890,7 @@ function initDeviceSetupDialog() {
     });
 
     dialog.close();
-
+    updateCentralDashboard();
     showMessage(
       'Appareil configuré',
       `Cet appareil est configuré comme caisse ${deviceCode}.`
