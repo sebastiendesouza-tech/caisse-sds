@@ -2,9 +2,62 @@
 // SDS Dashboard Service
 // =====================================================
 
-// Initialisation
+function showCashierView() {
+    const cashierView = document.getElementById("cashierView");
+    const dashboardView = document.getElementById("dashboardView");
+    const btnCashier = document.getElementById("btnCashierView");
+    const btnDashboard = document.getElementById("btnDashboardView");
 
-// Fonctions publiques
+    if (cashierView) cashierView.style.display = "grid";
+    if (dashboardView) dashboardView.style.display = "none";
+
+    if (btnCashier) btnCashier.classList.add("active");
+    if (btnDashboard) btnDashboard.classList.remove("active");
+}
+
+function showDashboardView() {
+    if (getDeviceCode() !== "A") {
+        showCashierView();
+        return;
+    }
+
+    const cashierView = document.getElementById("cashierView");
+    const dashboardView = document.getElementById("dashboardView");
+    const btnCashier = document.getElementById("btnCashierView");
+    const btnDashboard = document.getElementById("btnDashboardView");
+
+    if (cashierView) cashierView.style.display = "none";
+    if (dashboardView) dashboardView.style.display = "block";
+
+    if (btnCashier) btnCashier.classList.remove("active");
+    if (btnDashboard) btnDashboard.classList.add("active");
+
+    updateCentralDashboard();
+    refreshCentralDashboard();
+}
+
+function initDashboardViewSwitcher() {
+    const btnCashier = document.getElementById("btnCashierView");
+    const btnDashboard = document.getElementById("btnDashboardView");
+
+    if (getDeviceCode() === "A") {
+        if (btnCashier) btnCashier.style.display = "inline-block";
+        if (btnDashboard) btnDashboard.style.display = "inline-block";
+    } else {
+        if (btnCashier) btnCashier.style.display = "none";
+        if (btnDashboard) btnDashboard.style.display = "none";
+        showCashierView();
+    }
+
+    if (btnCashier) {
+        btnCashier.onclick = showCashierView;
+    }
+
+    if (btnDashboard) {
+        btnDashboard.onclick = showDashboardView;
+    }
+}
+
 function updateCentralDashboard() {
     const panel = document.getElementById("centralDashboard");
 
@@ -19,48 +72,48 @@ function updateCentralDashboard() {
     panel.style.display = "block";
 
     panel.innerHTML = `
-    <div id="dashboardStatus"></div>
+        <div id="dashboardStatus"></div>
 
-    <hr>
+        <hr>
 
-    <div id="dashboardTickets"></div>
+        <div id="dashboardTickets"></div>
 
-    <hr>
+        <hr>
 
-    <div id="dashboardDevices"></div>
+        <div id="dashboardDevices"></div>
 
-    <hr>
+        <hr>
 
-    <div id="dashboardPrinter"></div>
-  `;
+        <div id="dashboardPrinter"></div>
+    `;
 }
+
 function updateDashboardStatus() {
     const el = document.getElementById("dashboardStatus");
     if (!el) return;
 
     el.innerHTML = `
-    <strong>🖥 Poste central</strong><br>
-    🟢 Supabase connecté
-  `;
+        <strong>🖥 Poste central</strong><br>
+        🟢 Supabase connecté
+    `;
 }
 
 function updateDashboardPrinter(message) {
-
     const el = document.getElementById("dashboardPrinter");
 
     if (!el) return;
 
     el.innerHTML = `
-    <strong>🖨 Impression</strong><br>
-    ${message}
-  `;
+        <strong>🖨 Impression</strong><br>
+        ${message}
+    `;
 }
+
 function refreshCentralDashboard() {
+    if (getDeviceCode() !== "A") return;
 
     checkPendingPrints();
-
     checkConnectedDevices();
-
 }
 
 async function releaseOtherDevices() {
@@ -95,7 +148,6 @@ async function releaseOtherDevices() {
     );
 }
 
-// Fonctions privées
 async function checkPendingPrints() {
     if (!supabaseClient) return;
 
@@ -109,16 +161,18 @@ async function checkPendingPrints() {
         console.error(error);
         return;
     }
+
     const ticketList = data
         .map(sale => `${sale.order_number} — ${fmt(sale.total)} — Caisse ${sale.device_code || '?'}`)
         .join("<br>");
 
     const ticketsEl = document.getElementById("dashboardTickets");
+
     if (ticketsEl) {
         ticketsEl.innerHTML = `
-    🧾 Tickets en attente : <strong>${data.length}</strong><br><br>
-    ${ticketList || "Aucun ticket en attente"}
-  `;
+            🧾 Tickets en attente : <strong>${data.length}</strong><br><br>
+            ${ticketList || "Aucun ticket en attente"}
+        `;
     }
 }
 
@@ -145,8 +199,11 @@ async function checkConnectedDevices() {
             ).join("<br>") +
             `<br><br>
             <button type="button" class="secondary" onclick="releaseOtherDevices()">
-            🔓 Libérer les autres caisses
+                🔓 Libérer les autres caisses
             </button>`;
     }
 }
-// Utilitaires
+
+document.addEventListener("DOMContentLoaded", () => {
+    initDashboardViewSwitcher();
+});

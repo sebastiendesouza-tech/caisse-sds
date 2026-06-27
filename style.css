@@ -29,13 +29,14 @@ button {
 }
 
 .topbar {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  padding: 10px 14px;
-  background: #111827;
+  gap: 16px;
+
+  background: #161c2d;
   color: white;
+  padding: 10px 14px;
 }
 
 h1 {
@@ -44,13 +45,13 @@ h1 {
 }
 
 .event-title {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  justify-self: center;
+  align-self: center;
+
   font-size: 21px;
   font-weight: 900;
   white-space: nowrap;
+
   pointer-events: none;
 }
 
@@ -65,6 +66,8 @@ h3 {
 
 .top-actions {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
 }
 
@@ -2068,4 +2071,22 @@ dialog {
 .ticket-subline .ticket-product {
   padding-left: 24px;
   font-size: .95em;
+}
+
+.dashboard-view {
+  padding: 12px;
+  height: calc(100dvh - 62px);
+  overflow: auto;
+}
+
+.dashboard-panel {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 8px #0001;
+}
+
+.view-toggle.active {
+  background: #2563eb;
+  color: white;
 }

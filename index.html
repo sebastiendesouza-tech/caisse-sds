@@ -15,17 +15,20 @@
 <body>
 
   <header class="topbar no-print">
-    <div>
+    <div class="brand-block">
       <h1>Caisse by SDS 2<small>(iPad Chrome)</small> <span class="version-badge">v2026.13</span></h1>
-      <div id="eventTitle" class="event-title">Comité des Fêtes-Moroges</div>
-      <div id="centralDashboard" style="display:none"></div>
     </div>
+
+    <div id="eventTitle" class="event-title">Comité des Fêtes-Moroges</div>
+
     <div class="top-actions">
+      <button id="btnCashierView" class="secondary view-toggle active" style="display:none">Caisse</button>
+      <button id="btnDashboardView" class="secondary view-toggle" style="display:none">Tableau de bord</button>
       <button id="btnSettings" class="secondary">Paramètres</button>
     </div>
   </header>
 
-  <main class="app no-print">
+  <main id="cashierView" class="app no-print">
     <section class="products-zone">
       <div id="categories"></div>
       <div id="meatStock"></div>
@@ -81,6 +84,12 @@
 
       <p class="payment-hint">Clique sur Espèces ou CB pour valider et imprimer.</p>
       <button id="btnQuickRefund" class="secondary refund-shortcut caisse-action">Remboursement</button>
+    </section>
+  </main>
+  <main id="dashboardView" class="dashboard-view no-print" style="display:none">
+    <section class="dashboard-panel">
+      <h2>Tableau de bord</h2>
+      <div id="centralDashboard"></div>
     </section>
   </main>
 
