@@ -270,6 +270,29 @@ function getDeviceName() {
   const deviceConfig = getDeviceConfig();
   return deviceConfig?.deviceName || 'Appareil inconnu';
 }
+
+function renderDeviceInfo() {
+  const el = document.getElementById("deviceInfo");
+  if (!el) return;
+
+  const device = getDeviceConfig();
+
+  if (!device) {
+    el.textContent = "";
+    return;
+  }
+
+  const mode =
+    device.printMode === "central"
+      ? "🖨 Impression : Centralisée"
+      : "🖨 Impression : Directe";
+
+  el.innerHTML = `
+    <strong>🟢 Caisse ${device.deviceCode}</strong> • ${device.deviceName}<br>
+    <small>${mode}</small>
+  `;
+}
+
 async function registerDevice() {
   if (!supabaseClient) return;
 
@@ -743,7 +766,7 @@ function addCartLine(lineData) {
   renderCart();
 }
 function renderCart() {
-  document.getElementById('orderNumber').textContent = `n° ${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`;
+  document.getElementById('orderNumber').textContent = `n° ${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`;
   const list = document.getElementById('cartLines');
   if (!cart.length) { list.className = 'cart-lines empty'; list.textContent = 'Aucun produit'; }
   else {
@@ -1897,15 +1920,22 @@ function initDeviceSetupDialog() {
       );
       return;
     }
+
     saveDeviceConfig({
       deviceName,
       deviceCode,
       printMode
     });
+
     orderNumber = loadOrderNumber();
     renderCart();
+    renderDeviceInfo();
+
+    await registerDevice();
+
     dialog.close();
     updateCentralDashboard();
+
     showMessage(
       'Appareil configuré',
       `Cet appareil est configuré comme caisse ${deviceCode}.`
@@ -1914,6 +1944,10 @@ function initDeviceSetupDialog() {
 
   if (!getDeviceConfig()) {
     dialog.showModal();
+  } else {
+    orderNumber = loadOrderNumber();
+    renderCart();
+    renderDeviceInfo();
   }
 }
 
