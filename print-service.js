@@ -290,7 +290,7 @@ async function printTicket(sale) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            printer: "EPSON_XP_2200_Series",
+            printer: selectedPrinterName,
             content
         })
     });

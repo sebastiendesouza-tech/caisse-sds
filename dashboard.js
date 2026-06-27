@@ -1,6 +1,7 @@
 // =====================================================
 // SDS Dashboard Service
 // =====================================================
+let selectedPrinterName = "EPSON_XP_2200_Series";
 
 function showCashierView() {
     const cashierView = document.getElementById("cashierView");
@@ -59,6 +60,7 @@ function initDashboardViewSwitcher() {
 }
 
 function updateCentralDashboard() {
+
     const panel = document.getElementById("centralDashboard");
 
     if (!panel) return;
@@ -72,20 +74,39 @@ function updateCentralDashboard() {
     panel.style.display = "block";
 
     panel.innerHTML = `
+<div class="dashboard-grid">
+
+    <section class="dashboard-card">
+        <h2>Connexions</h2>
+
         <div id="dashboardStatus"></div>
 
         <hr>
+
+        <div id="dashboardPrinterServer"></div>
+
+        <hr>
+
+        <div id="dashboardDevices"></div>
+    </section>
+
+    <section class="dashboard-card">
+        <h2>Impression</h2>
 
         <div id="dashboardTickets"></div>
 
         <hr>
 
-        <div id="dashboardDevices"></div>
+        <div id="dashboardPrinterStatus"></div>
 
         <hr>
 
-        <div id="dashboardPrinter"></div>
-    `;
+        <div id="dashboardPrinterConfig"></div>
+    </section>
+
+</div>
+`;
+
 }
 
 function updateDashboardStatus() {
@@ -99,7 +120,7 @@ function updateDashboardStatus() {
 }
 
 function updateDashboardPrinter(message) {
-    const el = document.getElementById("dashboardPrinter");
+    const el = document.getElementById("dashboardPrinterStatus");
 
     if (!el) return;
 
@@ -109,11 +130,192 @@ function updateDashboardPrinter(message) {
     `;
 }
 
-function refreshCentralDashboard() {
+function updateDashboardPrinterConfig() {
+
+    const el = document.getElementById("dashboardPrinterConfig");
+
+    if (!el) return;
+
+    if (document.getElementById("printerSelect")) return;
+
+    refreshPrinterList();
+
+}
+async function printTestPage() {
+
+    console.log("Bouton Test impression cliqué");
+
+    const printer =
+        document.getElementById("printerSelect")?.value ||
+        selectedPrinterName;
+
+    if (!printer) {
+
+        alert("Aucune imprimante sélectionnée.");
+        return;
+
+    }
+
+    try {
+
+        const response = await fetch(
+            "http://127.0.0.1:17890/print-test",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    printer
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        console.log("Réponse /print-test :", data);
+
+        if (!data.ok) {
+            throw new Error(data.error);
+        }
+
+        alert("Ticket de test envoyé.");
+
+    } catch (e) {
+
+        console.error(e);
+
+        alert(
+            "Erreur d'impression : " + e.message
+        );
+
+    }
+
+}
+async function refreshPrinterList() {
+
+    const el = document.getElementById("dashboardPrinterConfig");
+
+    if (!el) return;
+
+    try {
+
+        const response = await fetch("http://127.0.0.1:17890/printers");
+        const data = await response.json();
+
+        if (!data.ok) {
+            throw new Error(data.error);
+        }
+
+        if (!selectedPrinterName && data.printers.length > 0) {
+            selectedPrinterName = data.printers[0].name;
+        }
+
+        const options = data.printers
+            .map(printer => {
+
+                const selected =
+                    printer.name === selectedPrinterName
+                        ? "selected"
+                        : "";
+
+                return `
+                    <option value="${printer.name}" ${selected}>
+                        ${printer.name}
+                    </option>
+                `;
+
+            })
+            .join("");
+
+        el.innerHTML = `
+            <strong>🖨 Imprimante</strong><br><br>
+
+            <select
+                id="printerSelect"
+                class="printer-select"
+                onchange="selectedPrinterName=this.value">
+
+                ${options}
+
+            </select>
+
+            <br><br>
+
+            <button
+                type="button"
+                class="secondary"
+                onclick="refreshPrinterList()">
+
+                Actualiser
+
+            </button>
+
+            <button
+                type="button"
+                class="secondary"
+                onclick="printTestPage()">
+
+                Test impression
+
+            </button>
+        `;
+
+    } catch (e) {
+
+        el.innerHTML = `
+            <strong>🖨 Imprimante</strong><br><br>
+
+            🔴 Impossible de récupérer les imprimantes.
+
+            <br><br>
+
+            <button
+                type="button"
+                class="secondary"
+                onclick="refreshPrinterList()">
+
+                Réessayer
+
+            </button>
+        `;
+
+    }
+
+}
+
+async function checkPrinterServer() {
+    const panel = document.getElementById("dashboardPrinterServer");
+
+    try {
+
+        const response = await fetch("http://127.0.0.1:17890/health");
+        const data = await response.json();
+
+        panel.innerHTML = `
+            <strong>🖨 SDS Printer</strong><br>
+            🟢 Connecté<br>
+            Version : ${data.version}
+        `;
+
+    } catch (e) {
+
+        panel.innerHTML = `
+            <strong>🖨 SDS Printer</strong><br>
+            🔴 Hors ligne
+        `;
+
+    }
+}
+
+async function refreshCentralDashboard() {
     if (getDeviceCode() !== "A") return;
 
+    updateDashboardStatus();
+    await checkPrinterServer();
     checkPendingPrints();
     checkConnectedDevices();
+    updateDashboardPrinterConfig();
 }
 
 async function releaseOtherDevices() {

@@ -2090,3 +2090,55 @@ dialog {
   background: #2563eb;
   color: white;
 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+.dashboard-card h2 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 20px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+}
+
+.dashboard-card,
+.dashboard-card * {
+  color: #111827;
+}
+
+.dashboard-card h2 {
+  color: #111827;
+}
+
+.dashboard-card button {
+  color: inherit;
+}
+
+.printer-current {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  font-weight: 700;
+}
+
+.printer-select {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f9fafb;
+  font-weight: 700;
+}
