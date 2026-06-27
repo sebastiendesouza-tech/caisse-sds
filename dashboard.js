@@ -1,7 +1,12 @@
 // =====================================================
 // SDS Dashboard Service
 // =====================================================
-let selectedPrinterName = "EPSON_XP_2200_Series";
+
+let selectedPrinterName = localStorage.getItem("sds_selected_printer") || "";
+
+// -----------------------------------------------------
+// Vues Caisse / Tableau de bord
+// -----------------------------------------------------
 
 function showCashierView() {
     const cashierView = document.getElementById("cashierView");
@@ -50,17 +55,15 @@ function initDashboardViewSwitcher() {
         showCashierView();
     }
 
-    if (btnCashier) {
-        btnCashier.onclick = showCashierView;
-    }
-
-    if (btnDashboard) {
-        btnDashboard.onclick = showDashboardView;
-    }
+    if (btnCashier) btnCashier.onclick = showCashierView;
+    if (btnDashboard) btnDashboard.onclick = showDashboardView;
 }
 
-function updateCentralDashboard() {
+// -----------------------------------------------------
+// Structure du tableau de bord
+// -----------------------------------------------------
 
+function updateCentralDashboard() {
     const panel = document.getElementById("centralDashboard");
 
     if (!panel) return;
@@ -74,50 +77,113 @@ function updateCentralDashboard() {
     panel.style.display = "block";
 
     panel.innerHTML = `
-<div class="dashboard-grid">
+        <div class="dashboard-grid">
 
-    <section class="dashboard-card">
-        <h2>Connexions</h2>
+            <section class="dashboard-card">
+                <h2>Connexions</h2>
+                <div id="dashboardConnections"></div>
+            </section>
 
-        <div id="dashboardStatus"></div>
+            <section class="dashboard-card">
+                <h2>Impression</h2>
+                <div id="dashboardTickets"></div>
+                <div id="dashboardPrinterStatus"></div>
+                <div id="dashboardPrinterConfig"></div>
+            </section>
 
-        <hr>
+            <section class="dashboard-card">
+                <h2>💰 Recettes</h2>
+                <div id="dashboardSales">Chargement...</div>
+            </section>
 
-        <div id="dashboardPrinterServer"></div>
+            <section class="dashboard-card">
+                <h2>📈 Ventes</h2>
+                <div id="dashboardStats">Chargement...</div>
+            </section>
 
-        <hr>
-
-        <div id="dashboardDevices"></div>
-    </section>
-
-    <section class="dashboard-card">
-        <h2>Impression</h2>
-
-        <div id="dashboardTickets"></div>
-
-        <hr>
-
-        <div id="dashboardPrinterStatus"></div>
-
-        <hr>
-
-        <div id="dashboardPrinterConfig"></div>
-    </section>
-
-</div>
-`;
-
-}
-
-function updateDashboardStatus() {
-    const el = document.getElementById("dashboardStatus");
-    if (!el) return;
-
-    el.innerHTML = `
-        <strong>🖥 Poste central</strong><br>
-        🟢 Supabase connecté
+        </div>
     `;
 }
+
+// -----------------------------------------------------
+// Rafraîchissement global
+// -----------------------------------------------------
+
+async function refreshCentralDashboard() {
+    if (getDeviceCode() !== "A") return;
+
+    await refreshDashboardConnections();
+    await checkPendingPrints();
+    updateDashboardPrinterConfig();
+    await refreshDashboardSales();
+    await refreshDashboardStats();
+}
+
+// -----------------------------------------------------
+// Connexions
+// -----------------------------------------------------
+
+async function refreshDashboardConnections() {
+    const el = document.getElementById("dashboardConnections");
+    if (!el) return;
+
+    let printerText = "🔴 SDS Printer";
+    let versionText = "";
+
+    try {
+        const response = await fetch("http://127.0.0.1:17890/health");
+        const data = await response.json();
+
+        printerText = "🟢 SDS Printer";
+        versionText = data.version ? `v${data.version}` : "";
+    } catch (e) {
+        printerText = "🔴 SDS Printer";
+        versionText = "";
+    }
+
+    let devicesHtml = "Aucune caisse";
+
+    if (supabaseClient) {
+        const { data, error } = await supabaseClient
+            .from("devices")
+            .select("device_code, device_status")
+            .order("device_code");
+
+        if (!error && data) {
+            devicesHtml = data
+                .map(device => {
+                    const icon = device.device_status === "busy" ? "🟢" : "⚪";
+                    return `${icon} ${device.device_code}`;
+                })
+                .join(" &nbsp; ");
+        }
+    }
+
+    el.innerHTML = `
+        <div class="dashboard-compact-line">
+            <span>Supabase</span>
+            <strong>🟢 Connecté</strong>
+        </div>
+
+        <div class="dashboard-compact-line">
+            <span>${printerText}</span>
+            <strong>${versionText}</strong>
+        </div>
+
+        <div class="dashboard-compact-block">
+            <span>Caisses</span>
+            <strong>${devicesHtml}</strong>
+        </div>
+
+        <button type="button" class="secondary dashboard-small-button" onclick="releaseOtherDevices()">
+            🔓 Libérer caisses inactives
+        </button>
+    `;
+}
+
+// -----------------------------------------------------
+// Impression
+// -----------------------------------------------------
 
 function updateDashboardPrinter(message) {
     const el = document.getElementById("dashboardPrinterStatus");
@@ -125,13 +191,42 @@ function updateDashboardPrinter(message) {
     if (!el) return;
 
     el.innerHTML = `
-        <strong>🖨 Impression</strong><br>
-        ${message}
+        <div class="dashboard-compact-line">
+            <span>État</span>
+            <strong>${message || "🟢 OK"}</strong>
+        </div>
+    `;
+}
+
+async function checkPendingPrints() {
+    if (!supabaseClient) return;
+
+    const { data, error } = await supabaseClient
+        .from("sales")
+        .select("id, order_number, total, device_code")
+        .eq("printed", false)
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    const ticketsEl = document.getElementById("dashboardTickets");
+
+    if (!ticketsEl) return;
+
+    const count = data ? data.length : 0;
+
+    ticketsEl.innerHTML = `
+        <div class="dashboard-compact-line">
+            <span>Tickets</span>
+            <strong>🎟 ${count}</strong>
+        </div>
     `;
 }
 
 function updateDashboardPrinterConfig() {
-
     const el = document.getElementById("dashboardPrinterConfig");
 
     if (!el) return;
@@ -139,10 +234,87 @@ function updateDashboardPrinterConfig() {
     if (document.getElementById("printerSelect")) return;
 
     refreshPrinterList();
-
 }
-async function printTestPage() {
 
+function setSelectedPrinter(name) {
+    selectedPrinterName = name || "";
+    localStorage.setItem("sds_selected_printer", selectedPrinterName);
+}
+
+async function refreshPrinterList() {
+    const el = document.getElementById("dashboardPrinterConfig");
+
+    if (!el) return;
+
+    try {
+        const response = await fetch("http://127.0.0.1:17890/printers");
+        const data = await response.json();
+
+        if (!data.ok) {
+            throw new Error(data.error);
+        }
+
+        if (!selectedPrinterName && data.printers.length > 0) {
+            setSelectedPrinter(data.printers[0].name);
+        }
+
+        const options = data.printers
+            .map(printer => {
+                const selected = printer.name === selectedPrinterName ? "selected" : "";
+
+                return `
+                    <option value="${printer.name}" ${selected}>
+                        ${printer.name}
+                    </option>
+                `;
+            })
+            .join("");
+
+        el.innerHTML = `
+            <div class="dashboard-printer-block">
+                <label>Imprimante</label>
+
+                <select id="printerSelect" class="printer-select">
+                    ${options}
+                </select>
+
+                <div class="dashboard-button-row">
+                    <button type="button" class="secondary" onclick="refreshPrinterList()">
+                        Actualiser
+                    </button>
+
+                    <button type="button" class="secondary" onclick="printTestPage()">
+                        Test
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const select = document.getElementById("printerSelect");
+
+        if (select) {
+            select.addEventListener("change", () => {
+                setSelectedPrinter(select.value);
+            });
+        }
+
+    } catch (e) {
+        console.error("Erreur refreshPrinterList :", e);
+
+        el.innerHTML = `
+            <div class="dashboard-printer-block">
+                <strong>🔴 Imprimantes indisponibles</strong><br>
+                <small>${e.message}</small><br><br>
+
+                <button type="button" class="secondary" onclick="refreshPrinterList()">
+                    Réessayer
+                </button>
+            </div>
+        `;
+    }
+}
+
+async function printTestPage() {
     console.log("Bouton Test impression cliqué");
 
     const printer =
@@ -150,14 +322,11 @@ async function printTestPage() {
         selectedPrinterName;
 
     if (!printer) {
-
         alert("Aucune imprimante sélectionnée.");
         return;
-
     }
 
     try {
-
         const response = await fetch(
             "http://127.0.0.1:17890/print-test",
             {
@@ -182,141 +351,117 @@ async function printTestPage() {
         alert("Ticket de test envoyé.");
 
     } catch (e) {
-
         console.error(e);
+        alert("Erreur d'impression : " + e.message);
+    }
+}
 
-        alert(
-            "Erreur d'impression : " + e.message
-        );
+// -----------------------------------------------------
+// Recettes
+// -----------------------------------------------------
 
+async function refreshDashboardSales() {
+    const el = document.getElementById("dashboardSales");
+
+    if (!el || !supabaseClient) return;
+
+    const { data, error } = await supabaseClient
+        .from("sales")
+        .select("payment_method,total")
+        .eq("event_id", currentEventId);
+
+    if (error) {
+        console.error("Erreur refreshDashboardSales :", error);
+        el.innerHTML = "🔴 Recettes indisponibles";
+        return;
     }
 
-}
-async function refreshPrinterList() {
+    let cash = 0;
+    let card = 0;
+    let total = 0;
 
-    const el = document.getElementById("dashboardPrinterConfig");
+    (data || []).forEach(sale => {
+        const amount = Number(sale.total || 0);
+        total += amount;
 
-    if (!el) return;
-
-    try {
-
-        const response = await fetch("http://127.0.0.1:17890/printers");
-        const data = await response.json();
-
-        if (!data.ok) {
-            throw new Error(data.error);
+        if (sale.payment_method === "CB") {
+            card += amount;
+        } else if (sale.payment_method === "Espèces") {
+            cash += amount;
         }
+    });
 
-        if (!selectedPrinterName && data.printers.length > 0) {
-            selectedPrinterName = data.printers[0].name;
-        }
+    el.innerHTML = `
+        <div class="dashboard-money-line">
+            <span>💵 Espèces</span>
+            <strong>${fmt(cash)}</strong>
+        </div>
 
-        const options = data.printers
-            .map(printer => {
+        <div class="dashboard-money-line">
+            <span>💳 CB</span>
+            <strong>${fmt(card)}</strong>
+        </div>
 
-                const selected =
-                    printer.name === selectedPrinterName
-                        ? "selected"
-                        : "";
+        <div class="dashboard-money-total">
+            <span>💰 Total</span>
+            <strong>${fmt(total)}</strong>
+        </div>
 
-                return `
-                    <option value="${printer.name}" ${selected}>
-                        ${printer.name}
-                    </option>
-                `;
+        <div class="dashboard-money-line">
+            <span>🎟 Tickets</span>
+            <strong>${(data || []).length}</strong>
+        </div>
+    `;
+}
 
-            })
-            .join("");
+// -----------------------------------------------------
+// Ventes
+// -----------------------------------------------------
 
-        el.innerHTML = `
-            <strong>🖨 Imprimante</strong><br><br>
+async function refreshDashboardStats() {
+    const el = document.getElementById("dashboardStats");
 
-            <select
-                id="printerSelect"
-                class="printer-select"
-                onchange="selectedPrinterName=this.value">
+    if (!el || !supabaseClient) return;
 
-                ${options}
+    const { data, error } = await supabaseClient
+        .from("sales")
+        .select("order_number,total,created_at")
+        .eq("event_id", currentEventId)
+        .order("created_at", { ascending: false });
 
-            </select>
-
-            <br><br>
-
-            <button
-                type="button"
-                class="secondary"
-                onclick="refreshPrinterList()">
-
-                Actualiser
-
-            </button>
-
-            <button
-                type="button"
-                class="secondary"
-                onclick="printTestPage()">
-
-                Test impression
-
-            </button>
-        `;
-
-    } catch (e) {
-
-        el.innerHTML = `
-            <strong>🖨 Imprimante</strong><br><br>
-
-            🔴 Impossible de récupérer les imprimantes.
-
-            <br><br>
-
-            <button
-                type="button"
-                class="secondary"
-                onclick="refreshPrinterList()">
-
-                Réessayer
-
-            </button>
-        `;
-
+    if (error) {
+        console.error("Erreur refreshDashboardStats :", error);
+        el.innerHTML = "🔴 Ventes indisponibles";
+        return;
     }
 
+    const sales = data || [];
+    const count = sales.length;
+    const total = sales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
+    const average = count ? total / count : 0;
+    const last = sales[0];
+
+    el.innerHTML = `
+        <div class="dashboard-compact-line">
+            <span>Dernier ticket</span>
+            <strong>${last?.order_number || "-"}</strong>
+        </div>
+
+        <div class="dashboard-compact-line">
+            <span>Panier moyen</span>
+            <strong>${fmt(average)}</strong>
+        </div>
+
+        <div class="dashboard-compact-line">
+            <span>Ventes</span>
+            <strong>${count}</strong>
+        </div>
+    `;
 }
 
-async function checkPrinterServer() {
-    const panel = document.getElementById("dashboardPrinterServer");
-
-    try {
-
-        const response = await fetch("http://127.0.0.1:17890/health");
-        const data = await response.json();
-
-        panel.innerHTML = `
-            <strong>🖨 SDS Printer</strong><br>
-            🟢 Connecté<br>
-            Version : ${data.version}
-        `;
-
-    } catch (e) {
-
-        panel.innerHTML = `
-            <strong>🖨 SDS Printer</strong><br>
-            🔴 Hors ligne
-        `;
-
-    }
-}
-
-async function refreshCentralDashboard() {
-    if (getDeviceCode() !== "A") return;
-
-    updateDashboardStatus();
-    await checkPrinterServer();
-    checkPendingPrints();
-    checkConnectedDevices();
-    updateDashboardPrinterConfig();
-}
+// -----------------------------------------------------
+// Libération caisses
+// -----------------------------------------------------
 
 async function releaseOtherDevices() {
     if (getDeviceCode() !== "A") return;
@@ -342,7 +487,7 @@ async function releaseOtherDevices() {
         return;
     }
 
-    await checkConnectedDevices();
+    await refreshDashboardConnections();
 
     showMessage(
         "Caisses inactives libérées",
@@ -350,61 +495,9 @@ async function releaseOtherDevices() {
     );
 }
 
-async function checkPendingPrints() {
-    if (!supabaseClient) return;
-
-    const { data, error } = await supabaseClient
-        .from('sales')
-        .select('id, order_number, total, device_code')
-        .eq('printed', false)
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    const ticketList = data
-        .map(sale => `${sale.order_number} — ${fmt(sale.total)} — Caisse ${sale.device_code || '?'}`)
-        .join("<br>");
-
-    const ticketsEl = document.getElementById("dashboardTickets");
-
-    if (ticketsEl) {
-        ticketsEl.innerHTML = `
-            🧾 Tickets en attente : <strong>${data.length}</strong><br><br>
-            ${ticketList || "Aucun ticket en attente"}
-        `;
-    }
-}
-
-async function checkConnectedDevices() {
-    if (!supabaseClient) return;
-
-    const { data, error } = await supabaseClient
-        .from('devices')
-        .select('device_code, device_name, device_status')
-        .order('device_code');
-
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    const devicesEl = document.getElementById("dashboardDevices");
-
-    if (devicesEl) {
-        devicesEl.innerHTML =
-            "<strong>📱 Caisses</strong><br><br>" +
-            data.map(device =>
-                `${device.device_status === "busy" ? "🟢" : "⚪"} ${device.device_code} - ${device.device_name || "Libre"}`
-            ).join("<br>") +
-            `<br><br>
-            <button type="button" class="secondary" onclick="releaseOtherDevices()">
-                🔓 Libérer les autres caisses
-            </button>`;
-    }
-}
+// -----------------------------------------------------
+// Initialisation
+// -----------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
     initDashboardViewSwitcher();

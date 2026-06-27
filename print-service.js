@@ -279,7 +279,15 @@ function previewTicket(sale) {
 }
 
 async function printTicket(sale) {
+    if (mustPrintNothing()) {
+        return true;
+    }
 
+    if (mustPrintDirect()) {
+        previewTicket(sale);
+        window.print();
+        return true;
+    }
     previewTicket(sale);
 
     const content = ticketTextFromSale(sale);

@@ -214,6 +214,32 @@ function getDeviceConfig() {
     return null;
   }
 }
+
+function getDevicePrintMode() {
+
+  const config = getDeviceConfig();
+
+  return config?.printMode || "central";
+
+}
+function mustPrintDirect() {
+
+  return getDevicePrintMode() === "direct";
+
+}
+
+function mustPrintCentral() {
+
+  return getDevicePrintMode() === "central";
+
+}
+
+function mustPrintNothing() {
+
+  return getDevicePrintMode() === "none";
+
+}
+
 function getDeviceInstanceId() {
   let id = localStorage.getItem('sds_device_instance_id');
 
@@ -948,9 +974,8 @@ function saleTimestampParts(date = new Date()) {
 }
 function validateSale(extra = {}) {
   const deviceConfig = getDeviceConfig();
-  const printMode = deviceConfig?.printMode || 'central';
-
-  const shouldPrint = extra.print !== false && printMode === 'direct';
+  const printMode = getDevicePrintMode();
+  const shouldPrint = extra.print !== false && mustPrintDirect();
 
   if (shouldPrint) buildTicket();
 
