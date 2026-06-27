@@ -292,7 +292,21 @@ function renderDeviceInfo() {
     <small>${mode}</small>
   `;
 }
+async function heartbeatDevice() {
+  if (!supabaseClient) return;
 
+  const device = getDeviceConfig();
+  if (!device) return;
+
+  await supabaseClient
+    .from('devices')
+    .update({
+      last_seen: new Date().toISOString(),
+      device_status: 'busy'
+    })
+    .eq('device_code', device.deviceCode)
+    .eq('current_device', getDeviceInstanceId());
+}
 async function registerDevice() {
   if (!supabaseClient) return;
 
@@ -314,8 +328,18 @@ async function registerDevice() {
 
   if (error) {
     console.error('Erreur registerDevice', error);
+    return;
+  }
+
+  renderDeviceInfo();
+
+  if (getDeviceCode() === 'A') {
+    updateCentralDashboard();
+    updateDashboardStatus();
+    refreshCentralDashboard();
   }
 }
+
 function startCentralServices() {
   if (getDeviceCode() !== 'A') return;
 
@@ -459,6 +483,8 @@ async function initSupabaseSync() {
   await loadConfigFromSupabase();
   await syncOrderNumberFromSupabase();
   await registerDevice();
+  heartbeatDevice();
+  setInterval(heartbeatDevice, 30000);
   startCentralServices();
   if (supabaseClient) {
     if (!supabaseReady) await saveConfigToSupabase();
@@ -875,13 +901,32 @@ function ticketLineBlock(line) {
 function ticketItemCompare(a, b) {
   return ticketSortIndex(a.category) - ticketSortIndex(b.category) || a.order - b.order;
 }
+async function printTicketForSale(sale) {
+  const html = ticketHtmlFromData(
+    sale.orderNumber,
+    sale.items || [],
+    sale.paymentMethod || paymentMethod,
+    Number(sale.total || 0),
+    Number(sale.paid || 0),
+    Number(sale.change || 0)
+  );
 
-function printTicketForSale(sale) {
-  const html = ticketHtmlFromData(sale.orderNumber, sale.items || [], sale.paymentMethod || paymentMethod, Number(sale.total || 0), Number(sale.paid || 0), Number(sale.change || 0));
   document.getElementById('printArea').innerHTML = html;
   lastTicketHtml = html;
   saveLastTicket();
-  window.print();
+
+  const content = document.getElementById('printArea').innerText;
+
+  await fetch("http://127.0.0.1:17890/print", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      printer: "EPSON_XP_2200_Series",
+      content
+    })
+  });
 }
 
 function buildTicket() {

@@ -66,26 +66,33 @@ function refreshCentralDashboard() {
 async function releaseOtherDevices() {
     if (getDeviceCode() !== "A") return;
 
-    if (!confirm("Libérer les caisses B, C et D ?")) return;
+    if (!confirm("Libérer uniquement les caisses inactives depuis plus de 2 minutes ?")) return;
+
+    const limit = new Date(Date.now() - 2 * 60 * 1000).toISOString();
 
     const { error } = await supabaseClient
         .from("devices")
         .update({
             current_device: null,
             device_status: "free",
-            last_seen: null
+            last_seen: null,
+            device_name: null
         })
-        .neq("device_code", "A");
+        .neq("device_code", "A")
+        .lt("last_seen", limit);
 
     if (error) {
         console.error(error);
-        showMessage("Erreur", "Impossible de libérer les autres caisses.");
+        showMessage("Erreur", "Impossible de libérer les caisses inactives.");
         return;
     }
 
     await checkConnectedDevices();
 
-    showMessage("Caisses libérées", "Les caisses B, C et D sont disponibles.");
+    showMessage(
+        "Caisses inactives libérées",
+        "Seules les caisses sans activité depuis plus de 2 minutes ont été libérées."
+    );
 }
 
 // Fonctions privées

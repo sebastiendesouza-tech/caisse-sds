@@ -84,7 +84,18 @@ async function printTicket(sale) {
 
     previewTicket(sale);
 
-    window.print();
+    const content = document.getElementById("printArea").innerText;
+
+    await fetch("http://127.0.0.1:17890/print", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            printer: "EPSON_XP_2200_Series",
+            content
+        })
+    });
 
     return true;
 
