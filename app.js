@@ -117,7 +117,7 @@ let draftConfig = null;
 let cart = [];
 let paymentMethod = 'Espèces';
 let paidCents = 0;
-let orderNumber = Number(localStorage.getItem('caisse_order_number') || '1');
+let orderNumber = 1;
 let sales = JSON.parse(localStorage.getItem('caisse_sales') || '[]');
 let reportArchive = JSON.parse(localStorage.getItem('caisse_report_archive') || 'null');
 let reportResetAt = localStorage.getItem('caisse_report_reset_at') || '';
@@ -252,6 +252,20 @@ async function isDeviceCodeAvailable(deviceCode) {
   // Sinon il est occupé
   return false;
 }
+
+function getOrderNumberKey() {
+  return `caisse_order_number_${getDeviceCode()}`;
+}
+
+function loadOrderNumber() {
+  return Number(localStorage.getItem(getOrderNumberKey()) || '1');
+}
+
+function saveOrderNumber() {
+  localStorage.setItem(getOrderNumberKey(), orderNumber);
+}
+
+
 function getDeviceName() {
   const deviceConfig = getDeviceConfig();
   return deviceConfig?.deviceName || 'Appareil inconnu';
@@ -848,7 +862,7 @@ function printTicketForSale(sale) {
 }
 
 function buildTicket() {
-  const number = `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`;
+  const number = `${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`;
   const html = ticketHtmlFromData(number, cart, paymentMethod, total(), paidAmount(), Math.max(0, paidAmount() - total()));
   document.getElementById('printArea').innerHTML = html;
   lastTicketHtml = html;
@@ -877,7 +891,7 @@ function validateSale(extra = {}) {
 
   const sale = {
     kind,
-    orderNumber: `${config.orderPrefix}${String(orderNumber).padStart(4, '0')}`,
+    orderNumber: `${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`,
     date: stamp.date,
     hour: stamp.hour,
     hourLabel: stamp.hourLabel,
@@ -1888,7 +1902,8 @@ function initDeviceSetupDialog() {
       deviceCode,
       printMode
     });
-
+    orderNumber = loadOrderNumber();
+    renderCart();
     dialog.close();
     updateCentralDashboard();
     showMessage(

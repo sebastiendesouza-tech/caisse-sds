@@ -5,7 +5,7 @@
 // Initialisation
 
 // Fonctions publiques
-ffunction updateCentralDashboard() {
+function updateCentralDashboard() {
     const panel = document.getElementById("centralDashboard");
 
     if (!panel) return;
