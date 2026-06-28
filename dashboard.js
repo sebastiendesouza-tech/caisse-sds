@@ -240,6 +240,10 @@ function setSelectedPrinter(name) {
     selectedPrinterName = name || "";
     localStorage.setItem("sds_selected_printer", selectedPrinterName);
 }
+function setDashboardPrintTicketsEnabled(checked) {
+    config.printTicketsEnabled = checked !== false;
+    saveConfig();
+}
 
 async function refreshPrinterList() {
     const el = document.getElementById("dashboardPrinterConfig");
@@ -278,6 +282,15 @@ async function refreshPrinterList() {
                     ${options}
                 </select>
 
+                <label class="checkline">
+                    <input
+                        type="checkbox"
+                        id="dashboardPrintTicketsEnabled"
+                        ${config.printTicketsEnabled !== false ? "checked" : ""}
+                    >
+                    Imprimer les tickets
+                </label>
+
                 <div class="dashboard-button-row">
                     <button type="button" class="secondary" onclick="refreshPrinterList()">
                         Actualiser
@@ -298,6 +311,14 @@ async function refreshPrinterList() {
             });
         }
 
+        const printTicketsCheckbox = document.getElementById("dashboardPrintTicketsEnabled");
+
+        if (printTicketsCheckbox) {
+            printTicketsCheckbox.addEventListener("change", () => {
+                setDashboardPrintTicketsEnabled(printTicketsCheckbox.checked);
+            });
+        }
+
     } catch (e) {
         console.error("Erreur refreshPrinterList :", e);
 
@@ -306,11 +327,28 @@ async function refreshPrinterList() {
                 <strong>🔴 Imprimantes indisponibles</strong><br>
                 <small>${e.message}</small><br><br>
 
+                <label class="checkline">
+                    <input
+                        type="checkbox"
+                        id="dashboardPrintTicketsEnabled"
+                        ${config.printTicketsEnabled !== false ? "checked" : ""}
+                    >
+                    Imprimer les tickets
+                </label>
+
                 <button type="button" class="secondary" onclick="refreshPrinterList()">
                     Réessayer
                 </button>
             </div>
         `;
+
+        const printTicketsCheckbox = document.getElementById("dashboardPrintTicketsEnabled");
+
+        if (printTicketsCheckbox) {
+            printTicketsCheckbox.addEventListener("change", () => {
+                setDashboardPrintTicketsEnabled(printTicketsCheckbox.checked);
+            });
+        }
     }
 }
 

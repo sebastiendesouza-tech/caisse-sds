@@ -1,12 +1,12 @@
 // === SDS Print Service ===
 async function getNextTicket() {
-
     if (!supabaseClient) return null;
 
     const { data, error } = await supabaseClient
         .from('sales')
         .select('*')
         .eq('printed', false)
+        .or('printing.is.null,printing.eq.false')
         .order('created_at', { ascending: true })
         .limit(1);
 
@@ -18,11 +18,9 @@ async function getNextTicket() {
     if (!data || data.length === 0) return null;
 
     return data[0];
-
 }
 
 async function lockTicketForPrinting(sale) {
-
     if (!supabaseClient || !sale?.id) return false;
 
     const { data, error } = await supabaseClient
@@ -31,7 +29,6 @@ async function lockTicketForPrinting(sale) {
             printing: true
         })
         .eq('id', sale.id)
-        .eq('printing', false)
         .eq('printed', false)
         .select('id');
 
@@ -41,13 +38,12 @@ async function lockTicketForPrinting(sale) {
     }
 
     if (!data || data.length === 0) {
-        console.warn("Ticket déjà pris ou déjà imprimé :", sale.order_number);
+        console.warn("Ticket déjà imprimé :", sale.order_number);
         return false;
     }
 
     return true;
 }
-
 async function markTicketAsPrinted(sale) {
     if (!supabaseClient || !sale?.id) return;
 
@@ -279,6 +275,9 @@ function previewTicket(sale) {
 }
 
 async function printTicket(sale) {
+    if (config.printTicketsEnabled === false) {
+        return true;
+    }
     if (mustPrintNothing()) {
         return true;
     }

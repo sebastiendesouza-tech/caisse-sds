@@ -16,6 +16,7 @@ const DEFAULT_CONFIG = {
   eventName: 'Comité des Fêtes-Moroges',
   orderPrefix: 'A',
   ticketColor: 'black',
+  printTicketsEnabled: true,
   volunteers: [
     { id: 'vol-daudey', name: 'Daudey', active: true },
     { id: 'vol-de-souza', name: 'De Souza', active: true },
@@ -124,6 +125,8 @@ let reportResetAt = localStorage.getItem('caisse_report_reset_at') || '';
 let lastTicketHtml = localStorage.getItem('caisse_last_ticket_html') || '';
 let pendingChoiceProduct = null;
 let currentEventId = localStorage.getItem('caisse_event_id') || 'event-1';
+let activePaymentField = 'cash';
+
 const fmt = n => new Intl.NumberFormat('fr-FR', {
   style: 'currency',
   currency: 'EUR'
@@ -138,7 +141,9 @@ function saveConfig() {
 }
 async function saveSaleToSupabase(sale) {
   if (!supabaseClient) return;
+
   console.log('Vente enregistrée avec event_id =', currentEventId);
+
   const { error } = await supabaseClient
     .from('sales')
     .insert({
@@ -147,6 +152,8 @@ async function saveSaleToSupabase(sale) {
       hour: sale.hour,
       payment_method: sale.paymentMethod,
       total: sale.total,
+      card_amount: Number(sale.cardAmount ?? sale.sale_data?.cardAmount ?? 0),
+      cash_amount: Number(sale.cashAmount ?? sale.sale_data?.cashAmount ?? 0),
       sale_data: sale,
       event_id: currentEventId,
       device_code: getDeviceCode(),
@@ -158,6 +165,27 @@ async function saveSaleToSupabase(sale) {
   }
 }
 
+function getDisplayMode() {
+  return localStorage.getItem('displayMode') || 'standard';
+}
+
+function setDisplayMode(mode) {
+  localStorage.setItem('displayMode', mode);
+
+  if (mode === 'compact') {
+    document.body.classList.remove('show-payment');
+  }
+
+  applyDisplayMode();
+  updateDisplayModeButton();
+}
+
+function applyDisplayMode() {
+  document.body.classList.toggle(
+    'compact-mode',
+    getDisplayMode() === 'compact'
+  );
+}
 async function loadSalesFromSupabase() {
   if (!supabaseClient) return;
   console.log('Manifestation active =', currentEventId);
@@ -610,60 +638,131 @@ function limitEmptyRestorationSlots(c) {
 function normalizeConfig(c) {
   const base = clone(DEFAULT_CONFIG);
   if (!c) return base;
+
   const previousVersion = Number(c.configVersion || 0);
+
   if (Array.isArray(c.products) && c.products[0] && !c.products[0].id) {
-    c.products = c.products.map((p, i) => ({ id: 'p' + (i + 1), group: displayGroup(p.category), category: p.category || 'Plat', name: p.name || '', price: Number(p.price || 0), type: 'simple', components: [], refundable: true, stock: '' }));
+    c.products = c.products.map((p, i) => ({
+      id: 'p' + (i + 1),
+      group: displayGroup(p.category),
+      category: p.category || 'Plat',
+      name: p.name || '',
+      price: Number(p.price || 0),
+      type: 'simple',
+      components: [],
+      refundable: true,
+      stock: ''
+    }));
   }
+
   c.configVersion = 2026.12;
   c.eventName ||= base.eventName;
   c.orderPrefix ||= 'A';
   c.ticketColor ||= 'black';
+  c.printTicketsEnabled ??= true;
   c.baseFoods ||= base.baseFoods;
   c.volunteers ||= base.volunteers;
+
   if (previousVersion < 18.17) {
     c.eventName ||= base.eventName;
     c.volunteers ||= clone(base.volunteers);
   }
+
   c.categoryColors ||= base.categoryColors;
   c.products ||= base.products;
-  c.products.forEach((p, i) => { p.id ||= 'p' + (i + 1); p.group ||= displayGroup(p.category); p.type ||= 'simple'; p.components ||= []; p.choices ||= []; p.menuSections ||= []; p.refundable = p.refundable !== false; p.stock ??= ''; });
-  // v18.14 : correction forcée des prix et des boissons du menu même si une ancienne configuration est déjà enregistrée sur l'iPad.
-  const forcedPriceUpdates = { 'p-assiette-gourmande': 7, 'p-pichet-biere': 10, 'p-consigne': 2, 'p-retour-consigne': -2 };
-  c.products.forEach(p => {
-    if (Object.prototype.hasOwnProperty.call(forcedPriceUpdates, p.id)) p.price = forcedPriceUpdates[p.id];
+
+  c.products.forEach((p, i) => {
+    p.id ||= 'p' + (i + 1);
+    p.group ||= displayGroup(p.category);
+    p.type ||= 'simple';
+    p.components ||= [];
+    p.choices ||= [];
+    p.menuSections ||= [];
+    p.refundable = p.refundable !== false;
+    p.stock ??= '';
   });
+
   if (!c.products.some(p => p.id === 'p-verre-cremant')) {
     const cafeIndex = c.products.findIndex(p => p.id === 'p-cafe');
-    const item = { id: 'p-verre-cremant', group: 'Boissons', category: 'Boissons avec alcool', name: 'Verre de crémant', price: 3, type: 'simple', components: [], refundable: true, stock: '' };
+    const item = {
+      id: 'p-verre-cremant',
+      group: 'Boissons',
+      category: 'Boissons avec alcool',
+      name: 'Verre de crémant',
+      price: 3,
+      type: 'simple',
+      components: [],
+      refundable: true,
+      stock: ''
+    };
     c.products.splice(cafeIndex >= 0 ? cafeIndex : c.products.length, 0, item);
   }
+
   // v2026.04 : configuration distribuable, tout le suivi stock est désactivé par défaut.
   if (previousVersion < 2026.05) {
     (c.products || []).forEach(p => { p.stock = ''; });
     (c.baseFoods || []).forEach(f => { f.stock = ''; });
   }
-  // v2026.03 : Glace à l'eau supprimée mais le bouton reste disponible en emplacement libre.
-  const glaceEau = c.products.find(p => p.id === 'p-glace-eau');
-  if (glaceEau) { glaceEau.name = ''; glaceEau.price = 0; glaceEau.stock = ''; glaceEau.type = 'simple'; glaceEau.components = []; glaceEau.choices = []; glaceEau.menuSections = []; }
 
-  const productOrder = ['p-eau-50', 'p-eau-150', 'p-coca', 'p-oasis', 'p-ice-tea', 'p-biere-25', 'p-pichet-biere', 'p-verre-rose', 'p-verre-blanc', 'p-verre-rouge', 'p-bouteille-blanc', 'p-bouteille-rose', 'p-bouteille-rouge', 'p-cremant', 'p-verre-cremant', 'p-boisson-libre', 'p-cafe', 'p-frites', 'p-assiette-gourmande', 'p-menu', 'p-glace-vanille', 'p-popcorn', 'p-glace-eau', 'p-restau-libre-1', 'p-restau-libre-2', 'p-consigne', 'p-retour-consigne'];
+  const productOrder = [
+    'p-eau-50',
+    'p-eau-150',
+    'p-coca',
+    'p-oasis',
+    'p-ice-tea',
+    'p-biere-25',
+    'p-pichet-biere',
+    'p-verre-rose',
+    'p-verre-blanc',
+    'p-verre-rouge',
+    'p-bouteille-blanc',
+    'p-bouteille-rose',
+    'p-bouteille-rouge',
+    'p-cremant',
+    'p-verre-cremant',
+    'p-boisson-libre',
+    'p-cafe',
+    'p-frites',
+    'p-assiette-gourmande',
+    'p-menu',
+    'p-glace-vanille',
+    'p-popcorn',
+    'p-glace-eau',
+    'p-restau-libre-1',
+    'p-restau-libre-2',
+    'p-consigne',
+    'p-retour-consigne'
+  ];
+
   if (previousVersion < 2026.03) {
     c.products.sort((a, b) => {
-      const ia = productOrder.indexOf(a.id), ib = productOrder.indexOf(b.id);
+      const ia = productOrder.indexOf(a.id);
+      const ib = productOrder.indexOf(b.id);
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
   }
 
   // v2026.12 : le menu garde les suppléments modifiés dans les paramètres.
-  // Avant, cette étape réécrivait toujours les boissons du menu avec les prix par défaut,
-  // donc un supplément changé puis enregistré revenait à l'ancien prix.
   const menu = c.products.find(p => p.id === 'p-menu');
+
   if (menu) {
     menu.menuSections ||= [];
+
     let drinks = menu.menuSections.find(sec => sec.section === 'Boissons');
-    if (!drinks) { drinks = { section: 'Boissons', clientChoice: true, max: 1, options: [] }; menu.menuSections.unshift(drinks); }
+
+    if (!drinks) {
+      drinks = {
+        section: 'Boissons',
+        clientChoice: true,
+        max: 1,
+        options: []
+      };
+      menu.menuSections.unshift(drinks);
+    }
+
     drinks.clientChoice = true;
     drinks.max = 1;
+
     const defaultDrinkOptions = [
       { productId: 'p-eau-50', supplement: -0.50 },
       { productId: 'p-coca', supplement: 0 },
@@ -674,21 +773,43 @@ function normalizeConfig(c) {
       { productId: 'p-verre-blanc', supplement: 0.50 },
       { productId: 'p-verre-rouge', supplement: 0.50 }
     ];
-    const savedDrinkOptions = new Map((drinks.options || []).map(opt => [opt.productId, opt]));
+
+    const savedDrinkOptions = new Map(
+      (drinks.options || []).map(opt => [opt.productId, opt])
+    );
+
     drinks.options = defaultDrinkOptions.map(def => {
       const saved = savedDrinkOptions.get(def.productId);
-      return { productId: def.productId, supplement: Number(saved?.supplement ?? def.supplement ?? 0) };
+      return {
+        productId: def.productId,
+        supplement: Number(saved?.supplement ?? def.supplement ?? 0)
+      };
     });
+
     let dessert = menu.menuSections.find(sec => sec.section === 'Dessert');
-    if (dessert) dessert.options = (dessert.options || []).filter(o => o.productId !== 'p-glace-eau');
+
+    if (dessert) {
+      dessert.options = (dessert.options || []).filter(o => o.productId !== 'p-glace-eau');
+    }
   }
-  c.baseFoods.forEach(f => { f.id ||= uid('food'); f.category ||= 'Viande'; f.stock ??= ''; });
-  c.volunteers.forEach(v => { v.id ||= uid('vol'); v.name ||= 'Bénévole'; v.active = v.active !== false; });
+
+  c.baseFoods.forEach(f => {
+    f.id ||= uid('food');
+    f.category ||= 'Viande';
+    f.stock ??= '';
+  });
+
+  c.volunteers.forEach(v => {
+    v.id ||= uid('vol');
+    v.name ||= 'Bénévole';
+    v.active = v.active !== false;
+  });
+
   compactAllChoices(c);
   limitEmptyRestorationSlots(c);
+
   return c;
 }
-
 function displayGroup(cat) {
   if (String(cat).startsWith('Boissons') || String(cat) === 'Boisson') return 'Boissons';
   if (String(cat).includes('Consigne') || String(cat).includes('consigne')) return 'Consignes';
@@ -882,20 +1003,189 @@ function updateLine(e) {
   renderProducts();
   renderCart();
 }
+
 function updatePayment() {
+
+  const totalCents = Math.round(total() * 100);
+
+  let cardCents = getCardAmountCents();
+
+  if (cardCents > totalCents) {
+    cardCents = totalCents;
+
+    const input = document.getElementById('cardAmountInput');
+    if (input) {
+      input.value = (cardCents / 100).toFixed(2);
+    }
+  }
+
+  const cashPartCents = totalCents - cardCents;
+
   document.getElementById('cartTotalBottom').textContent = fmt(total());
   document.getElementById('amountPaidDisplay').textContent = fmt(paidAmount());
-  document.getElementById('changeDue').textContent = fmt(Math.max(0, paidAmount() - total()));
+  document.getElementById('changeDue').textContent = fmt(Math.max(0, (paidCents - cashPartCents) / 100));
+  const remainingBlock = document.getElementById('cashRemainingBlock');
+  const remaining = document.getElementById('cashRemaining');
+
+  if (remainingBlock && remaining) {
+    if (cardCents > 0) {
+      remainingBlock.style.display = '';
+      remaining.textContent = fmt(cashPartCents / 100);
+    } else {
+      remainingBlock.style.display = 'none';
+    }
+  }
 }
-function pressKey(key) { if (key === 'clear') paidCents = 0; else if (key === 'back') paidCents = Math.floor(paidCents / 10); else if (key === '00') paidCents = Math.min(999999, paidCents * 100); else paidCents = Math.min(999999, paidCents * 10 + Number(key)); updatePayment(); }
-function setQuickAmount(amount) { paidCents = Math.round(amount * 100); updatePayment(); }
+function pressKey(key) {
+  if (activePaymentField === 'card') {
+    const input = document.getElementById('cardAmountInput');
+    if (!input) return;
+
+    let cardCents = getCardAmountCents();
+
+    if (key === 'clear') {
+      cardCents = 0;
+    } else if (key === 'back') {
+      cardCents = Math.floor(cardCents / 10);
+    } else if (key === '00') {
+      cardCents = Math.min(999999, cardCents * 100);
+    } else {
+      cardCents = Math.min(999999, cardCents * 10 + Number(key));
+    }
+
+    input.value = (cardCents / 100).toFixed(2);
+    updatePayment();
+    return;
+  }
+
+  if (key === 'clear') {
+    paidCents = 0;
+  } else if (key === 'back') {
+    paidCents = Math.floor(paidCents / 10);
+  } else if (key === '00') {
+    paidCents = Math.min(999999, paidCents * 100);
+  } else {
+    paidCents = Math.min(999999, paidCents * 10 + Number(key));
+  }
+
+  updatePayment();
+}
+
+function setQuickAmount(amount) {
+
+  if (activePaymentField === 'card') {
+
+    const total = Math.round(total() * 100);
+    const value = Math.min(Math.round(amount * 100), total);
+
+    const input = document.getElementById('cardAmountInput');
+    if (input) {
+      input.value = (value / 100).toFixed(2);
+    }
+
+    updatePayment();
+    return;
+  }
+
+  paidCents = Math.round(amount * 100);
+  updatePayment();
+}
+function setActivePaymentField(field) {
+  activePaymentField = field;
+
+  const cardInput = document.getElementById('cardAmountInput');
+  const cashDisplay = document.getElementById('amountPaidDisplay');
+  const btnExact = document.getElementById('btnExact');
+
+  cardInput?.classList.toggle(
+    'active-payment-field',
+    field === 'card'
+  );
+
+  cashDisplay?.classList.toggle(
+    'active-payment-field',
+    field === 'cash'
+  );
+
+  if (btnExact) {
+    btnExact.disabled = (field === 'card');
+  }
+}
+
+function showCashPaymentPanel() {
+  if (!cart.length) {
+    showMessage('Commande vide', 'Ajoute au moins un produit avant de valider.');
+    return;
+  }
+
+  paymentMethod = 'Espèces';
+  paidCents = 0;
+  document.body.classList.add('show-payment');
+
+  const cardInput = document.getElementById('cardAmountInput');
+
+  if (cardInput && !cardInput.dataset.listener) {
+    cardInput.addEventListener('input', updatePayment);
+    cardInput.addEventListener('change', updatePayment);
+
+    cardInput.addEventListener('focus', () => setActivePaymentField('card'));
+    cardInput.addEventListener('click', () => setActivePaymentField('card'));
+
+    cardInput.dataset.listener = '1';
+  }
+
+  const cashDisplay = document.getElementById('amountPaidDisplay');
+
+  if (cashDisplay && !cashDisplay.dataset.listener) {
+    cashDisplay.addEventListener('click', () => setActivePaymentField('cash'));
+    cashDisplay.dataset.listener = '1';
+  }
+
+  setActivePaymentField('cash');
+  updatePayment();
+}
+
+function validateCashPayment() {
+  const cardCents = getCardAmountCents();
+
+  if (cardCents > 0) {
+    payAndPrint('CB + Espèces');
+  } else {
+    payAndPrint('Espèces');
+  }
+
+  const cardInput = document.getElementById('cardAmountInput');
+  if (cardInput) {
+    cardInput.value = '0.00';
+  }
+
+  paidCents = 0;
+  setActivePaymentField('cash');
+  document.body.classList.remove('show-payment');
+  updatePayment();
+  applyDisplayMode();
+}
+
 function payAndPrint(method) {
-  if (!cart.length) return showMessage('Commande vide', 'Ajoute au moins un produit avant de valider.');
+  if (!cart.length) {
+    showMessage('Commande vide', 'Ajoute au moins un produit avant de valider.');
+    return;
+  }
+
   paymentMethod = method;
-  if (total() <= 0) paidCents = 0;
-  else if (method === 'CB') paidCents = Math.round(total() * 100);
+
+  if (total() <= 0) {
+    paidCents = 0;
+  } else if (method === 'CB') {
+    paidCents = Math.round(total() * 100);
+  }
+
   updatePayment();
   validateSale({ paymentMethod: method });
+
+  if (method !== 'Espèces') {
+    document.body.classList.remove('show-payment');
+  }
 }
 
 function consumeStock() {
@@ -972,25 +1262,62 @@ function reprintLastTicket() {
 function saleTimestampParts(date = new Date()) {
   return { date: date.toISOString(), hour: date.getHours(), hourLabel: `${String(date.getHours()).padStart(2, '0')}h-${String(date.getHours() + 1).padStart(2, '0')}h` };
 }
+
+function getCardAmountCents() {
+  const input = document.getElementById('cardAmountInput');
+  if (!input) return 0;
+
+  const value = Number(String(input.value || '0').replace(',', '.'));
+  if (!Number.isFinite(value) || value <= 0) return 0;
+
+  return Math.round(value * 100);
+}
+
+function getCashPartCents() {
+  const totalCents = Math.round(total() * 100);
+  const cardCents = Math.min(getCardAmountCents(), totalCents);
+
+  return Math.max(0, totalCents - cardCents);
+}
+
+
 function validateSale(extra = {}) {
   const deviceConfig = getDeviceConfig();
   const printMode = getDevicePrintMode();
-  const shouldPrint = extra.print !== false && mustPrintDirect();
+  const shouldPrint = config.printTicketsEnabled !== false && extra.print !== false && mustPrintDirect();
 
   if (shouldPrint) buildTicket();
 
   const kind = extra.kind || 'sale';
   const stamp = saleTimestampParts();
+  const salePaymentMethod = extra.paymentMethod || paymentMethod;
+  const totalSaleCents = Math.round(total() * 100);
+  let cardAmountCents = 0;
+  let cashAmountCents = 0;
 
+  if (salePaymentMethod === 'CB') {
+    cardAmountCents = totalSaleCents;
+  }
+
+  if (salePaymentMethod === 'Espèces') {
+    cashAmountCents = totalSaleCents;
+  }
+
+  if (salePaymentMethod === 'CB + Espèces') {
+    cardAmountCents = Math.min(getCardAmountCents(), totalSaleCents);
+    cashAmountCents = Math.max(0, totalSaleCents - cardAmountCents);
+  }
   const sale = {
     kind,
     orderNumber: `${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`,
     date: stamp.date,
     hour: stamp.hour,
     hourLabel: stamp.hourLabel,
-    paymentMethod: extra.paymentMethod || paymentMethod,
+    paymentMethod: salePaymentMethod,
+    cardAmount: cardAmountCents / 100,
+    cashAmount: cashAmountCents / 100,
     paid: extra.paid ?? paidAmount(),
-    change: extra.change ?? Math.max(0, paidAmount() - total()),
+    change: extra.change ?? Math.max(0, paidAmount() - (cashAmountCents / 100)),
     total: total(),
     items: clone(cart),
     volunteerId: extra.volunteerId || '',
@@ -1000,7 +1327,11 @@ function validateSale(extra = {}) {
   };
 
   sales.push(sale);
-  saveSaleToSupabase(sale);
+  saveSaleToSupabase(sale).then(() => {
+    if (getDeviceCode() === 'A' && mustPrintCentral()) {
+      processPrintQueue();
+    }
+  });
   saveSales();
 
   if (shouldPrint) window.print();
@@ -1371,6 +1702,7 @@ function renderGeneralEditor() {
   document.getElementById('setEventName').value = draftConfig.eventName;
   document.getElementById('setPrefix').value = draftConfig.orderPrefix;
   document.getElementById('setTicketColor').value = draftConfig.ticketColor;
+
   const cats = Array.from(new Set([...CATEGORIES, ...draftConfig.products.map(p => p.category).filter(Boolean)]));
   document.getElementById('categoryColorEditor').innerHTML = cats.map(c => `<div class="editor-row color"><div>${escapeHtml(c)}</div><select data-cat-color="${escapeHtml(c)}">${paletteOptions(draftConfig.categoryColors[c] || 'gris')}</select></div>`).join('');
   document.querySelectorAll('[data-cat-color]').forEach(x => x.addEventListener('change', e => { draftConfig.categoryColors[e.currentTarget.dataset.catColor] = e.currentTarget.value; }));
@@ -1764,11 +2096,42 @@ function validateRefund() {
 
 document.querySelectorAll('[data-key]').forEach(btn => btn.addEventListener('click', () => pressKey(btn.dataset.key)));
 document.querySelectorAll('[data-quick]').forEach(btn => btn.addEventListener('click', () => setQuickAmount(Number(btn.dataset.quick))));
-document.getElementById('btnExact').addEventListener('click', () => setQuickAmount(total()));
-document.querySelectorAll('.pay[data-method]').forEach(btn => btn.addEventListener('click', () => payAndPrint(btn.dataset.method)));
+document.getElementById('btnExact').addEventListener('click', () => {
+  paidCents = getCashPartCents();
+  updatePayment();
+});
+
+document.querySelectorAll('.pay[data-method]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const method = btn.dataset.method;
+
+    if (method === 'Espèces') {
+      showCashPaymentPanel();
+      return;
+    }
+
+    payAndPrint(method);
+  });
+});
+
+const btnValidateCashPayment = document.getElementById('btnValidateCashPayment');
+if (btnValidateCashPayment) {
+  btnValidateCashPayment.addEventListener('click', validateCashPayment);
+}
 const btnPrintTicket = document.getElementById('btnPrintTicket');
 if (btnPrintTicket) btnPrintTicket.addEventListener('click', () => { if (cart.length) { buildTicket(); window.print(); } });
-document.getElementById('btnClear').addEventListener('click', () => { if (!cart.length) return; showConfirm('Annuler la commande', 'Supprimer toute la commande en cours ?', clearCurrentCart); });
+document.getElementById('btnClear').addEventListener('click', () => {
+  cart = [];
+  paidCents = 0;
+
+  const cardAmountInput = document.getElementById('cardAmountInput');
+  if (cardAmountInput) cardAmountInput.value = '0.00';
+
+  document.body.classList.remove('show-payment');
+
+  renderCart();
+  updatePayment();
+});
 document.getElementById('btnReprintLast').addEventListener('click', reprintLastTicket);
 const btnExport = document.getElementById('btnExport'); if (btnExport) btnExport.addEventListener('click', exportCsv);
 document.getElementById('btnQuickRefund').addEventListener('click', openQuickRefund);
@@ -1985,7 +2348,7 @@ function initDeviceSetupDialog() {
 
     if (!(await isDeviceCodeAvailable(deviceCode))) {
       showMessage(
-        "Poste déjà utilisé",
+        'Poste déjà utilisé',
         `Le poste ${deviceCode} est déjà utilisé par une autre caisse.`
       );
       return;
@@ -2005,6 +2368,7 @@ function initDeviceSetupDialog() {
 
     dialog.close();
     updateCentralDashboard();
+    startCentralServices();
 
     showMessage(
       'Appareil configuré',
@@ -2018,9 +2382,34 @@ function initDeviceSetupDialog() {
     orderNumber = loadOrderNumber();
     renderCart();
     renderDeviceInfo();
+    startCentralServices();
   }
 }
+const btnToggleDisplayMode = document.getElementById('btnToggleDisplayMode');
 
+function updateDisplayModeButton() {
+  if (!btnToggleDisplayMode) return;
+
+  btnToggleDisplayMode.textContent =
+    getDisplayMode() === 'compact'
+      ? '▤ Standard'
+      : '▣ Compact';
+}
+
+if (btnToggleDisplayMode) {
+  updateDisplayModeButton();
+
+  btnToggleDisplayMode.addEventListener('click', () => {
+    setDisplayMode(
+      getDisplayMode() === 'compact'
+        ? 'standard'
+        : 'compact'
+    );
+
+    updateDisplayModeButton();
+  });
+}
+applyDisplayMode();
 renderProducts();
 renderCart();
 initSupabaseSync();

@@ -25,6 +25,9 @@
       <button id="btnCashierView" class="secondary view-toggle active" style="display:none">Caisse</button>
       <button id="btnDashboardView" class="secondary view-toggle" style="display:none">Tableau de bord</button>
       <button id="btnSettings" class="secondary">Paramètres</button>
+      <button id="btnToggleDisplayMode" class="secondary" type="button">
+        ▣ Compact
+      </button>
     </div>
   </header>
 
@@ -42,11 +45,32 @@
       </div>
       <div id="cartLines" class="cart-lines empty">Aucun produit</div>
       <div class="cart-summary">Total commande : <span id="cartTotalBottom">0,00 €</span></div>
-      <button id="btnReprintLast" class="secondary reprint-cart">Réimprimer dernier ticket</button>
-    </section>
 
+      <div class="cart-payment-actions">
+        <button class="pay cash" data-method="Espèces">Espèces</button>
+        <button class="pay card" data-method="CB">CB</button>
+        <button id="btnVolunteer" class="pay volunteer-pay" type="button">Bénévole</button>
+      </div>
+      <div class="cart-bottom-actions">
+        <button id="btnQuickRefund" class="secondary refund-shortcut">
+          Remboursement
+        </button>
+
+        <button id="btnReprintLast" class="secondary reprint-cart">
+          Réimprimer
+        </button>
+      </div>
+
+    </section>
     <section class="payment-zone">
-      <h2>Caisse</h2>
+      <h2>Paiement espèces</h2>
+
+      <label>Montant CB</label>
+      <input id="cardAmountInput" type="number" min="0" step="0.01" value="0.00" placeholder="0,00 €">
+      <div id="cashRemainingBlock" style="display:none">
+        <label>Espèces restantes</label>
+        <div id="cashRemaining" class="paid-display">0,00 €</div>
+      </div>
       <label>Somme payée</label>
       <div id="amountPaidDisplay" class="paid-display">0,00 €</div>
 
@@ -76,14 +100,13 @@
       <label>À rendre</label>
       <div id="changeDue" class="money change">0,00 €</div>
 
-      <div class="payment-buttons">
-        <button class="pay cash" data-method="Espèces">Espèces</button>
-        <button class="pay card" data-method="CB">CB</button>
-        <button id="btnVolunteer" class="pay volunteer-pay" type="button">Bénévole</button>
-      </div>
+      <button id="btnValidateCashPayment" class="validate" type="button">
+        Encaisser
+      </button>
 
-      <p class="payment-hint">Clique sur Espèces ou CB pour valider et imprimer.</p>
-      <button id="btnQuickRefund" class="secondary refund-shortcut caisse-action">Remboursement</button>
+      <p class="payment-hint">
+        Indique éventuellement le montant payé en CB, puis encaisse les espèces.
+      </p>
     </section>
   </main>
   <main id="dashboardView" class="dashboard-view no-print" style="display:none">
@@ -152,6 +175,7 @@
           <option value="blue">Bleu</option>
           <option value="red">Rouge</option>
         </select>
+
         <h3>Couleur des catégories</h3>
         <div id="categoryColorEditor" class="editor-list"></div>
       </section>
@@ -301,7 +325,7 @@
         <option value="C">C</option>
         <option value="D">D</option>
       </select>
-      
+
       <label>Mode d'impression</label>
       <select id="devicePrintMode">
         <option value="central">Centralisée</option>
