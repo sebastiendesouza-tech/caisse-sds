@@ -286,6 +286,11 @@ function getDeviceCode() {
   const deviceConfig = getDeviceConfig();
   return deviceConfig?.deviceCode || config?.orderPrefix || 'A';
 }
+
+function isCentralCashier() {
+  return getDeviceCode() === "A";
+}
+
 async function isDeviceCodeAvailable(deviceCode) {
   if (!supabaseClient) return true;
 
@@ -326,25 +331,36 @@ function getDeviceName() {
 }
 
 function renderDeviceInfo() {
-  const el = document.getElementById("deviceInfo");
-  if (!el) return;
+  const nameEl = document.getElementById("cashRegisterName");
+  const modeEl = document.getElementById("printerMode");
+
+  if (!nameEl || !modeEl) return;
 
   const device = getDeviceConfig();
 
   if (!device) {
-    el.textContent = "";
+    nameEl.textContent = "CAISSE A";
+    modeEl.textContent = "Impression non configurée";
     return;
   }
 
-  const mode =
-    device.printMode === "central"
-      ? "🖨 Impression : Centralisée"
-      : "🖨 Impression : Directe";
+  const deviceName = device.deviceName || "";
+  const deviceCode = device.deviceCode || "A";
 
-  el.innerHTML = `
-    <strong>🟢 Caisse ${device.deviceCode}</strong> • ${device.deviceName}<br>
-    <small>${mode}</small>
-  `;
+  nameEl.textContent = `CAISSE ${deviceCode}${deviceName ? " - " + deviceName : ""}`;
+
+  if (device.printMode === "central") {
+    modeEl.textContent = "Impression centralisée";
+  } else if (device.printMode === "direct") {
+    modeEl.textContent = "Impression directe";
+  } else {
+    modeEl.textContent = "Impression désactivée";
+  }
+}
+function updateDashboardStatus() {
+  if (typeof updateCentralDashboard === 'function') {
+    updateCentralDashboard();
+  }
 }
 async function heartbeatDevice() {
   if (!supabaseClient) return;
@@ -558,20 +574,82 @@ function saveReportState() {
   if (reportResetAt) localStorage.setItem('caisse_report_reset_at', reportResetAt);
   else localStorage.removeItem('caisse_report_reset_at');
 }
-function saveOrderNumber() { localStorage.setItem('caisse_order_number', String(orderNumber)); }
+//function saveOrderNumber() { localStorage.setItem('caisse_order_number', String(orderNumber)); }
 function saveLastTicket() { localStorage.setItem('caisse_last_ticket_html', lastTicketHtml || ''); }
+
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
-function showMessage(title, text) {
-  const dlg = document.getElementById('messageDialog');
-  if (!dlg) { window.alert((title ? title + '\n' : '') + (text || '')); return; }
-  document.getElementById('messageTitle').textContent = title || 'Information';
-  document.getElementById('messageText').textContent = text || '';
-  document.getElementById('messageCancel').style.display = 'none';
-  const ok = document.getElementById('messageOk');
-  ok.textContent = 'OK';
-  ok.onclick = () => dlg.close();
-  dlg.showModal();
+
+function showToast(message, type = 'success', duration = 2600) {
+  let container = document.getElementById('toastContainer');
+
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container no-print';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(8px)';
+    toast.style.transition = 'opacity .18s ease, transform .18s ease';
+
+    setTimeout(() => toast.remove(), 220);
+  }, duration);
 }
+
+function showSettingsStatus(message, type = "success") {
+  const el = document.getElementById("settingsStatus");
+  if (!el) return;
+
+  const icons = {
+    success: "✓",
+    info: "ℹ",
+    warning: "⚠",
+    error: "✖"
+  };
+
+  el.textContent = `${icons[type] || ""} ${message}`;
+
+  const colors = {
+    success: "#16a34a",
+    info: "#2563eb",
+    warning: "#f59e0b",
+    error: "#dc2626"
+  };
+
+  el.style.background = colors[type] || colors.success;
+  el.style.display = "block";
+
+  clearTimeout(el._timer);
+
+  el._timer = setTimeout(() => {
+    el.style.display = "none";
+  }, 2500);
+}
+
+function showMessage(title, text) {
+  const settingsDialog = document.getElementById('settingsDialog');
+
+  if (settingsDialog && settingsDialog.open) {
+    showSettingsStatus(title || text || 'Information', 'info');
+    return;
+  }
+
+  if (typeof showToast === 'function') {
+    showToast(title || text || 'Information', 'info');
+    return;
+  }
+
+  window.alert((title ? title + '\n' : '') + (text || ''));
+}
+
 function showConfirm(title, text, onConfirm) {
   const dlg = document.getElementById('messageDialog');
   if (!dlg) { if (window.confirm((title ? title + '\n' : '') + (text || ''))) { if (typeof onConfirm === 'function') onConfirm(); } return; }
@@ -651,7 +729,8 @@ function normalizeConfig(c) {
       type: 'simple',
       components: [],
       refundable: true,
-      stock: ''
+      stock: '',
+      stockAlert: ''
     }));
   }
 
@@ -680,6 +759,7 @@ function normalizeConfig(c) {
     p.menuSections ||= [];
     p.refundable = p.refundable !== false;
     p.stock ??= '';
+    p.stockAlert ??= '';
   });
 
   if (!c.products.some(p => p.id === 'p-verre-cremant')) {
@@ -797,6 +877,7 @@ function normalizeConfig(c) {
     f.id ||= uid('food');
     f.category ||= 'Viande';
     f.stock ??= '';
+    f.stockAlert ??= '';
   });
 
   c.volunteers.forEach(v => {
@@ -873,24 +954,75 @@ function renderProducts() {
   if (meat) meat.innerHTML = renderMeatStockBox();
   document.querySelectorAll('.product-btn:not(.empty-product):not(.out-stock)').forEach(btn => btn.addEventListener('click', () => addProduct(btn.dataset.id)));
 }
+
 function renderMeatStockBox() {
-  const meats = (config.baseFoods || []).filter(f => String(f.category).toLowerCase() === 'viande' && isTracked(f.stock));
+  const meats = (config.baseFoods || []).filter(f =>
+    String(f.category).toLowerCase() === 'viande' && isTracked(f.stock)
+  );
+
   if (!meats.length) return '';
+
   return `<div class="meat-stock-box"><h3>Stocks viandes</h3><div class="meat-stock-grid">${meats.map(f => {
     const value = Number(f.stock);
-    const level = value < 10 ? 'low' : (value <= 30 ? 'medium' : 'ok');
-    return `<div class="meat-stock-item ${level}"><span>${escapeHtml(f.name)}</span><strong>${value}</strong></div>`;
+    const alertLevel = Number(f.stockAlert || 0);
+
+    const out = value <= 0;
+    const warning = !out && alertLevel > 0 && value <= alertLevel;
+
+    let level = 'ok';
+    if (out) level = 'out-stock stock-warning';
+    else if (warning) level = 'stock-warning';
+
+    const label = out ? 'Rupture' : value;
+
+    return `<div class="meat-stock-item ${level}"><span>${escapeHtml(f.name)}</span><strong>${label}</strong></div>`;
   }).join('')}</div></div>`;
 }
+
 function productButtonHtml(p) {
   const col = colorFor(p.category);
   const style = `background:${col.bg};color:${col.fg}`;
-  if (!p.name) return `<button class="product-btn empty-product" style="${style}" disabled><strong>Libre</strong></button>`;
-  const out = !stockAvailable(p);
-  const stockLabel = isTracked(p.stock) ? `<em class="btn-stock">Stock ${Number(p.stock)}</em>` : '';
-  const sub = `${fmt(p.price)}${out ? ' - rupture' : ''}`;
-  return `<button class="product-btn ${out ? 'out-stock stock-warning' : ''}" style="${style}" data-id="${p.id}"><strong>${escapeHtml(p.name)}</strong><span>${sub}</span>${stockLabel}</button>`;
+
+  if (!p.name) {
+    return `<button class="product-btn empty-product" style="${style}" disabled><strong>Libre</strong></button>`;
+  }
+
+  const stock = Number(p.stock);
+  const alertLevel = Number(p.stockAlert || 0);
+
+  const tracked = isTracked(p.stock);
+  const out = tracked && stock <= 0;
+  const warning = tracked && !out && alertLevel > 0 && stock <= alertLevel;
+
+  let classes = "product-btn";
+  if (out) classes += " out-stock stock-warning";
+  else if (warning) classes += " stock-warning";
+
+  let stockLabel = "";
+  if (tracked) {
+    stockLabel = `<em class="btn-stock">Stock ${stock}</em>`;
+  }
+
+  let sub = fmt(p.price);
+
+  if (out) {
+    sub += " - Rupture";
+  } else if (warning) {
+    sub += " - Stock faible";
+  }
+
+  return `
+    <button
+      class="${classes}"
+      style="${style}"
+      data-id="${p.id}">
+      <strong>${escapeHtml(p.name)}</strong>
+      <span>${sub}</span>
+      ${stockLabel}
+    </button>
+  `;
 }
+
 function addProduct(id) {
   const p = config.products.find(x => x.id === id);
   if (!p || !p.name) return;
@@ -1498,29 +1630,19 @@ function addMenuProduct() {
   pendingChoiceProduct = null;
 }
 
+let settingsMode = "admin";
+
+function openSettings(mode = "admin") { settingsMode = mode; draftConfig = clone(config); renderSettings(); updateSettingsButtons(); document.getElementById('settingsDialog').showModal(); }
+
 function renderSettingsOrders() {
   const el = document.getElementById('settingsOrdersList');
   if (!el) return;
 
-  el.innerHTML = '<p>Chargement des commandes...</p>';
-
-  loadSalesFromSupabase().then(() => {
-    const previousSales = sales;
-
-    if (supabaseSales.length) {
-      sales = supabaseSales;
-    }
-
-    el.innerHTML = ordersHtml();
-    bindRefundButtons(el);
-    bindVolunteerPayButtons(el);
-
-    sales = previousSales;
-  });
+  el.innerHTML = ordersHtml();
+  bindRefundButtons(el);
+  bindVolunteerPayButtons(el);
 }
-let settingsMode = "admin";
 
-function openSettings(mode = "admin") { settingsMode = mode; draftConfig = clone(config); renderSettings(); updateSettingsResetButton(); document.getElementById('settingsDialog').showModal(); }
 function renderSettings() {
   renderProductEditor(); renderFoodEditor(); renderStockEditor(); renderGeneralEditor(); renderVolunteerEditor(); renderSettingsOrders(); renderSettingsReport(); const tabs = document.querySelector('.settings-tabs');
 
@@ -1568,7 +1690,20 @@ function renderProductEditor() {
 }
 function newProductForZone(zone) {
   const category = zone === 'Boissons' ? 'Boissons sans alcool' : (zone === 'Consignes' ? 'Consigne' : 'Plat');
-  return { id: uid('p'), group: zone, category, name: 'Libre', price: 0, type: 'simple', components: [], choices: [], menuSections: [], refundable: true, stock: '' };
+  return {
+    id: uid('p'),
+    group: zone,
+    category,
+    name: 'Libre',
+    price: 0,
+    type: 'simple',
+    components: [],
+    choices: [],
+    menuSections: [],
+    refundable: true,
+    stock: '',
+    stockAlert: ''
+  };
 }
 function addProductDraft(e) {
   const zone = e.currentTarget.dataset.addProductZone;
@@ -1692,18 +1827,78 @@ function renderVolunteerEditor() {
 }
 function renderStockEditor() {
   const el = document.getElementById('stockEditor');
+  if (!el) return;
+
   const productRows = draftConfig.products
     .filter(p => p.name && p.type === 'simple')
-    .map(p => ({ kind: 'product', id: p.id, label: p.name, value: p.stock }));
+    .map(p => ({
+      kind: 'product',
+      id: p.id,
+      label: p.name,
+      value: p.stock,
+      alert: p.stockAlert
+    }));
+
   const foodRows = draftConfig.baseFoods
     .filter(f => f.name)
-    .map(f => ({ kind: 'food', id: f.id, label: f.name, value: f.stock }));
+    .map(f => ({
+      kind: 'food',
+      id: f.id,
+      label: f.name,
+      value: f.stock,
+      alert: f.stockAlert
+    }));
+
   const rows = [...productRows, ...foodRows];
-  el.innerHTML = rows.map(r => `<div class="stock-card"><label>${escapeHtml(r.label)}</label><input inputmode="numeric" placeholder="vide = pas de suivi" data-stock-kind="${r.kind}" data-stock-id="${r.id}" value="${r.value ?? ''}"></div>`).join('');
+
+  el.innerHTML = rows.map(r => `
+    <div class="stock-card">
+      <label>${escapeHtml(r.label)}</label>
+
+      <div class="stock-fields">
+        <input
+          inputmode="numeric"
+          placeholder="Stock"
+          data-stock-kind="${r.kind}"
+          data-stock-id="${r.id}"
+          value="${r.value ?? ''}"
+        >
+
+        <input
+          inputmode="numeric"
+          placeholder="Seuil"
+          data-stock-alert-kind="${r.kind}"
+          data-stock-alert-id="${r.id}"
+          value="${r.alert ?? ''}"
+        >
+      </div>
+    </div>
+  `).join('');
+
   el.querySelectorAll('[data-stock-kind]').forEach(x => x.addEventListener('change', e => {
-    const kind = e.currentTarget.dataset.stockKind, id = e.currentTarget.dataset.stockId;
-    const obj = kind === 'product' ? draftConfig.products.find(p => p.id === id) : draftConfig.baseFoods.find(f => f.id === id);
+    const kind = e.currentTarget.dataset.stockKind;
+    const id = e.currentTarget.dataset.stockId;
+
+    const obj = kind === 'product'
+      ? draftConfig.products.find(p => p.id === id)
+      : draftConfig.baseFoods.find(f => f.id === id);
+
+    if (!obj) return;
+
     obj.stock = e.currentTarget.value.trim();
+  }));
+
+  el.querySelectorAll('[data-stock-alert-kind]').forEach(x => x.addEventListener('change', e => {
+    const kind = e.currentTarget.dataset.stockAlertKind;
+    const id = e.currentTarget.dataset.stockAlertId;
+
+    const obj = kind === 'product'
+      ? draftConfig.products.find(p => p.id === id)
+      : draftConfig.baseFoods.find(f => f.id === id);
+
+    if (!obj) return;
+
+    obj.stockAlert = e.currentTarget.value.trim();
   }));
 }
 function renderGeneralEditor() {
@@ -1728,8 +1923,8 @@ function saveSettings() {
   renderProducts();
   renderCart();
   renderSettings();
-  updateSettingsResetButton();
-  showMessage('Paramètres enregistrés', 'Les modifications ont été enregistrées. La fenêtre reste ouverte.');
+  updateSettingsButtons();
+  showSettingsStatus("Paramètres enregistrés");
 }
 
 
@@ -2067,26 +2262,142 @@ async function openReport() {
 
   sales = previousSales;
 }
-function startNewEvent() {
-  if (!confirm('Démarrer une nouvelle manifestation ? Les ventes locales seront remises à zéro.')) return;
 
-  const name = prompt('Nom de la manifestation ?', 'Nouvelle manifestation');
-  if (!name) return;
+async function resetAllSupabaseData() {
+  if (getDeviceCode() !== 'A') {
+    showMessage(
+      'Action non autorisée',
+      'Cette action est réservée à la caisse centrale.'
+    );
+    return;
+  }
+
+  const ok = confirm(
+    'Tout effacer ?\n\nCette action supprimera toutes les ventes et toutes les manifestations dans Supabase.\n\nElle est irréversible.'
+  );
+
+  if (!ok) return;
+
+  const ok2 = confirm(
+    'Confirmation finale\n\nSupprimer définitivement toutes les données de ventes et manifestations ?'
+  );
+
+  if (!ok2) return;
+
+  if (!supabaseClient) {
+    showMessage('Supabase indisponible', 'Impossible de se connecter à Supabase.');
+    return;
+  }
+
+  const { error: salesError } = await supabaseClient
+    .from('sales')
+    .delete()
+    .neq('id', 0);
+
+  if (salesError) {
+    console.error('Erreur suppression ventes', salesError);
+    showMessage('Erreur', 'Impossible de supprimer les ventes Supabase.');
+    return;
+  }
+
+  const { error: eventsError } = await supabaseClient
+    .from('events')
+    .delete()
+    .neq('id', '');
+
+  if (eventsError) {
+    console.error('Erreur suppression manifestations', eventsError);
+    showMessage('Erreur', 'Les ventes ont été supprimées, mais pas les manifestations.');
+    return;
+  }
+
+  sales = [];
+  supabaseSales = [];
+  reportArchive = null;
+  reportResetAt = '';
+  lastTicketHtml = '';
+  orderNumber = 1;
+  currentEventId = '';
+
+  localStorage.removeItem('caisse_sales');
+  localStorage.removeItem('caisse_report_archive');
+  localStorage.removeItem('caisse_report_reset_at');
+  localStorage.removeItem('caisse_last_ticket_html');
+  localStorage.removeItem('caisse_event_id');
+  localStorage.removeItem(getOrderNumberKey());
+
+  config.currentEventId = '';
+  config.eventName = '';
+
+  saveConfig();
+
+  renderEventTitle();
+  renderCart();
+  renderProducts();
+
+  showMessage(
+    'Base remise à zéro',
+    'Toutes les ventes et manifestations ont été supprimées. Recharge l’application pour créer la première manifestation.'
+  );
+}
+
+async function ensureCurrentEvent() {
+  if (currentEventId && config.eventName) return;
+
+  await startNewEvent();
+}
+
+
+async function startNewEvent() {
+  const name = prompt('Nom de la manifestation ?', '');
+
+  if (!name || !name.trim()) {
+    showMessage('Nom obligatoire', 'Indique un nom de manifestation pour continuer.');
+    return;
+  }
+
   currentEventId = 'event-' + Date.now();
   localStorage.setItem('caisse_event_id', currentEventId);
 
   config.currentEventId = currentEventId;
-  config.eventName = name;
-  console.log('Nouveau nom manifestation =', config.eventName);
-  saveConfig();
-  renderEventTitle();
-  sales = [];
-  localStorage.setItem('caisse_sales', JSON.stringify(sales));
+  config.eventName = name.trim();
 
+  sales = [];
+  supabaseSales = [];
+  reportArchive = null;
+  reportResetAt = '';
+  lastTicketHtml = '';
   orderNumber = 1;
+
+  saveReportState();
+  saveSales();
+  saveLastTicket();
   saveOrderNumber();
 
-  alert('Nouvelle manifestation créée : ' + name);
+  if (supabaseClient) {
+    const { error } = await supabaseClient
+      .from('events')
+      .insert({
+        id: currentEventId,
+        name: config.eventName
+      });
+
+    if (error) {
+      console.error('Erreur création manifestation', error);
+      showMessage('Erreur Supabase', 'La manifestation a été créée localement, mais pas dans Supabase.');
+    }
+  }
+
+  saveConfig();
+
+  renderEventTitle();
+  renderProducts();
+  renderCart();
+
+  showMessage(
+    'Nouvelle manifestation créée',
+    config.eventName
+  );
 }
 
 function renderEventTitle() {
@@ -2262,7 +2573,6 @@ async function renderSettingsReport() {
 }
 async function openOrders() {
 
-  alert('OPEN ORDERS');
   await loadSalesFromSupabase();
 
   console.log('Ventes Supabase chargées', supabaseSales);
@@ -2451,26 +2761,51 @@ function showSettingsTab(tabName) {
   if (tabName === 'report') renderSettingsReport();
   if (tabName === 'export') exportCsv();
 
-  updateSettingsResetButton();
+  updateSettingsButtons();
 }
 
-function updateSettingsResetButton() {
-  const btn = document.getElementById('btnReset');
-  if (!btn) return;
+function updateSettingsButtons() {
+  const btnReset = document.getElementById('btnReset');
+  const btnSave = document.getElementById('btnSaveSettings');
   const tab = activeSettingsTab();
-  const labels = {
-    products: 'Vider les boutons produits',
-    foods: 'Effacer les aliments',
-    stocks: 'Réinitialiser les stocks',
-    volunteers: 'Effacer les bénévoles',
-    orders: 'Effacer les commandes',
-    report: 'Réinitialiser le bilan',
-    general: "Réinitialiser toute l'application"
-  };
-  if (tab === 'export') { btn.style.display = 'none'; return; }
-  btn.textContent = labels[tab] || 'Réinitialiser';
-  btn.style.display = '';
+
+  if (btnReset) {
+    const labels = {
+      products: 'Vider les boutons produits',
+      foods: 'Effacer les aliments',
+      stocks: 'Réinitialiser les stocks',
+      volunteers: 'Effacer les bénévoles',
+      general: "Réinitialiser toute l'application"
+    };
+
+    if (
+      getDeviceCode() !== 'A' ||
+      tab === 'orders' ||
+      tab === 'report' ||
+      tab === 'export' ||
+      tab === 'new-event'
+    ) {
+      btnReset.style.display = 'none';
+    } else {
+      btnReset.textContent = labels[tab] || 'Réinitialiser';
+      btnReset.style.display = '';
+    }
+  }
+
+  if (btnSave) {
+    if (
+      tab === 'orders' ||
+      tab === 'report' ||
+      tab === 'export' ||
+      tab === 'new-event'
+    ) {
+      btnSave.style.display = 'none';
+    } else {
+      btnSave.style.display = '';
+    }
+  }
 }
+
 
 function blankProductForSameSlot(p) {
   const group = p.group || displayGroup(p.category);
@@ -2490,32 +2825,88 @@ function blankProductForSameSlot(p) {
   };
 }
 function resetDraftProducts() {
-  draftConfig.products = (draftConfig.products || []).map(blankProductForSameSlot);
-  renderSettings();
-  updateSettingsResetButton();
-  showMessage('Boutons produits vidés', 'Les boutons produits sont maintenant vierges. Clique sur Enregistrer pour appliquer.');
+  showConfirm(
+    "Vider les boutons produits",
+    "Les boutons produits seront vidés.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer.",
+    () => {
+      draftConfig.products = (draftConfig.products || []).map(blankProductForSameSlot);
+
+      renderSettings();
+      updateSettingsButtons();
+
+      showSettingsStatus("Boutons produits vidés. Cliquez sur Enregistrer pour valider.");
+    }
+  );
 }
-function resetDraftFoods() {
+
+async function resetDraftFoods() {
+  const ok = await showConfirm(
+    "Effacer les aliments",
+    "La liste des aliments sera vidée.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer."
+  );
+
+  if (!ok) return;
+
   draftConfig.baseFoods = [];
+
   (draftConfig.products || []).forEach(p => {
     p.components = [];
     p.choices = [];
-    p.menuSections = (p.menuSections || []).map(sec => ({ ...sec, options: (sec.options || []).map(opt => ({ productId: opt.productId, supplement: opt.supplement || 0 })) }));
+    p.menuSections = (p.menuSections || []).map(sec => ({
+      ...sec,
+      options: (sec.options || []).map(opt => ({
+        productId: opt.productId,
+        supplement: opt.supplement || 0
+      }))
+    }));
   });
+
   renderSettings();
-  updateSettingsResetButton();
-  showMessage('Aliments effacés', 'La liste des aliments est vide. Clique sur Enregistrer pour appliquer.');
+  updateSettingsButtons();
+
+  showSettingsStatus(
+    "Aliments effacés. Cliquez sur Enregistrer pour valider."
+  );
 }
+
 function resetDraftStocks() {
-  (draftConfig.products || []).forEach(p => { p.stock = ''; });
-  (draftConfig.baseFoods || []).forEach(f => { f.stock = ''; });
-  renderStockEditor();
-  showMessage('Stocks réinitialisés', 'Tous les stocks sont en non suivi. Clique sur Enregistrer pour appliquer.');
+  showConfirm(
+    "Réinitialiser les stocks",
+    "Tous les stocks seront mis en non suivi.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer.",
+    () => {
+      (draftConfig.products || []).forEach(p => {
+        p.stock = '';
+      });
+
+      (draftConfig.baseFoods || []).forEach(f => {
+        f.stock = '';
+      });
+
+      renderStockEditor();
+
+      showSettingsStatus(
+        "Stocks réinitialisés. Cliquez sur Enregistrer pour valider."
+      );
+    }
+  );
 }
-function resetDraftVolunteers() {
+
+async function resetDraftVolunteers() {
+
+  const ok = await showConfirm(
+    "Effacer les bénévoles",
+    "La liste des bénévoles sera vidée.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer."
+  );
+
+  if (!ok) return;
+
   draftConfig.volunteers = [];
+
   renderVolunteerEditor();
-  showMessage('Bénévoles effacés', 'La liste des bénévoles est vide. Clique sur Enregistrer pour appliquer.');
+
+  showSettingsStatus(
+    "Liste des bénévoles effacée. Cliquez sur Enregistrer pour valider."
+  );
 }
 function clearAllOrdersAndTickets() {
   // On conserve le bilan visible avant suppression, puis on efface seulement l'historique des commandes.
@@ -2599,6 +2990,11 @@ document.getElementById('btnAddFood').addEventListener('click', () => { draftCon
 document.getElementById('btnAddVolunteer').addEventListener('click', () => { draftConfig.volunteers ||= []; draftConfig.volunteers.push({ id: uid('vol'), name: 'Nouveau bénévole', active: true }); renderVolunteerEditor(); });
 document.getElementById('btnReset').addEventListener('click', handleSettingsReset);
 const btnNewEvent = document.getElementById('btnNewEvent');
+const btnResetAllSupabaseData = document.getElementById('btnResetAllSupabaseData');
+
+if (btnResetAllSupabaseData) {
+  btnResetAllSupabaseData.addEventListener('click', resetAllSupabaseData);
+}
 
 if (btnNewEvent) {
   btnNewEvent.addEventListener('click', startNewEvent);
@@ -2611,7 +3007,7 @@ document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', (
   if (btn.dataset.tab === 'orders') renderSettingsOrders();
   if (btn.dataset.tab === 'report') renderSettingsReport();
   if (btn.dataset.tab === 'export') exportCsv();
-  updateSettingsResetButton();
+  updateSettingsButtons();
 }));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 function initDeviceSetupDialog() {
@@ -2698,5 +3094,8 @@ renderProducts();
 renderCart();
 initSupabaseSync();
 initDeviceSetupDialog();
+setTimeout(() => {
+  ensureCurrentEvent();
+}, 800);
 
 document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('btnCloseSettingsBottom'); if (b) { b.addEventListener('click', () => document.getElementById('settingsDialog')?.close()); } });

@@ -16,16 +16,15 @@
 
   <header class="topbar no-print">
     <div class="brand-block">
-      <h1>Caisse by SDS 2<small>(iPad Chrome)</small> <span class="version-badge">v2026.13</span></h1>
+      <h1 id="cashRegisterName">CAISSE A</h1>
+      <div id="printerMode" class="printer-mode">Impression centralisée</div>
     </div>
 
-    <div id="eventTitle" class="event-title">Comité des Fêtes-Moroges</div>
+    <div id="eventTitle" class="event-title">Caisse</div>
 
     <div class="top-actions">
-      <button id="btnSettings" class="secondary">🗂️ Gestion</button>
-      <button id="btnToggleDisplayMode" class="secondary" type="button">
-        ▣ Compact
-      </button>
+      <button id="btnSettings" class="secondary" type="button">Gestion</button>
+      <button id="btnToggleDisplayMode" class="secondary" type="button">▣ Compact</button>
     </div>
   </header>
 
@@ -33,7 +32,6 @@
     <section class="products-zone">
       <div id="categories"></div>
       <div id="meatStock"></div>
-      <div id="deviceInfo" class="device-info"></div>
     </section>
 
     <section class="cart-zone">
@@ -158,6 +156,7 @@
         <h2>Paramètres</h2>
         <button id="btnCloseSettings" class="secondary">Fermer</button>
       </div>
+      <div id="settingsStatus" class="settings-status"></div>
       <div class="settings-tabs">
         <button class="tab active" data-tab="products">Produits</button>
         <button class="tab" data-tab="foods">Aliments</button>
@@ -167,6 +166,9 @@
         <button class="tab" data-tab="orders">Commandes</button>
         <button class="tab" data-tab="report">Bilan</button>
         <button class="tab" data-tab="new-event">Nouvelle manifestation</button>
+        <button id="btnResetAllSupabaseData" class="danger">
+          ⚠️ Effacer toutes les ventes et manifestations
+        </button>
         <button class="tab" data-tab="export">Export CSV</button>
       </div>
       <section id="tab-products" class="tab-panel active">
@@ -232,8 +234,8 @@
       </section>
       <div class="settings-actions">
         <button id="btnReset" class="danger">Vider les boutons produits</button>
-        <button id="btnCloseSettingsBottom" class="secondary">Fermer</button><button id="btnSaveSettings"
-          class="validate">Enregistrer</button>
+        <button id="btnCloseSettingsBottom" class="secondary">Fermer</button>
+        <button id="btnSaveSettings" class="validate">Enregistrer</button>
       </div>
     </div>
   </dialog>
@@ -364,11 +366,13 @@
     </div>
   </dialog>
 
+  <div id="toastContainer" class="toast-container no-print"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="ticket.js"></script>
   <script src="dashboard.js"></script>
   <script src="print-service.js"></script>
   <script src="app.js?v=test1"></script>
+
 </body>
 
 </html>
