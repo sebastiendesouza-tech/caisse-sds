@@ -2434,3 +2434,13 @@ body.compact-mode.show-payment .payment-zone {
   background: #16a34a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
 }
+
+/* Texte plus grand en mode compact */
+body.compact-mode .product-btn strong {
+  font-size: 16px;
+}
+
+body.compact-mode .product-btn span,
+body.compact-mode .product-btn .btn-stock {
+  font-size: 13px;
+}
