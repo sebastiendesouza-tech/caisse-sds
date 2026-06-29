@@ -429,6 +429,8 @@ async function loadConfigFromSupabase() {
     return;
   }
 
+  const previousEventId = currentEventId;
+
   const { data, error } = await supabaseClient
     .from(SUPABASE_CONFIG_TABLE)
     .select('data')
@@ -446,6 +448,20 @@ async function loadConfigFromSupabase() {
     if (config.currentEventId) {
       currentEventId = config.currentEventId;
       localStorage.setItem('caisse_event_id', currentEventId);
+    }
+
+    if (currentEventId !== previousEventId) {
+      sales = [];
+      supabaseSales = [];
+      reportArchive = null;
+      reportResetAt = '';
+      lastTicketHtml = '';
+      orderNumber = 1;
+
+      saveReportState();
+      saveSales();
+      saveLastTicket();
+      saveOrderNumber();
     }
 
     localStorage.setItem('caisse_config', JSON.stringify(config));
@@ -518,14 +534,32 @@ function startSupabaseRealtime() {
 
         console.log('Mise à jour Supabase reçue');
 
+        const previousEventId = currentEventId;
+
         supabaseReceiving = true;
+
         console.log('remoteConfig eventName =', remoteConfig.eventName);
         console.log('remoteConfig currentEventId =', remoteConfig.currentEventId);
+
         config = normalizeConfig(remoteConfig);
 
         if (config.currentEventId) {
           currentEventId = config.currentEventId;
           localStorage.setItem('caisse_event_id', currentEventId);
+        }
+
+        if (currentEventId !== previousEventId) {
+          sales = [];
+          supabaseSales = [];
+          reportArchive = null;
+          reportResetAt = '';
+          lastTicketHtml = '';
+          orderNumber = 1;
+
+          saveReportState();
+          saveSales();
+          saveLastTicket();
+          saveOrderNumber();
         }
 
         localStorage.setItem('caisse_config', JSON.stringify(config));
