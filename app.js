@@ -1041,8 +1041,6 @@ function productButtonHtml(p) {
 
   if (out) {
     sub += " - Rupture";
-  } else if (warning) {
-    sub += " - Stock faible";
   }
 
   return `
@@ -1665,6 +1663,7 @@ function addMenuProduct() {
 }
 
 let settingsMode = "admin";
+let settingsOrdersScope = "device";
 
 function openSettings(mode = "admin") { settingsMode = mode; draftConfig = clone(config); renderSettings(); updateSettingsButtons(); document.getElementById('settingsDialog').showModal(); }
 
@@ -1672,9 +1671,26 @@ function renderSettingsOrders() {
   const el = document.getElementById('settingsOrdersList');
   if (!el) return;
 
-  el.innerHTML = ordersHtml();
-  bindRefundButtons(el);
-  bindVolunteerPayButtons(el);
+  el.innerHTML = '<p>Chargement des commandes...</p>';
+
+  loadSalesFromSupabase().then(() => {
+    const previousSales = sales;
+
+    let list = supabaseSales.length ? supabaseSales : sales;
+
+    if (settingsOrdersScope === "device") {
+      const code = getDeviceCode();
+      list = list.filter(s => String(s.orderNumber || '').startsWith(code));
+    }
+
+    sales = list;
+
+    el.innerHTML = ordersHtml();
+    bindRefundButtons(el);
+    bindVolunteerPayButtons(el);
+
+    sales = previousSales;
+  });
 }
 
 function renderSettings() {
@@ -2745,13 +2761,23 @@ document.getElementById('btnGestionVolunteers')?.addEventListener('click', () =>
 
 document.getElementById('btnGestionOrders')?.addEventListener('click', () => {
   document.getElementById('gestionDialog')?.close();
+  settingsOrdersScope = "device";
   openSettings("cashier");
   showSettingsTab('orders');
 });
 
 document.getElementById('btnGestionAdmin')?.addEventListener('click', () => {
+  if (getDeviceCode() !== 'A') {
+    showMessage(
+      'Accès réservé',
+      'L’administration est réservée à la caisse centrale.'
+    );
+    return;
+  }
+
   document.getElementById('gestionDialog')?.close();
-  openSettings();
+  settingsOrdersScope = "all";
+  openSettings("admin");
   showSettingsTab('products');
 });
 
