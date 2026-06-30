@@ -3154,71 +3154,66 @@ function initDeviceSetupDialog() {
   if (!dialog || !btnSave) return;
 
   btnSave.addEventListener('click', async () => {
-    const deviceName = document.getElementById('deviceName').value.trim();
-    const deviceCode = document.getElementById('deviceCode').value;
-    const printMode = document.getElementById('devicePrintMode').value;
+    const originalText = btnSave.textContent;
 
-    if (!deviceName) {
-      showMessage('Configuration incomplète', 'Indique un nom pour cet appareil.');
-      return;
-    }
+    try {
+      btnSave.disabled = true;
+      btnSave.textContent = 'Vérification...';
 
-    if (!(await isDeviceCodeAvailable(deviceCode))) {
-      showConfirm(
-        'Poste déjà utilisé',
-        `Le poste ${deviceCode} est déjà utilisé par une autre caisse.\n\nVoulez-vous récupérer cette caisse sur cet appareil ?`,
-        async () => {
-          const recovered = await recoverDeviceCode(deviceCode, deviceName, printMode);
+      const deviceName = document.getElementById('deviceName').value.trim();
+      const deviceCode = document.getElementById('deviceCode').value;
+      const printMode = document.getElementById('devicePrintMode').value;
 
-          if (!recovered) {
-            showMessage('Erreur', `Impossible de récupérer la caisse ${deviceCode}.`);
-            return;
-          }
+      if (!deviceName) {
+        showMessage('Configuration incomplète', 'Indique un nom pour cet appareil.');
+        return;
+      }
 
-          saveDeviceConfig({ deviceName, deviceCode, printMode });
+      const available = await isDeviceCodeAvailable(deviceCode);
 
-          orderNumber = loadOrderNumber();
+      if (!available) {
+        const ok = await showRecoverDeviceDialog(deviceCode);
 
-          await loadConfigFromSupabase();
-          await syncOrderNumberFromSupabase();
-          await registerDevice();
+        if (!ok) return;
 
-          renderCart();
-          renderDeviceInfo();
+        btnSave.textContent = 'Récupération...';
 
-          dialog.close();
+        const recovered = await recoverDeviceCode(deviceCode, deviceName, printMode);
 
-          if (getDeviceCode() === 'A') {
-            updateCentralDashboard();
-            startCentralServices();
-          }
-
-          showMessage('Caisse récupérée', `Cet appareil utilise maintenant la caisse ${deviceCode}.`);
+        if (!recovered) {
+          showMessage('Erreur', `Impossible de récupérer la caisse ${deviceCode}.`);
+          return;
         }
-      );
+      }
 
-      return;
+      btnSave.textContent = 'Enregistrement...';
+
+      saveDeviceConfig({ deviceName, deviceCode, printMode });
+
+      orderNumber = loadOrderNumber();
+
+      await loadConfigFromSupabase();
+      await syncOrderNumberFromSupabase();
+      await registerDevice();
+
+      renderCart();
+      renderDeviceInfo();
+
+      if (dialog.open) dialog.close();
+
+      if (getDeviceCode() === 'A') {
+        updateCentralDashboard();
+        startCentralServices();
+      }
+
+      showMessage('Appareil configuré', `Cet appareil est configuré comme caisse ${deviceCode}.`);
+    } catch (e) {
+      console.error('Erreur configuration appareil', e);
+      showMessage('Erreur configuration', e.message || 'Une erreur est survenue.');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.textContent = originalText;
     }
-
-    saveDeviceConfig({ deviceName, deviceCode, printMode });
-
-    orderNumber = loadOrderNumber();
-
-    await loadConfigFromSupabase();
-    await syncOrderNumberFromSupabase();
-    await registerDevice();
-
-    renderCart();
-    renderDeviceInfo();
-
-    dialog.close();
-
-    if (getDeviceCode() === 'A') {
-      updateCentralDashboard();
-      startCentralServices();
-    }
-
-    showMessage('Appareil configuré', `Cet appareil est configuré comme caisse ${deviceCode}.`);
   });
 
   if (!getDeviceConfig()) {
@@ -3233,7 +3228,35 @@ function initDeviceSetupDialog() {
     }
   }
 }
+function showRecoverDeviceDialog(deviceCode) {
+  return new Promise(resolve => {
+    const dlg = document.getElementById("recoverDeviceDialog");
+    if (!dlg) {
+      resolve(false);
+      return;
+    }
 
+    document.getElementById("recoverDeviceText").textContent =
+      `La caisse ${deviceCode} est actuellement utilisée sur un autre appareil.\n\n` +
+      `Si vous continuez, cet appareil deviendra la caisse ${deviceCode}.\n` +
+      `L'ancien appareil perdra automatiquement cette caisse.`;
+
+    const cancel = document.getElementById("recoverDeviceCancel");
+    const ok = document.getElementById("recoverDeviceOk");
+
+    cancel.onclick = () => {
+      dlg.close();
+      resolve(false);
+    };
+
+    ok.onclick = () => {
+      dlg.close();
+      resolve(true);
+    };
+
+    dlg.showModal();
+  });
+}
 async function checkDeviceOwnership() {
   if (!supabaseClient) return;
 
