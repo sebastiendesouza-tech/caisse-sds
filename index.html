@@ -156,37 +156,47 @@
         <h2>Paramètres</h2>
         <button id="btnCloseSettings" class="secondary">Fermer</button>
       </div>
+
       <div id="settingsStatus" class="settings-status"></div>
+
       <div class="settings-tabs">
-        <button class="tab active" data-tab="products">Produits</button>
+        <button class="tab active" data-tab="general">Général</button>
+        <button class="tab" data-tab="products">Produits</button>
         <button class="tab" data-tab="foods">Aliments</button>
-        <button class="tab" data-tab="stocks">Stocks</button>
-        <button class="tab" data-tab="general">Général</button>
-        <button class="tab" data-tab="volunteers">Bénévoles</button>
         <button class="tab" data-tab="orders">Commandes</button>
         <button class="tab" data-tab="report">Bilan</button>
         <button class="tab" data-tab="new-event">Nouvelle manifestation</button>
+        <button class="tab" data-tab="export">Export CSV</button>
         <button id="btnResetAllSupabaseData" class="danger">
           ⚠️ Effacer toutes les ventes et manifestations
         </button>
-        <button class="tab" data-tab="export">Export CSV</button>
       </div>
+
       <section id="tab-products" class="tab-panel active">
         <p class="hint">Pour un produit composé ou un menu, choisis les viandes/accompagnements proposés, le nombre à
           choisir, et un supplément éventuel par aliment.</p>
         <div id="productEditor" class="editor-list"></div>
       </section>
+
       <section id="tab-foods" class="tab-panel">
         <button id="btnAddFood" class="secondary">Ajouter un aliment</button>
         <div id="foodEditor" class="editor-list"></div>
       </section>
+
+      <section id="tab-live" class="tab-panel">
+        <p class="hint">État des connexions, des caisses, de l’impression et des ventes.</p>
+        <div id="liveStatusContent"></div>
+      </section>
+
       <section id="tab-stocks" class="tab-panel">
         <p class="hint">Vide = pas de suivi. Nombre = suivi du stock.</p>
         <div id="stockEditor" class="editor-list"></div>
       </section>
+
       <section id="tab-general" class="tab-panel">
         <label>Nom manifestation</label>
         <input id="setEventName" />
+
         <label>Préfixe iPad</label>
         <select id="setPrefix">
           <option>A</option>
@@ -194,28 +204,26 @@
           <option>C</option>
           <option>D</option>
         </select>
-        <label>Couleur ticket</label>
-        <select id="setTicketColor">
-          <option value="black">Noir</option>
-          <option value="blue">Bleu</option>
-          <option value="red">Rouge</option>
-        </select>
 
         <h3>Couleur des catégories</h3>
         <div id="categoryColorEditor" class="editor-list"></div>
       </section>
+
       <section id="tab-volunteers" class="tab-panel">
         <button id="btnAddVolunteer" class="secondary">Ajouter un bénévole</button>
         <div id="volunteerEditor" class="editor-list"></div>
       </section>
+
       <section id="tab-orders" class="tab-panel">
         <p class="hint">Historique des commandes, ventes bénévoles et remboursements.</p>
         <div id="settingsOrdersList" class="orders-list"></div>
       </section>
+
       <section id="tab-report" class="tab-panel">
         <p class="hint">Bilan des ventes, paiements et remboursements.</p>
         <div id="settingsReportContent"></div>
       </section>
+
       <section id="tab-new-event" class="tab-panel">
         <h3>Nouvelle manifestation</h3>
 
@@ -228,10 +236,12 @@
           🎉 Démarrer une nouvelle manifestation
         </button>
       </section>
+
       <section id="tab-export" class="tab-panel">
         <p class="hint">Clique sur l'onglet pour lancer directement l'export CSV.</p>
         <div class="export-status">L'export CSV se lance automatiquement.</div>
       </section>
+
       <div class="settings-actions">
         <button id="btnReset" class="danger">Vider les boutons produits</button>
         <button id="btnCloseSettingsBottom" class="secondary">Fermer</button>
@@ -349,13 +359,6 @@
         <option value="B">B</option>
         <option value="C">C</option>
         <option value="D">D</option>
-      </select>
-
-      <label>Mode d'impression</label>
-      <select id="devicePrintMode">
-        <option value="central">Centralisée</option>
-        <option value="direct">Directe (secours)</option>
-        <option value="none">Aucune</option>
       </select>
 
       <div class="settings-actions">

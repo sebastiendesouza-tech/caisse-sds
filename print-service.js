@@ -278,6 +278,7 @@ async function printTicket(sale) {
     if (config.printTicketsEnabled === false) {
         return true;
     }
+
     if (mustPrintNothing()) {
         return true;
     }
@@ -287,23 +288,40 @@ async function printTicket(sale) {
         window.print();
         return true;
     }
-    previewTicket(sale);
 
-    const content = ticketTextFromSale(sale);
+    if (!selectedPrinterName) {
+        showSettingsStatus("Aucune imprimante sélectionnée.", "error");
+        return false;
+    }
 
-    await fetch("http://127.0.0.1:17890/print", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            printer: selectedPrinterName,
-            content
-        })
-    });
+    try {
+        previewTicket(sale);
 
-    return true;
+        const content = ticketTextFromSale(sale);
 
+        const response = await fetch("http://127.0.0.1:17890/print", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                printer: selectedPrinterName,
+                content
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.ok === false) {
+            throw new Error(data.error || "Erreur d'impression");
+        }
+
+        return true;
+    } catch (e) {
+        console.error("Erreur printTicket", e);
+        showSettingsStatus("Erreur impression : " + e.message, "error");
+        return false;
+    }
 }
 
 async function processPrintQueue() {

@@ -89,68 +89,346 @@ async function refreshCentralDashboard() {
 // Connexions
 // -----------------------------------------------------
 
-async function refreshDashboardConnections() {
-    const el = document.getElementById("dashboardConnections");
+async function renderLiveStatus() {
+    const el = document.getElementById("liveStatusContent");
     if (!el) return;
 
-    let printerText = "🔴 SDS Printer";
-    let versionText = "";
+    let printer = "🔴 Non connecté";
+    let version = "";
 
     try {
         const response = await fetch("http://127.0.0.1:17890/health");
         const data = await response.json();
 
-        printerText = "🟢 SDS Printer";
-        versionText = data.version ? `v${data.version}` : "";
+        printer = "🟢 Connecté";
+        version = data.version ? ` (${data.version})` : "";
     } catch (e) {
-        printerText = "🔴 SDS Printer";
-        versionText = "";
     }
 
-    let devicesHtml = "Aucune caisse";
+    let devicesHtml = "";
 
     if (supabaseClient) {
-        const { data, error } = await supabaseClient
+        const { data } = await supabaseClient
             .from("devices")
             .select("device_code, device_status")
             .order("device_code");
 
-        if (!error && data) {
+        if (data) {
             devicesHtml = data
-                .map(device => {
-                    const icon = device.device_status === "busy" ? "🟢" : "⚪";
-                    return `${icon} ${device.device_code}`;
-                })
-                .join(" &nbsp; ");
+                .map(d =>
+                    `${d.device_status === "busy" ? "🟢" : "⚪"} ${d.device_code}`
+                )
+                .join(" &nbsp;&nbsp; ");
         }
     }
 
-    const releaseButtonHtml = getDeviceCode() === "A"
-        ? `
-            <button type="button" class="secondary dashboard-small-button" onclick="releaseOtherDevices()">
-                🔓 Libérer caisses inactives
-            </button>
-        `
-        : "";
+    const device = getDeviceConfig?.();
+
+    let pendingTickets = 0;
+    let ticketCount = 0;
+    let cashTotal = 0;
+    let cardTotal = 0;
+    let totalSales = 0;
+    let averageBasket = 0;
+    let lastOrderNumber = "-";
+
+    if (supabaseClient) {
+        const { data: pendingData } = await supabaseClient
+            .from("sales")
+            .select("id")
+            .eq("event_id", currentEventId)
+            .eq("printed", false);
+
+        if (pendingData) {
+            pendingTickets = pendingData.length;
+        }
+
+        const { data: salesData } = await supabaseClient
+            .from("sales")
+            .select("order_number, total, cash_amount, card_amount, sale_data, cancelled")
+            .eq("event_id", currentEventId)
+            .order("created_at", { ascending: false });
+
+        if (salesData) {
+            salesData.forEach(sale => {
+                if (sale.cancelled) return;
+
+                ticketCount += 1;
+                cashTotal += Number(sale.cash_amount ?? sale.sale_data?.cashAmount ?? 0);
+                cardTotal += Number(sale.card_amount ?? sale.sale_data?.cardAmount ?? 0);
+                totalSales += Number(sale.total || 0);
+
+                if (lastOrderNumber === "-") {
+                    lastOrderNumber = sale.order_number || "-";
+                }
+            });
+
+            if (ticketCount > 0) {
+                averageBasket = totalSales / ticketCount;
+            }
+        }
+    }
 
     el.innerHTML = `
-        <div class="dashboard-compact-line">
-            <span>Supabase</span>
-            <strong>${supabaseClient ? "🟢 Connecté" : "🔴 Non connecté"}</strong>
-        </div>
+        <div class="live-columns">
+            <div>
+                <h3>Connexions</h3>
 
-        <div class="dashboard-compact-line">
-            <span>${printerText}</span>
-            <strong>${versionText}</strong>
-        </div>
+                <p>Supabase : <strong>${supabaseClient ? "🟢 Connecté" : "🔴 Non connecté"}</strong></p>
 
-        <div class="dashboard-compact-block">
-            <span>Caisses</span>
-            <strong>${devicesHtml}</strong>
-        </div>
+                <p>SDS Printer : <strong>${printer}${version}</strong></p>
 
-        ${releaseButtonHtml}
+                <h3>Caisses</h3>
+
+                <p>${devicesHtml || "Aucune caisse détectée"}</p>
+
+                <h3>Impression</h3>
+
+                <label>Mode d'impression</label>
+                <select id="livePrintMode">
+                    <option value="central" ${device?.printMode === "central" ? "selected" : ""}>
+                        Centralisée
+                    </option>
+                    <option value="direct" ${device?.printMode === "direct" ? "selected" : ""}>
+                        Directe
+                    </option>
+                    <option value="none" ${device?.printMode === "none" ? "selected" : ""}>
+                        Aucune
+                    </option>
+                </select>
+
+                <p>Tickets en attente : <strong>${pendingTickets}</strong></p>
+
+                <label>Couleur ticket</label>
+                <select id="liveTicketColor">
+                    <option value="black" ${config.ticketColor === "black" ? "selected" : ""}>Noir</option>
+                    <option value="blue" ${config.ticketColor === "blue" ? "selected" : ""}>Bleu</option>
+                    <option value="red" ${config.ticketColor === "red" ? "selected" : ""}>Rouge</option>
+                </select>
+
+                <div id="livePrinterSettings"></div>
+            </div>
+
+            <div>
+                <h3>Ventes</h3>
+
+                <p>Tickets : <strong>${ticketCount}</strong></p>
+
+                <p>Dernier ticket : <strong>${lastOrderNumber}</strong></p>
+
+                <p>Panier moyen : <strong>${fmt(averageBasket)}</strong></p>
+
+                <p>CB : <strong>${fmt(cardTotal)}</strong></p>
+
+                <p>Espèces : <strong>${fmt(cashTotal)}</strong></p>
+
+                <p>Total : <strong>${fmt(cardTotal + cashTotal)}</strong></p>
+            </div>
+        </div>
     `;
+
+    document.getElementById("livePrintMode")?.addEventListener("change", e => {
+        const cfg = getDeviceConfig();
+
+        if (!cfg) return;
+
+        cfg.printMode = e.currentTarget.value;
+
+        saveDeviceConfig(cfg);
+
+        showSettingsStatus("Mode d'impression enregistré.", "success");
+
+        renderDeviceInfo();
+    });
+
+    document.getElementById("liveTicketColor")?.addEventListener("change", e => {
+        const color = e.currentTarget.value;
+
+        config.ticketColor = color;
+
+        if (draftConfig) {
+            draftConfig.ticketColor = color;
+        }
+
+        saveConfig();
+
+        document.documentElement.style.setProperty("--ticket-color", color);
+
+        showSettingsStatus("Couleur du ticket enregistrée.", "success");
+    });
+
+    refreshPrinterList("livePrinterSettings");
+}
+
+async function renderLiveStatus() {
+    const el = document.getElementById("liveStatusContent");
+    if (!el) return;
+
+    let printer = "🔴 Non connecté";
+    let version = "";
+
+    try {
+        const response = await fetch("http://127.0.0.1:17890/health");
+        const data = await response.json();
+
+        printer = "🟢 Connecté";
+        version = data.version ? ` (${data.version})` : "";
+    } catch (e) {
+    }
+
+    let devicesHtml = "";
+
+    if (supabaseClient) {
+        const { data } = await supabaseClient
+            .from("devices")
+            .select("device_code, device_status")
+            .order("device_code");
+
+        if (data) {
+            devicesHtml = data
+                .map(d =>
+                    `${d.device_status === "busy" ? "🟢" : "⚪"} ${d.device_code}`
+                )
+                .join(" &nbsp;&nbsp; ");
+        }
+    }
+
+    const device = getDeviceConfig?.();
+
+    let pendingTickets = 0;
+    let ticketCount = 0;
+    let cashTotal = 0;
+    let cardTotal = 0;
+    let totalSales = 0;
+    let averageBasket = 0;
+    let lastOrderNumber = "-";
+
+    if (supabaseClient) {
+        const { data: pendingData } = await supabaseClient
+            .from("sales")
+            .select("id")
+            .eq("event_id", currentEventId)
+            .eq("printed", false);
+
+        if (pendingData) {
+            pendingTickets = pendingData.length;
+        }
+
+        const { data: salesData } = await supabaseClient
+            .from("sales")
+            .select("order_number, total, cash_amount, card_amount, sale_data, cancelled")
+            .eq("event_id", currentEventId)
+            .order("created_at", { ascending: false });
+
+        if (salesData) {
+            salesData.forEach(sale => {
+                if (sale.cancelled) return;
+
+                ticketCount += 1;
+                cashTotal += Number(sale.cash_amount ?? sale.sale_data?.cashAmount ?? 0);
+                cardTotal += Number(sale.card_amount ?? sale.sale_data?.cardAmount ?? 0);
+                totalSales += Number(sale.total || 0);
+
+                if (lastOrderNumber === "-") {
+                    lastOrderNumber = sale.order_number || "-";
+                }
+            });
+
+            if (ticketCount > 0) {
+                averageBasket = totalSales / ticketCount;
+            }
+        }
+    }
+
+    el.innerHTML = `
+        <div class="live-columns">
+            <div>
+                <h3>Connexions</h3>
+
+                <p>Supabase : <strong>${supabaseClient ? "🟢 Connecté" : "🔴 Non connecté"}</strong></p>
+
+                <p>SDS Printer : <strong>${printer}${version}</strong></p>
+
+                <h3>Caisses</h3>
+
+                <p>${devicesHtml || "Aucune caisse détectée"}</p>
+
+                <h3>Impression</h3>
+
+                <label>Mode d'impression</label>
+                <select id="livePrintMode">
+                    <option value="central" ${device?.printMode === "central" ? "selected" : ""}>
+                        Centralisée
+                    </option>
+                    <option value="direct" ${device?.printMode === "direct" ? "selected" : ""}>
+                        Directe
+                    </option>
+                    <option value="none" ${device?.printMode === "none" ? "selected" : ""}>
+                        Aucune
+                    </option>
+                </select>
+
+                <p>Tickets en attente : <strong>${pendingTickets}</strong></p>
+
+                <label>Couleur ticket</label>
+                <select id="liveTicketColor">
+                    <option value="black" ${config.ticketColor === "black" ? "selected" : ""}>Noir</option>
+                    <option value="blue" ${config.ticketColor === "blue" ? "selected" : ""}>Bleu</option>
+                    <option value="red" ${config.ticketColor === "red" ? "selected" : ""}>Rouge</option>
+                </select>
+
+                <div id="livePrinterSettings"></div>
+            </div>
+
+            <div>
+                <h3>Ventes</h3>
+
+                <p>Tickets : <strong>${ticketCount}</strong></p>
+
+                <p>Dernier ticket : <strong>${lastOrderNumber}</strong></p>
+
+                <p>Panier moyen : <strong>${fmt(averageBasket)}</strong></p>
+
+                <p>CB : <strong>${fmt(cardTotal)}</strong></p>
+
+                <p>Espèces : <strong>${fmt(cashTotal)}</strong></p>
+
+                <p>Total : <strong>${fmt(cardTotal + cashTotal)}</strong></p>
+            </div>
+        </div>
+    `;
+
+    document.getElementById("livePrintMode")?.addEventListener("change", e => {
+        const cfg = getDeviceConfig();
+
+        if (!cfg) return;
+
+        cfg.printMode = e.currentTarget.value;
+
+        saveDeviceConfig(cfg);
+
+        showSettingsStatus("Mode d'impression enregistré.", "success");
+
+        renderDeviceInfo();
+    });
+
+    document.getElementById("liveTicketColor")?.addEventListener("change", e => {
+        const color = e.currentTarget.value;
+
+        config.ticketColor = color;
+
+        if (draftConfig) {
+            draftConfig.ticketColor = color;
+        }
+
+        saveConfig();
+
+        document.documentElement.style.setProperty("--ticket-color", color);
+
+        showSettingsStatus("Couleur du ticket enregistrée.", "success");
+    });
+
+    refreshPrinterList("livePrinterSettings");
 }
 // -----------------------------------------------------
 // Impression
@@ -214,8 +492,8 @@ function setDashboardPrintTicketsEnabled(checked) {
     saveConfig();
 }
 
-async function refreshPrinterList() {
-    const el = document.getElementById("dashboardPrinterConfig");
+async function refreshPrinterList(containerId = "dashboardPrinterConfig") {
+    const el = document.getElementById(containerId);
     if (!el) return;
 
     try {
@@ -239,21 +517,21 @@ async function refreshPrinterList() {
             <div class="dashboard-printer-block">
                 <label>Imprimante</label>
 
-                <select id="printerSelect" class="printer-select">
+                <select class="printer-select" data-printer-select>
                     ${options}
                 </select>
 
                 <label class="checkline">
                     <input
                         type="checkbox"
-                        id="dashboardPrintTicketsEnabled"
+                        data-print-tickets-enabled
                         ${config.printTicketsEnabled !== false ? "checked" : ""}
                     >
                     Imprimer les tickets
                 </label>
 
                 <div class="dashboard-button-row">
-                    <button type="button" class="secondary" onclick="refreshPrinterList()">
+                    <button type="button" class="secondary" onclick="refreshPrinterList('${containerId}')">
                         Actualiser
                     </button>
 
@@ -264,11 +542,12 @@ async function refreshPrinterList() {
             </div>
         `;
 
-        document.getElementById("printerSelect")?.addEventListener("change", e => {
+        el.querySelector("[data-printer-select]")?.addEventListener("change", e => {
             setSelectedPrinter(e.currentTarget.value);
+            showSettingsStatus(`Imprimante sélectionnée : ${selectedPrinterName}`, "success");
         });
 
-        document.getElementById("dashboardPrintTicketsEnabled")?.addEventListener("change", e => {
+        el.querySelector("[data-print-tickets-enabled]")?.addEventListener("change", e => {
             setDashboardPrintTicketsEnabled(e.currentTarget.checked);
         });
 
@@ -283,24 +562,23 @@ async function refreshPrinterList() {
                 <label class="checkline">
                     <input
                         type="checkbox"
-                        id="dashboardPrintTicketsEnabled"
+                        data-print-tickets-enabled
                         ${config.printTicketsEnabled !== false ? "checked" : ""}
                     >
                     Imprimer les tickets
                 </label>
 
-                <button type="button" class="secondary" onclick="refreshPrinterList()">
+                <button type="button" class="secondary" onclick="refreshPrinterList('${containerId}')">
                     Réessayer
                 </button>
             </div>
         `;
 
-        document.getElementById("dashboardPrintTicketsEnabled")?.addEventListener("change", e => {
+        el.querySelector("[data-print-tickets-enabled]")?.addEventListener("change", e => {
             setDashboardPrintTicketsEnabled(e.currentTarget.checked);
         });
     }
 }
-
 async function printTestPage() {
     const printer =
         document.getElementById("printerSelect")?.value ||
@@ -312,6 +590,7 @@ async function printTestPage() {
     }
 
     try {
+        console.log("Imprimante utilisée :", printer);
         const response = await fetch("http://127.0.0.1:17890/print-test", {
             method: "POST",
             headers: {
@@ -444,7 +723,13 @@ async function refreshDashboardStats() {
 // -----------------------------------------------------
 
 async function releaseOtherDevices() {
-    if (getDeviceCode() !== "A") return;
+    if (getDeviceCode() !== 'A') {
+        showSettingsStatus(
+            "Cette fonction est réservée à la caisse centrale.",
+            "warning"
+        );
+        return;
+    }
 
     if (!confirm("Libérer uniquement les caisses inactives depuis plus de 2 minutes ?")) return;
 
@@ -467,7 +752,7 @@ async function releaseOtherDevices() {
         return;
     }
 
-    await refreshDashboardConnections();
+    await renderLiveStatus();
 
     showMessage(
         "Caisses inactives libérées",

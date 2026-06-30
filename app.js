@@ -391,6 +391,19 @@ async function heartbeatDevice() {
   const device = getDeviceConfig();
   if (!device) return;
 
+  const { data, error } = await supabaseClient
+    .from('devices')
+    .select('current_device')
+    .eq('device_code', device.deviceCode)
+    .single();
+
+  if (error || !data) return;
+
+  if (data.current_device !== getDeviceInstanceId()) {
+    await checkDeviceOwnership();
+    return;
+  }
+
   await supabaseClient
     .from('devices')
     .update({
@@ -399,6 +412,7 @@ async function heartbeatDevice() {
     })
     .eq('device_code', device.deviceCode)
     .eq('current_device', getDeviceInstanceId());
+
   await checkDeviceOwnership();
 }
 
@@ -1995,7 +2009,10 @@ function renderStockEditor() {
 function renderGeneralEditor() {
   document.getElementById('setEventName').value = draftConfig.eventName;
   document.getElementById('setPrefix').value = draftConfig.orderPrefix;
-  document.getElementById('setTicketColor').value = draftConfig.ticketColor;
+  const ticketColorSelect = document.getElementById('setTicketColor');
+  if (ticketColorSelect) {
+    ticketColorSelect.value = draftConfig.ticketColor;
+  }
 
   const cats = Array.from(new Set([...CATEGORIES, ...draftConfig.products.map(p => p.category).filter(Boolean)]));
   document.getElementById('categoryColorEditor').innerHTML = cats.map(c => `<div class="editor-row color"><div>${escapeHtml(c)}</div><select data-cat-color="${escapeHtml(c)}">${paletteOptions(draftConfig.categoryColors[c] || 'gris')}</select></div>`).join('');
@@ -2007,7 +2024,11 @@ function saveSettings() {
     draftConfig.volunteers.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'fr', { sensitivity: 'base' }));
   }
   draftConfig.orderPrefix = document.getElementById('setPrefix').value;
-  draftConfig.ticketColor = document.getElementById('setTicketColor').value;
+  const liveTicketColor = document.getElementById('liveTicketColor');
+
+  if (liveTicketColor) {
+    draftConfig.ticketColor = liveTicketColor.value;
+  }
   config = normalizeConfig(draftConfig);
   draftConfig = clone(config);
   saveConfig();
@@ -2786,7 +2807,11 @@ document.getElementById('btnCloseGestion')?.addEventListener('click', () => {
 });
 document.getElementById('btnGestionLive')?.addEventListener('click', () => {
   document.getElementById('gestionDialog')?.close();
-  showDashboardView();
+
+  openSettings('cashier');
+  showSettingsTab('live');
+
+  renderLiveStatus();
 });
 document.getElementById('btnGestionStocks')?.addEventListener('click', () => {
   document.getElementById('gestionDialog')?.close();
@@ -2819,7 +2844,7 @@ document.getElementById('btnGestionAdmin')?.addEventListener('click', () => {
   document.getElementById('gestionDialog')?.close();
   settingsOrdersScope = "all";
   openSettings("admin");
-  showSettingsTab('products');
+  showSettingsTab('general');
 });
 
 
