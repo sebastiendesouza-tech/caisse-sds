@@ -302,7 +302,7 @@ async function printTestPage() {
         selectedPrinterName;
 
     if (!printer) {
-        alert("Aucune imprimante sélectionnée.");
+        showSettingsStatus("Aucune imprimante sélectionnée.", "error");
         return;
     }
 
@@ -319,10 +319,10 @@ async function printTestPage() {
 
         if (!data.ok) throw new Error(data.error);
 
-        alert("Ticket de test envoyé.");
+        showSettingsStatus("Ticket de test envoyé.", "success");
     } catch (e) {
         console.error(e);
-        alert("Erreur d'impression : " + e.message);
+        showSettingsStatus("Erreur d'impression : " + e.message, "error");
     }
 }
 

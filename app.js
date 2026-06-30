@@ -212,6 +212,7 @@ async function syncOrderNumberFromSupabase() {
   const { data, error } = await supabaseClient
     .from('sales')
     .select('order_number')
+    .eq('event_id', currentEventId)
     .order('created_at', { ascending: false })
     .limit(1);
 
@@ -220,18 +221,16 @@ async function syncOrderNumberFromSupabase() {
     return;
   }
 
-  if (!data || !data.length) return;
+  if (!data || !data.length) {
+    orderNumber = 1;
+    saveOrderNumber();
+    return;
+  }
 
-  const lastOrder = data[0].order_number || '';
-
-  const match = lastOrder.match(/(\d+)$/);
-  if (!match) return;
-
-  orderNumber = Number(match[1]) + 1;
+  const match = (data[0].order_number || '').match(/(\d+)$/);
+  orderNumber = match ? Number(match[1]) + 1 : 1;
 
   saveOrderNumber();
-
-  console.log('Prochain ticket :', orderNumber);
 }
 const DEVICE_CONFIG_KEY = 'sds_device_config';
 
@@ -290,7 +289,29 @@ function getDeviceCode() {
 function isCentralCashier() {
   return getDeviceCode() === "A";
 }
+async function recoverDeviceCode(deviceCode, deviceName, printMode) {
+  if (!supabaseClient) return false;
 
+  const { error } = await supabaseClient
+    .from('devices')
+    .update({
+      device_name: deviceName,
+      device_type: /iPad/i.test(navigator.userAgent) ? 'ipad' : 'windows',
+      current_device: getDeviceInstanceId(),
+      device_status: 'busy',
+      print_mode: printMode,
+      app_version: '2026.06.25',
+      last_seen: new Date().toISOString()
+    })
+    .eq('device_code', deviceCode);
+
+  if (error) {
+    console.error('Erreur récupération caisse', error);
+    return false;
+  }
+
+  return true;
+}
 async function isDeviceCodeAvailable(deviceCode) {
   if (!supabaseClient) return true;
 
@@ -357,11 +378,13 @@ function renderDeviceInfo() {
     modeEl.textContent = "Impression désactivée";
   }
 }
+
 function updateDashboardStatus() {
   if (typeof updateCentralDashboard === 'function') {
     updateCentralDashboard();
   }
 }
+
 async function heartbeatDevice() {
   if (!supabaseClient) return;
 
@@ -376,7 +399,9 @@ async function heartbeatDevice() {
     })
     .eq('device_code', device.deviceCode)
     .eq('current_device', getDeviceInstanceId());
+  await checkDeviceOwnership();
 }
+
 async function registerDevice() {
   if (!supabaseClient) return;
 
@@ -669,35 +694,51 @@ function showSettingsStatus(message, type = "success") {
 }
 
 function showMessage(title, text) {
+  const message = title || text || 'Information';
   const settingsDialog = document.getElementById('settingsDialog');
 
   if (settingsDialog && settingsDialog.open) {
-    showSettingsStatus(title || text || 'Information', 'info');
+    showSettingsStatus(message, 'info');
     return;
   }
 
   if (typeof showToast === 'function') {
-    showToast(title || text || 'Information', 'info');
-    return;
+    showToast(message, 'info');
   }
-
-  window.alert((title ? title + '\n' : '') + (text || ''));
 }
 
-function showConfirm(title, text, onConfirm) {
-  const dlg = document.getElementById('messageDialog');
-  if (!dlg) { if (window.confirm((title ? title + '\n' : '') + (text || ''))) { if (typeof onConfirm === 'function') onConfirm(); } return; }
-  document.getElementById('messageTitle').textContent = title || 'Confirmation';
-  document.getElementById('messageText').textContent = text || '';
-  const cancel = document.getElementById('messageCancel');
-  const ok = document.getElementById('messageOk');
-  cancel.style.display = '';
-  cancel.textContent = 'Non';
-  ok.textContent = 'Oui';
-  cancel.onclick = () => dlg.close();
-  ok.onclick = () => { dlg.close(); if (typeof onConfirm === 'function') onConfirm(); };
-  dlg.showModal();
+function showConfirm(title, text) {
+  return new Promise(resolve => {
+    const dlg = document.getElementById('messageDialog');
+    if (!dlg) {
+      resolve(false);
+      return;
+    }
+
+    document.getElementById('messageTitle').textContent = title || 'Confirmation';
+    document.getElementById('messageText').textContent = text || '';
+
+    const cancel = document.getElementById('messageCancel');
+    const ok = document.getElementById('messageOk');
+
+    cancel.style.display = '';
+    cancel.textContent = 'Non';
+    ok.textContent = 'Oui';
+
+    cancel.onclick = () => {
+      dlg.close();
+      resolve(false);
+    };
+
+    ok.onclick = () => {
+      dlg.close();
+      resolve(true);
+    };
+
+    dlg.showModal();
+  });
 }
+
 function clearCurrentCart() {
 
   cart.forEach(line => {
@@ -1060,7 +1101,7 @@ function addProduct(id) {
   if (!p || !p.name) return;
 
   if (isTracked(p.stock) && Number(p.stock) <= 0) {
-    alert('Stock insuffisant pour ' + p.name);
+    showToast('Stock insuffisant pour ' + p.name);
     renderProducts();
     return;
   }
@@ -1085,7 +1126,6 @@ function addProduct(id) {
 
   renderProducts();
 }
-
 function addCartLine(lineData) {
   const foodKey = (lineData.selectedFoods || [])
     .map(x => `${x.foodId}:${x.qty || 1}`)
@@ -1121,6 +1161,7 @@ function restoreStock(productId, qty) {
 
   p.stock = Number(p.stock) + Number(qty || 0);
 }
+
 function reserveStock(productId, qty) {
   const p = config.products.find(x => x.id === productId);
   if (!p) return false;
@@ -1128,7 +1169,7 @@ function reserveStock(productId, qty) {
   if (!isTracked(p.stock)) return true;
 
   if (Number(p.stock) < Number(qty || 0)) {
-    alert('Stock insuffisant pour ' + p.name);
+    showToast('Stock insuffisant pour ' + p.name);
     renderProducts();
     return false;
   }
@@ -2768,9 +2809,9 @@ document.getElementById('btnGestionOrders')?.addEventListener('click', () => {
 
 document.getElementById('btnGestionAdmin')?.addEventListener('click', () => {
   if (getDeviceCode() !== 'A') {
-    showMessage(
-      'Accès réservé',
-      'L’administration est réservée à la caisse centrale.'
+    showSettingsStatus(
+      'Administration réservée à la caisse centrale.',
+      'warning'
     );
     return;
   }
@@ -2884,18 +2925,21 @@ function blankProductForSameSlot(p) {
     stock: ''
   };
 }
-function resetDraftProducts() {
-  showConfirm(
+async function resetDraftProducts() {
+  const ok = await showConfirm(
     "Vider les boutons produits",
-    "Les boutons produits seront vidés.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer.",
-    () => {
-      draftConfig.products = (draftConfig.products || []).map(blankProductForSameSlot);
+    "Les boutons produits seront vidés.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer."
+  );
 
-      renderSettings();
-      updateSettingsButtons();
+  if (!ok) return;
 
-      showSettingsStatus("Boutons produits vidés. Cliquez sur Enregistrer pour valider.");
-    }
+  draftConfig.products = (draftConfig.products || []).map(blankProductForSameSlot);
+
+  renderSettings();
+  updateSettingsButtons();
+
+  showSettingsStatus(
+    "Boutons produits vidés. Cliquez sur Enregistrer pour valider."
   );
 }
 
@@ -2929,25 +2973,26 @@ async function resetDraftFoods() {
   );
 }
 
-function resetDraftStocks() {
-  showConfirm(
+async function resetDraftStocks() {
+  const ok = await showConfirm(
     "Réinitialiser les stocks",
-    "Tous les stocks seront mis en non suivi.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer.",
-    () => {
-      (draftConfig.products || []).forEach(p => {
-        p.stock = '';
-      });
+    "Tous les stocks seront mis en non suivi.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer."
+  );
 
-      (draftConfig.baseFoods || []).forEach(f => {
-        f.stock = '';
-      });
+  if (!ok) return;
 
-      renderStockEditor();
+  (draftConfig.products || []).forEach(p => {
+    p.stock = '';
+  });
 
-      showSettingsStatus(
-        "Stocks réinitialisés. Cliquez sur Enregistrer pour valider."
-      );
-    }
+  (draftConfig.baseFoods || []).forEach(f => {
+    f.stock = '';
+  });
+
+  renderStockEditor();
+
+  showSettingsStatus(
+    "Stocks réinitialisés. Cliquez sur Enregistrer pour valider."
   );
 }
 
@@ -3016,29 +3061,35 @@ function resetWholeApplication() {
 }
 function handleSettingsReset() {
   const tab = activeSettingsTab();
+
   if (tab === 'products') {
-    return showConfirm('Vider les boutons produits', 'Effacer le nom, le prix et les réglages de tous les boutons produits ? Les emplacements restent en place.', resetDraftProducts);
+    return resetDraftProducts();
   }
+
   if (tab === 'foods') {
-    return showConfirm('Effacer les aliments', 'Effacer tous les aliments de base ?', resetDraftFoods);
+    return resetDraftFoods();
   }
+
   if (tab === 'stocks') {
-    return showConfirm('Réinitialiser les stocks', 'Mettre tous les stocks en non suivi ? Aucun bouton ne sera bloqué.', resetDraftStocks);
+    return resetDraftStocks();
   }
+
   if (tab === 'volunteers') {
-    return showConfirm('Effacer les bénévoles', 'Effacer toute la liste des bénévoles ?', resetDraftVolunteers);
+    return resetDraftVolunteers();
   }
+
   if (tab === 'orders') {
-    return showConfirm('Effacer les commandes', 'Effacer toutes les commandes ? Cette action supprimera aussi le dernier ticket et remettra la numérotation à 1.', clearAllOrdersAndTickets);
+    return clearAllOrdersAndTickets();
   }
+
   if (tab === 'report') {
-    return showConfirm('Réinitialiser le bilan', 'Réinitialiser le bilan ? Les ventes et remboursements enregistrés seront remis à zéro.', resetReportData);
+    return resetReportData();
   }
+
   if (tab === 'general') {
-    return showConfirm('Réinitialiser toute l’application', 'Tout effacer et revenir aux paramètres par défaut ? Produits, aliments, stocks, bénévoles, commandes et bilan seront réinitialisés.', resetWholeApplication);
+    return resetWholeApplication();
   }
 }
-
 document.getElementById('btnCloseChoice').addEventListener('click', () => document.getElementById('choiceDialog').close());
 document.getElementById('btnAddChoiceProduct').addEventListener('click', addChoiceProduct);
 document.getElementById('btnCloseSettings').addEventListener('click', () => document.getElementById('settingsDialog').close());
@@ -3070,6 +3121,32 @@ document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', (
   updateSettingsButtons();
 }));
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+
+async function recoverDeviceCode(deviceCode, deviceName, printMode) {
+  if (!supabaseClient) return false;
+
+  const { error } = await supabaseClient
+    .from('devices')
+    .update({
+      device_name: deviceName,
+      device_type: /iPad/i.test(navigator.userAgent) ? 'ipad' : 'windows',
+      current_device: getDeviceInstanceId(),
+      device_status: 'busy',
+      print_mode: printMode,
+      app_version: '2026.13',
+      last_seen: new Date().toISOString()
+    })
+    .eq('device_code', deviceCode);
+
+  if (error) {
+    console.error('Erreur récupération caisse', error);
+    return false;
+  }
+
+  return true;
+}
+
 function initDeviceSetupDialog() {
   const dialog = document.getElementById('deviceSetupDialog');
   const btnSave = document.getElementById('btnSaveDeviceConfig');
@@ -3087,33 +3164,61 @@ function initDeviceSetupDialog() {
     }
 
     if (!(await isDeviceCodeAvailable(deviceCode))) {
-      showMessage(
+      showConfirm(
         'Poste déjà utilisé',
-        `Le poste ${deviceCode} est déjà utilisé par une autre caisse.`
+        `Le poste ${deviceCode} est déjà utilisé par une autre caisse.\n\nVoulez-vous récupérer cette caisse sur cet appareil ?`,
+        async () => {
+          const recovered = await recoverDeviceCode(deviceCode, deviceName, printMode);
+
+          if (!recovered) {
+            showMessage('Erreur', `Impossible de récupérer la caisse ${deviceCode}.`);
+            return;
+          }
+
+          saveDeviceConfig({ deviceName, deviceCode, printMode });
+
+          orderNumber = loadOrderNumber();
+
+          await loadConfigFromSupabase();
+          await syncOrderNumberFromSupabase();
+          await registerDevice();
+
+          renderCart();
+          renderDeviceInfo();
+
+          dialog.close();
+
+          if (getDeviceCode() === 'A') {
+            updateCentralDashboard();
+            startCentralServices();
+          }
+
+          showMessage('Caisse récupérée', `Cet appareil utilise maintenant la caisse ${deviceCode}.`);
+        }
       );
+
       return;
     }
 
-    saveDeviceConfig({
-      deviceName,
-      deviceCode,
-      printMode
-    });
+    saveDeviceConfig({ deviceName, deviceCode, printMode });
 
     orderNumber = loadOrderNumber();
+
+    await loadConfigFromSupabase();
+    await syncOrderNumberFromSupabase();
+    await registerDevice();
+
     renderCart();
     renderDeviceInfo();
 
-    await registerDevice();
-
     dialog.close();
-    updateCentralDashboard();
-    startCentralServices();
 
-    showMessage(
-      'Appareil configuré',
-      `Cet appareil est configuré comme caisse ${deviceCode}.`
-    );
+    if (getDeviceCode() === 'A') {
+      updateCentralDashboard();
+      startCentralServices();
+    }
+
+    showMessage('Appareil configuré', `Cet appareil est configuré comme caisse ${deviceCode}.`);
   });
 
   if (!getDeviceConfig()) {
@@ -3122,9 +3227,37 @@ function initDeviceSetupDialog() {
     orderNumber = loadOrderNumber();
     renderCart();
     renderDeviceInfo();
-    startCentralServices();
+
+    if (getDeviceCode() === 'A') {
+      startCentralServices();
+    }
   }
 }
+
+async function checkDeviceOwnership() {
+  if (!supabaseClient) return;
+
+  const { data, error } = await supabaseClient
+    .from('devices')
+    .select('current_device')
+    .eq('device_code', getDeviceCode())
+    .single();
+
+  if (error || !data) return;
+
+  if (data.current_device !== getDeviceInstanceId()) {
+    showMessage(
+      'Caisse transférée',
+      'Cette caisse a été reprise par un autre appareil.'
+    );
+
+    localStorage.removeItem(DEVICE_CONFIG_KEY);
+
+    setTimeout(() => location.reload(), 1500);
+  }
+}
+
+
 const btnToggleDisplayMode = document.getElementById('btnToggleDisplayMode');
 
 function updateDisplayModeButton() {
