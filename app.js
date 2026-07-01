@@ -10,7 +10,18 @@ const PALETTE = {
   gris: { label: 'Gris', bg: '#f3f4f6', fg: '#374151' },
   noir: { label: 'Noir', bg: '#111827', fg: '#ffffff' }
 };
-
+const SECTIONS = [
+  {
+    id: 'main',
+    title: 'Buv/Restau',
+    minSlots: 24
+  },
+  {
+    id: 'tickets',
+    title: 'Billetterie',
+    minSlots: 4
+  }
+];
 const DEFAULT_CONFIG = {
   configVersion: 2026.13,
   eventName: 'Comité des Fêtes-Moroges',
@@ -94,6 +105,14 @@ const DEFAULT_CONFIG = {
     { id: 'p-retour-consigne', group: 'Consignes', category: 'Retour consigne', name: 'Retour gobelet', price: -2, type: 'simple', components: [], refundable: false, stock: '' }
   ]
 };
+
+
+
+DEFAULT_CONFIG.products = DEFAULT_CONFIG.products.map((product, index) => ({
+  ...product,
+  section: product.section || "main",
+  position: product.position || index + 1,
+}));
 
 const GROUP_ORDER = ['Boissons', 'Restauration', 'Consignes'];
 const CATEGORIES = ['Boissons sans alcool', 'Boissons avec alcool', 'Boissons chaudes', 'Boissons', 'Entrée', 'Plat', 'Fromage', 'Dessert', 'Consigne', 'Retour consigne'];
@@ -860,11 +879,15 @@ function compactAllChoices(c) {
 
 function limitEmptyRestorationSlots(c) {
   if (!Array.isArray(c.products)) return;
+
   let emptyKept = 0;
+
   c.products = c.products.filter(p => {
-    const isRest = (p.group || displayGroup(p.category)) === 'Restauration';
-    const isEmpty = isRest && !String(p.name || '').trim();
+    const isMain = (p.section || 'main') === 'main';
+    const isEmpty = isMain && !String(p.name || '').trim();
+
     if (!isEmpty) return true;
+
     emptyKept += 1;
     return emptyKept <= 2;
   });
@@ -872,45 +895,41 @@ function limitEmptyRestorationSlots(c) {
 
 function normalizeConfig(c) {
   const base = clone(DEFAULT_CONFIG);
-  if (!c) return base;
 
-  const previousVersion = Number(c.configVersion || 0);
-
-  if (Array.isArray(c.products) && c.products[0] && !c.products[0].id) {
-    c.products = c.products.map((p, i) => ({
-      id: 'p' + (i + 1),
-      group: displayGroup(p.category),
-      category: p.category || 'Plat',
-      name: p.name || '',
-      price: Number(p.price || 0),
-      type: 'simple',
-      components: [],
-      refundable: true,
-      stock: '',
-      stockAlert: ''
-    }));
+  if (!c) {
+    c = base;
   }
 
-  c.configVersion = 2026.12;
+  if (!Array.isArray(c.sections) || !c.sections.length) {
+    c.sections = clone(base.sections || [
+      { id: 'main', title: 'Buv/Restau', minSlots: 24 },
+      { id: 'tickets', title: 'Billetterie', minSlots: 4 }
+    ]);
+  }
+
+  c.configVersion = 2026.14;
   c.eventName ||= base.eventName;
   c.orderPrefix ||= 'A';
   c.ticketColor ||= 'black';
   c.printTicketsEnabled ??= true;
-  c.baseFoods ||= base.baseFoods;
-  c.volunteers ||= base.volunteers;
+  c.baseFoods ||= clone(base.baseFoods);
+  c.volunteers ||= clone(base.volunteers);
+  c.categoryColors ||= clone(base.categoryColors);
+  c.products ||= clone(base.products);
 
-  if (previousVersion < 18.17) {
-    c.eventName ||= base.eventName;
-    c.volunteers ||= clone(base.volunteers);
-  }
-
-  c.categoryColors ||= base.categoryColors;
-  c.products ||= base.products;
+  c.sections.forEach((section, index) => {
+    section.id ||= 'section-' + (index + 1);
+    section.title ||= section.id;
+    section.minSlots = Math.max(1, Number(section.minSlots || 1));
+  });
 
   c.products.forEach((p, i) => {
     p.id ||= 'p' + (i + 1);
-    p.group ||= displayGroup(p.category);
     p.section ||= 'main';
+    p.position ||= i + 1;
+    p.category ||= 'Plat';
+    p.name ??= '';
+    p.price = Number(p.price || 0);
     p.type ||= 'simple';
     p.components ||= [];
     p.choices ||= [];
@@ -919,117 +938,6 @@ function normalizeConfig(c) {
     p.stock ??= '';
     p.stockAlert ??= '';
   });
-
-  if (!c.products.some(p => p.id === 'p-verre-cremant')) {
-    const cafeIndex = c.products.findIndex(p => p.id === 'p-cafe');
-    const item = {
-      id: 'p-verre-cremant',
-      group: 'Boissons',
-      category: 'Boissons avec alcool',
-      name: 'Verre de crémant',
-      price: 3,
-      type: 'simple',
-      components: [],
-      refundable: true,
-      stock: ''
-    };
-    c.products.splice(cafeIndex >= 0 ? cafeIndex : c.products.length, 0, item);
-  }
-
-  // v2026.04 : configuration distribuable, tout le suivi stock est désactivé par défaut.
-  if (previousVersion < 2026.05) {
-    (c.products || []).forEach(p => { p.stock = ''; });
-    (c.baseFoods || []).forEach(f => { f.stock = ''; });
-  }
-
-  const productOrder = [
-    'p-eau-50',
-    'p-eau-150',
-    'p-coca',
-    'p-oasis',
-    'p-ice-tea',
-    'p-biere-25',
-    'p-pichet-biere',
-    'p-verre-rose',
-    'p-verre-blanc',
-    'p-verre-rouge',
-    'p-bouteille-blanc',
-    'p-bouteille-rose',
-    'p-bouteille-rouge',
-    'p-cremant',
-    'p-verre-cremant',
-    'p-boisson-libre',
-    'p-cafe',
-    'p-frites',
-    'p-assiette-gourmande',
-    'p-menu',
-    'p-glace-vanille',
-    'p-popcorn',
-    'p-glace-eau',
-    'p-restau-libre-1',
-    'p-restau-libre-2',
-    'p-consigne',
-    'p-retour-consigne'
-  ];
-
-  if (previousVersion < 2026.03) {
-    c.products.sort((a, b) => {
-      const ia = productOrder.indexOf(a.id);
-      const ib = productOrder.indexOf(b.id);
-      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-    });
-  }
-
-  // v2026.12 : le menu garde les suppléments modifiés dans les paramètres.
-  const menu = c.products.find(p => p.id === 'p-menu');
-
-  if (menu) {
-    menu.menuSections ||= [];
-
-    let drinks = menu.menuSections.find(sec => sec.section === 'Boissons');
-
-    if (!drinks) {
-      drinks = {
-        section: 'Boissons',
-        clientChoice: true,
-        max: 1,
-        options: []
-      };
-      menu.menuSections.unshift(drinks);
-    }
-
-    drinks.clientChoice = true;
-    drinks.max = 1;
-
-    const defaultDrinkOptions = [
-      { productId: 'p-eau-50', supplement: -0.50 },
-      { productId: 'p-coca', supplement: 0 },
-      { productId: 'p-oasis', supplement: 0 },
-      { productId: 'p-ice-tea', supplement: 0 },
-      { productId: 'p-biere-25', supplement: 0 },
-      { productId: 'p-verre-rose', supplement: 0.50 },
-      { productId: 'p-verre-blanc', supplement: 0.50 },
-      { productId: 'p-verre-rouge', supplement: 0.50 }
-    ];
-
-    const savedDrinkOptions = new Map(
-      (drinks.options || []).map(opt => [opt.productId, opt])
-    );
-
-    drinks.options = defaultDrinkOptions.map(def => {
-      const saved = savedDrinkOptions.get(def.productId);
-      return {
-        productId: def.productId,
-        supplement: Number(saved?.supplement ?? def.supplement ?? 0)
-      };
-    });
-
-    let dessert = menu.menuSections.find(sec => sec.section === 'Dessert');
-
-    if (dessert) {
-      dessert.options = (dessert.options || []).filter(o => o.productId !== 'p-glace-eau');
-    }
-  }
 
   c.baseFoods.forEach(f => {
     f.id ||= uid('food');
@@ -1049,24 +957,28 @@ function normalizeConfig(c) {
 
   return c;
 }
-function displayGroup(cat) {
-  if (String(cat).startsWith('Boissons') || String(cat) === 'Boisson') return 'Boissons';
-  if (String(cat).includes('Consigne') || String(cat).includes('consigne')) return 'Consignes';
-  return 'Restauration';
-}
+
+
 function groupClass(group) { return 'group-' + slug(group); }
+
 function slug(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
 function escapeHtml(str) { return String(str).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
 function summarizeNames(names) {
   const counts = {};
   (names || []).filter(Boolean).forEach(n => counts[n] = (counts[n] || 0) + 1);
   return Object.entries(counts).map(([name, qty]) => `${qty > 1 ? qty + ' ' : ''}${name}`).join(' + ');
 }
+
 function options(arr, selected) { return arr.map(x => `<option ${x === selected ? 'selected' : ''}>${escapeHtml(x)}</option>`).join(''); }
+
 function paletteOptions(selected) { return Object.entries(PALETTE).map(([k, v]) => `<option value="${k}" ${k === selected ? 'selected' : ''}>${v.label}</option>`).join(''); }
 
 function colorFor(category) { return PALETTE[config.categoryColors?.[category]] || PALETTE.gris; }
+
 function isTracked(v) { return v !== '' && v !== null && v !== undefined && !Number.isNaN(Number(v)); }
+
 function stockAvailable(product) {
   if (product.price < 0) return true;
   if (product.type === 'simple' && isTracked(product.stock) && Number(product.stock) <= 0) return false;
@@ -1096,54 +1008,158 @@ function ticketSortIndex(category) {
   return idx === -1 ? 99 : idx;
 }
 
+function buildProductSlots(products, sectionId, minSlots) {
+  const sectionProducts = (products || [])
+    .filter(p => (p.section || 'main') === sectionId)
+    .sort((a, b) => Number(a.position || 0) - Number(b.position || 0));
+
+  const highestPosition = sectionProducts.reduce((max, product) => {
+    return Math.max(max, Number(product.position || 0));
+  }, 0);
+
+  const slotCount = Math.max(minSlots, highestPosition);
+
+  return Array.from({ length: slotCount }, (_, index) => {
+    const position = index + 1;
+
+    const product = sectionProducts.find(p => Number(p.position || 0) === position);
+
+    return product || {
+      id: `${sectionId}-empty-${position}`,
+      name: '',
+      price: 0,
+      category: sectionId === 'tickets' ? 'Billetterie' : 'Plat',
+      section: sectionId,
+      position,
+      type: 'simple',
+      refundable: true,
+      stock: ''
+    };
+  });
+}
+function maxSlotsForSection(sectionId) {
+  const section = getProductSections().find(s => s.id === sectionId);
+  return Math.max(1, Number(section?.minSlots || 1));
+}
+
+function moveProductToCase(index, sectionId, requestedPosition) {
+  const products = draftConfig.products || [];
+  const product = products[index];
+  if (!product) return false;
+
+  const oldSection = product.section || 'main';
+  const oldPosition = Number(product.position || index + 1);
+  const max = maxSlotsForSection(sectionId);
+  const targetPosition = Math.max(1, Math.min(max, Number(requestedPosition || 1)));
+
+  if (oldSection === sectionId) {
+    products.forEach((p, i) => {
+      if (i === index) return;
+      if ((p.section || 'main') !== sectionId) return;
+
+      const pos = Number(p.position || 0);
+
+      if (targetPosition < oldPosition && pos >= targetPosition && pos < oldPosition) {
+        p.position = pos + 1;
+      }
+
+      if (targetPosition > oldPosition && pos > oldPosition && pos <= targetPosition) {
+        p.position = pos - 1;
+      }
+    });
+
+    product.section = sectionId;
+    product.position = targetPosition;
+    return true;
+  }
+
+  const occupied = new Set(
+    products
+      .filter((p, i) => i !== index && (p.section || 'main') === sectionId)
+      .map(p => Number(p.position || 0))
+      .filter(pos => pos >= 1 && pos <= max)
+  );
+
+  if (occupied.has(targetPosition)) {
+    let freePosition = targetPosition;
+
+    while (freePosition <= max && occupied.has(freePosition)) {
+      freePosition++;
+    }
+
+    if (freePosition > max) {
+      showMessage(
+        'Section pleine',
+        `Impossible de placer ce produit en case ${targetPosition}. La section ne contient que ${max} cases.`
+      );
+      return false;
+    }
+
+    products.forEach((p, i) => {
+      if (i === index) return;
+      if ((p.section || 'main') !== sectionId) return;
+
+      const pos = Number(p.position || 0);
+
+      if (pos >= targetPosition && pos < freePosition) {
+        p.position = pos + 1;
+      }
+    });
+  }
+
+  product.section = sectionId;
+  product.position = targetPosition;
+
+  if (!product.category) {
+    product.category = defaultCategoryForSection(sectionId);
+  }
+
+  return true;
+}
 function renderProducts() {
   console.log('renderProducts eventName =', config.eventName);
 
   const eventTitle = document.getElementById('eventTitle');
-  if (eventTitle) eventTitle.textContent = config.eventName || 'Comité des Fêtes';
+  if (eventTitle) {
+    eventTitle.textContent = config.eventName || 'Comité des Fêtes';
+  }
 
   document.documentElement.style.setProperty('--ticket-color', config.ticketColor);
 
   const wrap = document.getElementById('categories');
   const meat = document.getElementById('meatStock');
 
-  const mainProducts = (config.products || []).filter(p => (p.section || 'main') === 'main');
-  const ticketProducts = (config.products || []).filter(p => p.section === 'tickets');
+  if (!wrap) return;
 
-  wrap.innerHTML = `
-    <div class="category group-main">
-      <h3>Buvette / Restauration</h3>
-      <div class="product-grid">
-        ${mainProducts.slice(0, 24).map(productButtonHtml).join('')}
+  const sections = getProductSections();
+
+  wrap.innerHTML = sections.map(section => {
+    const slots = buildProductSlots(
+      config.products,
+      section.id,
+      Number(section.minSlots || 1)
+    );
+
+    return `
+      <div class="category group-${section.id}">
+        <h3>${escapeHtml(section.title)}</h3>
+        <div class="product-grid">
+          ${slots.map(productButtonHtml).join('')}
+        </div>
       </div>
-    </div>
+    `;
+  }).join('');
 
-    <div class="category group-tickets">
-      <h3>Billetterie</h3>
-      <div class="product-grid">
-        ${Array.from({ length: 4 }, (_, i) =>
-    productButtonHtml(ticketProducts[i] || {
-      id: 'ticket-empty-' + i,
-      name: '',
-      price: 0,
-      category: 'Billetterie',
-      section: 'tickets',
-      type: 'simple',
-      refundable: true,
-      stock: ''
-    })
-  ).join('')}
-      </div>
-    </div>
-  `;
-
-  if (meat) meat.innerHTML = renderMeatStockBox();
+  if (meat) {
+    meat.innerHTML = renderMeatStockBox();
+  }
 
   document
     .querySelectorAll('.product-btn:not(.empty-product):not(.out-stock)')
-    .forEach(btn => btn.addEventListener('click', () => addProduct(btn.dataset.id)));
+    .forEach(btn => {
+      btn.addEventListener('click', () => addProduct(btn.dataset.id));
+    });
 }
-
 function renderMeatStockBox() {
   const meats = (config.baseFoods || []).filter(f =>
     String(f.category).toLowerCase() === 'viande' && isTracked(f.stock)
@@ -1151,7 +1167,7 @@ function renderMeatStockBox() {
 
   if (!meats.length) return '';
 
-  return `<div class="meat-stock-box"><h3>Stocks viandes</h3><div class="meat-stock-grid">${meats.map(f => {
+  return `< div class="meat-stock-box" ><h3>Stocks viandes</h3><div class="meat-stock-grid">${meats.map(f => {
     const value = Number(f.stock);
     const alertLevel = Number(f.stockAlert || 0);
 
@@ -1165,7 +1181,7 @@ function renderMeatStockBox() {
     const label = out ? 'Rupture' : value;
 
     return `<div class="meat-stock-item ${level}"><span>${escapeHtml(f.name)}</span><strong>${label}</strong></div>`;
-  }).join('')}</div></div>`;
+  }).join('')}</div></div > `;
 }
 
 function productButtonHtml(p) {
@@ -1173,7 +1189,11 @@ function productButtonHtml(p) {
   const style = `background:${col.bg};color:${col.fg}`;
 
   if (!p.name) {
-    return `<button class="product-btn empty-product" style="${style}" disabled><strong>Libre</strong></button>`;
+    return `
+      <button class="product-btn empty-product" style="${style}" disabled>
+        <strong>Libre</strong>
+      </button>
+    `;
   }
 
   const stock = Number(p.stock);
@@ -1184,10 +1204,15 @@ function productButtonHtml(p) {
   const warning = tracked && !out && alertLevel > 0 && stock <= alertLevel;
 
   let classes = "product-btn";
-  if (out) classes += " out-stock stock-warning";
-  else if (warning) classes += " stock-warning";
+
+  if (out) {
+    classes += " out-stock stock-warning";
+  } else if (warning) {
+    classes += " stock-warning";
+  }
 
   let stockLabel = "";
+
   if (tracked) {
     stockLabel = `<em class="btn-stock">Stock ${stock}</em>`;
   }
@@ -1242,7 +1267,7 @@ function addProduct(id) {
 }
 function addCartLine(lineData) {
   const foodKey = (lineData.selectedFoods || [])
-    .map(x => `${x.foodId}:${x.qty || 1}`)
+    .map(x => `${x.foodId}:${x.qty || 1} `)
     .sort()
     .join(',');
 
@@ -1257,14 +1282,49 @@ function addCartLine(lineData) {
   renderCart();
 }
 function renderCart() {
-  document.getElementById('orderNumber').textContent = `n° ${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`;
+  document.getElementById('orderNumber').textContent =
+    `n° ${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`;
+
   const list = document.getElementById('cartLines');
-  if (!cart.length) { list.className = 'cart-lines empty'; list.textContent = 'Aucun produit'; }
-  else {
-    list.className = 'cart-lines';
-    list.innerHTML = cart.map((item, index) => ({ item, index })).reverse().map(({ item, index }) => `<div class="cart-line"><div><div class="cart-name">${escapeHtml(item.name)}</div>${item.detail ? `<div class="cart-detail">${escapeHtml(item.detail)}</div>` : ''}<div class="cart-unit">${fmt(item.price)} / unité</div></div><div class="qty-actions"><button data-action="minus" data-index="${index}">-</button><span class="qty-value">${item.qty}</span><button data-action="plus" data-index="${index}">+</button><button data-action="delete" data-index="${index}">x</button></div><div class="cart-total">${fmt(item.qty * item.price)}</div></div>`).join('');
+
+  if (!list) return;
+
+  if (!cart.length) {
+    list.className = 'cart-lines empty';
+    list.textContent = 'Aucun produit';
+    updatePayment();
+    return;
   }
-  document.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', updateLine));
+
+  list.className = 'cart-lines';
+
+  list.innerHTML = cart
+    .map((item, index) => ({ item, index }))
+    .reverse()
+    .map(({ item, index }) => `
+      <div class="cart-line">
+        <div>
+          <div class="cart-name">${escapeHtml(item.name)}</div>
+          ${item.detail ? `<div class="cart-detail">${escapeHtml(item.detail)}</div>` : ''}
+          <div class="cart-unit">${fmt(item.price)} / unité</div>
+        </div>
+
+        <div class="qty-actions">
+          <button data-action="minus" data-index="${index}">-</button>
+          <span class="qty-value">${item.qty}</span>
+          <button data-action="plus" data-index="${index}">+</button>
+          <button data-action="delete" data-index="${index}">x</button>
+        </div>
+
+        <div class="cart-total">${fmt(item.qty * item.price)}</div>
+      </div>
+    `)
+    .join('');
+
+  document
+    .querySelectorAll('[data-action]')
+    .forEach(btn => btn.addEventListener('click', updateLine));
+
   updatePayment();
 }
 function restoreStock(productId, qty) {
@@ -1526,11 +1586,11 @@ function checkMarker(qty) {
   return qty > 5 ? '<span class="reste-label">Reste : ________</span>' : Array.from({ length: Math.max(0, qty) }, () => '☐').join(' ');
 }
 function ticketLineHtml(name, qty, price, cls = '', withChecks = true) {
-  return `<div class="ticket-line ${cls}"><div>${qty || ''}</div><div class="ticket-product">${escapeHtml(name)}</div><div class="checks">${withChecks ? checkMarker(qty || 1) : ''}</div><div class="ticket-price">${price === null ? '' : fmt(price)}</div></div>`;
+  return `< div class="ticket-line ${cls}" ><div>${qty || ''}</div><div class="ticket-product">${escapeHtml(name)}</div><div class="checks">${withChecks ? checkMarker(qty || 1) : ''}</div><div class="ticket-price">${price === null ? '' : fmt(price)}</div></div > `;
 }
 function ticketLineBlock(line) {
   let html = ticketLineHtml(line.name, line.qty, line.price, line.cls || '', line.withChecks);
-  if (line.composition) html += `<div class="ticket-subline no-check"><div></div><div class="ticket-composition">(${escapeHtml(line.composition)})</div><div></div><div></div></div>`;
+  if (line.composition) html += `< div class="ticket-subline no-check" ><div></div><div class="ticket-composition">(${escapeHtml(line.composition)})</div><div></div><div></div></div > `;
   return html;
 }
 function ticketItemCompare(a, b) {
@@ -1565,7 +1625,7 @@ async function printTicketForSale(sale) {
 }
 
 function buildTicket() {
-  const number = `${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`;
+  const number = `${getDeviceCode()}${String(orderNumber).padStart(4, '0')} `;
   const html = ticketHtmlFromData(number, cart, paymentMethod, total(), paidAmount(), Math.max(0, paidAmount() - total()));
   document.getElementById('printArea').innerHTML = html;
   lastTicketHtml = html;
@@ -1588,7 +1648,7 @@ async function reprintLastTicket() {
 }
 
 function saleTimestampParts(date = new Date()) {
-  return { date: date.toISOString(), hour: date.getHours(), hourLabel: `${String(date.getHours()).padStart(2, '0')}h-${String(date.getHours() + 1).padStart(2, '0')}h` };
+  return { date: date.toISOString(), hour: date.getHours(), hourLabel: `${String(date.getHours()).padStart(2, '0')} h - ${String(date.getHours() + 1).padStart(2, '0')} h` };
 }
 
 function getCardAmountCents() {
@@ -1641,7 +1701,7 @@ function validateSale(extra = {}) {
   }
   const sale = {
     kind,
-    orderNumber: `${getDeviceCode()}${String(orderNumber).padStart(4, '0')}`,
+    orderNumber: `${getDeviceCode()}${String(orderNumber).padStart(4, '0')} `,
     date: stamp.date,
     hour: stamp.hour,
     hourLabel: stamp.hourLabel,
@@ -1689,7 +1749,7 @@ function exportCsv() {
   if (settingsDialog && settingsDialog.open) settingsDialog.close();
   const rows = [['type', 'commande', 'date', 'heure', 'paiement', 'benevole', 'regle', 'paye', 'rendu', 'produit', 'quantite', 'prix_unitaire', 'total_ligne', 'total_commande', 'motif']];
   sales.forEach(s => (s.items || []).forEach(i => rows.push([s.kind || 'sale', s.orderNumber, s.date, s.hourLabel || orderHourLabel(s), s.paymentMethod, s.volunteerName || '', s.settled === false ? 'non' : 'oui', s.paid || '', s.change || '', i.name, i.qty, i.price, i.qty * i.price, s.total, s.reason || ''])));
-  const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(';')).join('\n');
+  const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join('; ')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ventes-caisse.csv'; a.click();
 }
@@ -1875,50 +1935,162 @@ function renderSettings() {
     tabs.style.display = settingsMode === "cashier" ? "none" : "";
   }
 }
-function renderProductEditor() {
-  const el = document.getElementById('productEditor');
-  const zones = ['Boissons', 'Restauration', 'Consignes'];
-  const byZone = Object.fromEntries(zones.map(z => [z, []]));
-  (draftConfig.products || []).forEach((p, i) => {
-    const zone = p.group || displayGroup(p.category);
-    (byZone[zone] ||= []).push({ p, i });
-  });
 
-  function productCard(p, i) {
-    const detail = p.type === 'compose' ? renderChoiceEditor(p, i) : (p.type === 'menu' ? renderMenuEditor(p, i) : '');
-    return `<article class="product-edit-card clean-product-card">
-      <div class="editor-row product-main clean-product-main">
-        <div class="move-buttons"><button type="button" class="move-product" data-move-product="up" data-i="${i}">↑</button><button type="button" class="move-product" data-move-product="down" data-i="${i}">↓</button></div>
-        <div class="field-name"><small>Nom</small><input data-product="name" data-i="${i}" value="${escapeHtml(p.name)}"></div>
-        <div class="field-price"><small>Prix</small><input type="number" step="0.01" data-product="price" data-i="${i}" value="${p.price}"></div>
-        <div class="field-type"><small>Structure</small><select data-product="type" data-i="${i}"><option value="simple" ${p.type === 'simple' ? 'selected' : ''}>Simple</option><option value="compose" ${p.type === 'compose' ? 'selected' : ''}>Composé</option><option value="menu" ${p.type === 'menu' ? 'selected' : ''}>Menu</option></select></div>
-        <div><small>Catégorie</small><select data-product="category" data-i="${i}">${options(CATEGORIES, p.category)}</select></div>
-        <label class="checkline refundable-line"><input type="checkbox" data-product="refundable" data-i="${i}" ${p.refundable ? 'checked' : ''}> Remboursable</label>
-        <button type="button" class="danger small-action" data-delete-product="${i}" title="Supprimer">🗑</button>
-      </div>${detail}
-    </article>`;
+function getProductSections() {
+  if (draftConfig && Array.isArray(draftConfig.sections) && draftConfig.sections.length) {
+    return draftConfig.sections;
   }
 
-  el.innerHTML = zones.map(zone => {
-    const rows = byZone[zone] || [];
-    return `<section class="product-zone-editor ${groupClass(zone)}-editor">
-      <div class="product-zone-title"><strong>${zone}</strong><span>${rows.length} bouton${rows.length > 1 ? 's' : ''}</span><button type="button" class="secondary add-zone-product" data-add-product-zone="${zone}">Ajouter un bouton</button></div>
-      <div class="product-zone-list">${rows.map(({ p, i }) => productCard(p, i)).join('')}</div>
-    </section>`;
-  }).join('');
-  el.querySelectorAll('[data-product]').forEach(x => x.addEventListener('change', updateProductDraft));
-  el.querySelectorAll('[data-choice-field]').forEach(x => x.addEventListener('change', updateChoiceDraft));
-  el.querySelectorAll('[data-menu-field]').forEach(x => x.addEventListener('change', updateMenuDraft));
-  el.querySelectorAll('[data-move-product]').forEach(x => x.addEventListener('click', moveProductDraft));
-  el.querySelectorAll('[data-add-product-zone]').forEach(x => x.addEventListener('click', addProductDraft));
-  el.querySelectorAll('[data-delete-product]').forEach(x => x.addEventListener('click', deleteProductDraft));
+  if (config && Array.isArray(config.sections) && config.sections.length) {
+    return config.sections;
+  }
+
+  return [
+    { id: 'main', title: 'Buv/Restau', minSlots: 24 },
+    { id: 'tickets', title: 'Billetterie', minSlots: 4 }
+  ];
 }
-function newProductForZone(zone) {
-  const category = zone === 'Boissons' ? 'Boissons sans alcool' : (zone === 'Consignes' ? 'Consigne' : 'Plat');
+
+function getSectionLabel(sectionId) {
+  const section = getProductSections().find(s => s.id === sectionId);
+  return section ? section.title : sectionId;
+}
+
+function nextPositionForSection(sectionId) {
+  const products = draftConfig.products || [];
+
+  return products
+    .filter(p => (p.section || 'main') === sectionId)
+    .reduce((max, p) => Math.max(max, Number(p.position || 0)), 0) + 1;
+}
+
+function defaultCategoryForSection(sectionId) {
+  if (sectionId === 'tickets') return 'Billetterie';
+  return 'Plat';
+}
+
+function renderProductEditor() {
+  const el = document.getElementById('productEditor');
+  if (!el) return;
+
+  const sections = getProductSections();
+  const bySection = Object.fromEntries(sections.map(section => [section.id, []]));
+
+  (draftConfig.products || []).forEach((product, index) => {
+    const sectionId = product.section || 'main';
+    if (!bySection[sectionId]) bySection[sectionId] = [];
+    bySection[sectionId].push({ product, index });
+  });
+
+  function sectionOptions(selected) {
+    return sections.map(section => `
+      <option value="${section.id}" ${section.id === selected ? 'selected' : ''}>
+        ${escapeHtml(section.title)}
+      </option>
+    `).join('');
+  }
+
+  function productCard(product, index) {
+    const sectionId = product.section || 'main';
+    const maxCase = maxSlotsForSection(sectionId);
+
+    const detail =
+      product.type === 'compose'
+        ? renderChoiceEditor(product, index)
+        : product.type === 'menu'
+          ? renderMenuEditor(product, index)
+          : '';
+
+    return `
+      <article class="product-edit-card clean-product-card">
+        <div class="editor-row product-main clean-product-main">
+
+          <div class="field-name">
+            <small>Nom</small>
+            <input data-product="name" data-i="${index}" value="${escapeHtml(product.name || '')}">
+          </div>
+
+          <div class="field-price">
+            <small>Prix</small>
+            <input type="number" step="0.01" data-product="price" data-i="${index}" value="${Number(product.price || 0)}">
+          </div>
+
+          <div>
+            <small>Section</small>
+            <select data-product="section" data-i="${index}">
+              ${sectionOptions(sectionId)}
+            </select>
+          </div>
+
+          <div>
+            <small>Case</small>
+            <input type="number" min="1" max="${maxCase}" step="1" data-product="position" data-i="${index}" value="${product.position || index + 1}">
+          </div>
+
+          <div class="field-type">
+            <small>Structure</small>
+            <select data-product="type" data-i="${index}">
+              <option value="simple" ${product.type === 'simple' ? 'selected' : ''}>Simple</option>
+              <option value="compose" ${product.type === 'compose' ? 'selected' : ''}>Composé</option>
+              <option value="menu" ${product.type === 'menu' ? 'selected' : ''}>Menu</option>
+              <option value="service" ${product.type === 'service' ? 'selected' : ''}>Avancé</option>
+            </select>
+          </div>
+
+          <div>
+            <small>Catégorie</small>
+            <select data-product="category" data-i="${index}">
+              ${options(CATEGORIES, product.category)}
+            </select>
+          </div>
+
+          <label class="checkline refundable-line">
+            <input type="checkbox" data-product="refundable" data-i="${index}" ${product.refundable ? 'checked' : ''}>
+            Remb.
+          </label>
+
+          <button type="button" class="danger small-action" data-delete-product="${index}" title="Supprimer">🗑</button>
+        </div>
+
+        ${detail}
+      </article>
+    `;
+  }
+
+  el.innerHTML = sections.map(section => {
+    const rows = (bySection[section.id] || [])
+      .sort((a, b) => Number(a.product.position || 0) - Number(b.product.position || 0));
+
+    return `
+      <section class="product-zone-editor group-${section.id}-editor">
+        <div class="product-zone-title">
+          <strong>${escapeHtml(section.title)}</strong>
+          <span>${rows.length} produit${rows.length > 1 ? 's' : ''}</span>
+          <button type="button" class="secondary add-zone-product" data-add-product-zone="${section.id}">
+            Ajouter un bouton
+          </button>
+        </div>
+
+        <div class="product-zone-list">
+          ${rows.map(({ product, index }) => productCard(product, index)).join('')}
+        </div>
+      </section>
+    `;
+  }).join('');
+
+  el.querySelectorAll('[data-product]').forEach(input => input.addEventListener('change', updateProductDraft));
+  el.querySelectorAll('[data-choice-field]').forEach(input => input.addEventListener('change', updateChoiceDraft));
+  el.querySelectorAll('[data-menu-field]').forEach(input => input.addEventListener('change', updateMenuDraft));
+  el.querySelectorAll('[data-add-product-zone]').forEach(button => button.addEventListener('click', addProductDraft));
+  el.querySelectorAll('[data-delete-product]').forEach(button => button.addEventListener('click', deleteProductDraft));
+}
+
+function newProductForZone(sectionId) {
   return {
     id: uid('p'),
-    group: zone,
-    category,
+    section: sectionId,
+    position: nextPositionForSection(sectionId),
+    category: defaultCategoryForSection(sectionId),
     name: 'Libre',
     price: 0,
     type: 'simple',
@@ -1930,14 +2102,74 @@ function newProductForZone(zone) {
     stockAlert: ''
   };
 }
+
 function addProductDraft(e) {
-  const zone = e.currentTarget.dataset.addProductZone;
+  const sectionId = e.currentTarget.dataset.addProductZone || 'main';
+
   draftConfig.products ||= [];
-  draftConfig.products.push(newProductForZone(zone));
+  draftConfig.products.push(newProductForZone(sectionId));
+
   renderProductEditor();
   renderStockEditor();
   renderGeneralEditor();
 }
+
+function updateProductDraft(e) {
+  const index = Number(e.currentTarget.dataset.i);
+  const field = e.currentTarget.dataset.product;
+  const product = draftConfig.products[index];
+
+  if (!product) return;
+
+  if (field === 'refundable') {
+    product.refundable = e.currentTarget.checked;
+  } else if (field === 'price') {
+    product.price = Number(e.currentTarget.value || 0);
+  } else if (field === 'position') {
+    moveProductToCase(index, product.section || 'main', e.currentTarget.value);
+  } else if (field === 'section') {
+    moveProductToCase(index, e.currentTarget.value || 'main', product.position || 1);
+  } else {
+    product[field] = e.currentTarget.value;
+  }
+
+  if (field === 'type') {
+    if (product.type === 'simple') {
+      product.components = [];
+      product.choices = [];
+      product.menuSections = [];
+      product.module = null;
+    }
+
+    if (product.type === 'compose') {
+      product.menuSections = [];
+      product.module = null;
+      product.choices ||= [];
+    }
+
+    if (product.type === 'menu') {
+      product.choices = [];
+      product.module = null;
+      product.menuSections ||= [];
+    }
+
+    if (product.type === 'advanced') {
+      product.components = [];
+      product.choices = [];
+      product.menuSections = [];
+      product.module ||= {
+        type: 'meal'
+      };
+    }
+  }
+
+  renderProductEditor();
+  renderStockEditor();
+  renderGeneralEditor();
+}
+
+
+
 async function deleteProductDraft(e) {
   const i = Number(e.currentTarget.dataset.deleteProduct);
   const p = draftConfig.products?.[i];
@@ -1966,22 +2198,8 @@ async function deleteProductDraft(e) {
 
   renderSettings();
 }
-function moveProductDraft(e) {
-  const i = Number(e.currentTarget.dataset.i);
-  const dir = e.currentTarget.dataset.moveProduct === 'up' ? -1 : 1;
-  const products = draftConfig.products || [];
-  const product = products[i];
-  if (!product) return;
-  const zone = product.group || displayGroup(product.category);
-  const zoneIndices = products.map((p, idx) => ({ p, idx })).filter(x => (x.p.group || displayGroup(x.p.category)) === zone).map(x => x.idx);
-  const pos = zoneIndices.indexOf(i);
-  const targetIndex = zoneIndices[pos + dir];
-  if (targetIndex === undefined) return;
-  const tmp = products[i];
-  products[i] = products[targetIndex];
-  products[targetIndex] = tmp;
-  renderProductEditor();
-}
+
+
 function renderChoiceEditor(p, i) {
   const groups = ['Viande', 'Accompagnement'];
   return `<div class="choice-edit"><h4>Réglage produit composé</h4>${groups.map(cat => {
@@ -1991,14 +2209,124 @@ function renderChoiceEditor(p, i) {
     return `<div class="settings-choice-section"><h4>${cat}</h4><div class="choice-rules"><label><input type="checkbox" data-choice-field="clientChoice" data-i="${i}" data-cat="${cat}" ${choice.clientChoice ? 'checked' : ''}> Choix laissé au client</label><label>Nombre à choisir <input type="number" min="0" data-choice-field="max" data-i="${i}" data-cat="${cat}" value="${choice.max || 0}"></label></div><div class="${gridClass}">${foods.map(f => { const opt = (choice.options || []).find(o => o.foodId === f.id); return `<div class="option-card"><label class="option-card-name"><input type="checkbox" data-choice-field="option" data-i="${i}" data-cat="${cat}" data-food-id="${f.id}" ${opt ? 'checked' : ''}> ${escapeHtml(f.name)}</label><label class="option-card-supp">Suppl. <input type="number" step="0.01" data-choice-field="supplement" data-i="${i}" data-cat="${cat}" data-food-id="${f.id}" value="${opt?.supplement || 0}"></label></div>`; }).join('')}</div></div>`;
   }).join('')}</div>`;
 }
+
 function renderMenuEditor(p, i) {
   const sections = ['Boissons', 'Entrée', 'Plat', 'Fromage', 'Dessert'];
-  return `<div class="menu-edit"><h4>Réglage menu</h4><p class="hint">Chaque rubrique peut être fixe ou laissée au choix du client. Le plat peut être un produit simple ou composé déjà paramétré.</p>${sections.map(section => {
-    let cfg = (p.menuSections || []).find(c => c.section === section) || { section, clientChoice: false, max: 1, options: [] };
-    const candidates = draftConfig.products.filter(prod => prod.id !== p.id && prod.name && (prod.category === section || (section === 'Boissons' && displayGroup(prod.category) === 'Boissons')));
-    const gridClass = candidates.length >= 5 ? 'settings-options-grid settings-options-grid-3' : 'settings-options-grid';
-    return `<div class="menu-section"><h4>${section}</h4><div class="menu-rules"><label><input type="checkbox" data-menu-field="clientChoice" data-i="${i}" data-section="${section}" ${cfg.clientChoice ? 'checked' : ''}> Choix laissé au client</label><label>Nombre à choisir <input type="number" min="0" data-menu-field="max" data-i="${i}" data-section="${section}" value="${cfg.max || 1}"></label></div>${candidates.length ? `<div class="${gridClass}">${candidates.map(prod => { const opt = (cfg.options || []).find(o => o.productId === prod.id); return `<div class="option-card"><label class="option-card-name"><input type="checkbox" data-menu-field="option" data-i="${i}" data-section="${section}" data-product-id="${prod.id}" ${opt ? 'checked' : ''}> ${escapeHtml(prod.name)}</label><label class="option-card-supp">Suppl. <input type="number" step="0.01" data-menu-field="supplement" data-i="${i}" data-section="${section}" data-product-id="${prod.id}" value="${opt?.supplement || 0}"></label></div>`; }).join('')}</div>` : '<p class="hint">Aucun produit dans cette catégorie.</p>'}</div>`;
-  }).join('')}</div>`;
+
+  return `
+    <div class="menu-edit">
+      <h4>Réglage menu</h4>
+      <p class="hint">
+        Chaque rubrique peut être fixe ou laissée au choix du client.
+        Le plat peut être un produit simple ou composé déjà paramétré.
+      </p>
+
+      ${sections.map(section => {
+
+    const cfg =
+      (p.menuSections || []).find(c => c.section === section) || {
+        section,
+        clientChoice: false,
+        max: 1,
+        options: []
+      };
+
+    const candidates = draftConfig.products.filter(prod => {
+      if (prod.id === p.id || !prod.name) return false;
+
+      if (section === 'Boissons') {
+        return String(prod.category).startsWith('Boissons');
+      }
+
+      return prod.category === section;
+    });
+
+    const gridClass =
+      candidates.length >= 5
+        ? 'settings-options-grid settings-options-grid-3'
+        : 'settings-options-grid';
+
+    return `
+          <div class="menu-section">
+            <h4>${section}</h4>
+
+            <div class="menu-rules">
+              <label>
+                <input
+                  type="checkbox"
+                  data-menu-field="clientChoice"
+                  data-i="${i}"
+                  data-section="${section}"
+                  ${cfg.clientChoice ? 'checked' : ''}
+                >
+                Choix laissé au client
+              </label>
+
+              <label>
+                Nombre à choisir
+                <input
+                  type="number"
+                  min="0"
+                  data-menu-field="max"
+                  data-i="${i}"
+                  data-section="${section}"
+                  value="${cfg.max || 1}"
+                >
+              </label>
+            </div>
+
+            ${candidates.length
+        ? `
+                  <div class="${gridClass}">
+                    ${candidates.map(prod => {
+
+          const opt =
+            (cfg.options || []).find(o => o.productId === prod.id);
+
+          return `
+                        <div class="option-card">
+
+                          <label class="option-card-name">
+                            <input
+                              type="checkbox"
+                              data-menu-field="option"
+                              data-i="${i}"
+                              data-section="${section}"
+                              data-product-id="${prod.id}"
+                              ${opt ? 'checked' : ''}
+                            >
+                            ${escapeHtml(prod.name)}
+                          </label>
+
+                          <label class="option-card-supp">
+                            Suppl.
+
+                            <input
+                              type="number"
+                              step="0.01"
+                              data-menu-field="supplement"
+                              data-i="${i}"
+                              data-section="${section}"
+                              data-product-id="${prod.id}"
+                              value="${opt?.supplement || 0}"
+                            >
+                          </label>
+
+                        </div>
+                      `;
+
+        }).join('')}
+                  </div>
+                `
+        : '<p class="hint">Aucun produit dans cette catégorie.</p>'
+      }
+
+          </div>
+        `;
+
+  }).join('')}
+    </div>
+  `;
 }
 function ensureChoice(p, cat) {
   p.choices ||= [];
@@ -2018,12 +2346,14 @@ function updateChoiceDraft(e) {
   if (field === 'supplement') { const opt = choice.options.find(o => o.foodId === foodId) || (choice.options.push({ foodId, supplement: 0 }), choice.options.find(o => o.foodId === foodId)); opt.supplement = Number(e.currentTarget.value || 0); }
   p.choices = (p.choices || []).filter(c => (c.max || 0) > 0 || (c.options || []).length > 0);
 }
+
 function ensureMenuSection(p, section) {
   p.menuSections ||= [];
   let cfg = p.menuSections.find(c => c.section === section);
   if (!cfg) { cfg = { section, clientChoice: false, max: 1, options: [] }; p.menuSections.push(cfg); }
   return cfg;
 }
+
 function updateMenuDraft(e) {
   const i = Number(e.currentTarget.dataset.i), section = e.currentTarget.dataset.section, field = e.currentTarget.dataset.menuField, productId = e.currentTarget.dataset.productId;
   const p = draftConfig.products[i]; const cfg = ensureMenuSection(p, section);
@@ -2037,16 +2367,6 @@ function updateMenuDraft(e) {
   p.menuSections = (p.menuSections || []).filter(c => (c.max || 0) > 0 || (c.options || []).length > 0);
 }
 
-function updateProductDraft(e) {
-  const i = Number(e.currentTarget.dataset.i), field = e.currentTarget.dataset.product, p = draftConfig.products[i];
-  if (field === 'refundable') p.refundable = e.currentTarget.checked;
-  else if (field === 'price') p.price = Number(e.currentTarget.value || 0);
-  else { p[field] = e.currentTarget.value; if (field === 'category') p.group = displayGroup(p.category); }
-  if (field === 'type' && p.type === 'simple') { p.components = []; p.choices = []; p.menuSections = []; }
-  if (field === 'type' && p.type === 'compose') { p.menuSections = []; p.choices ||= []; }
-  if (field === 'type' && p.type === 'menu') { p.choices = []; p.menuSections ||= []; }
-  renderProductEditor(); renderStockEditor(); renderGeneralEditor();
-}
 
 function renderFoodEditor() {
   const el = document.getElementById('foodEditor');
@@ -2062,6 +2382,7 @@ function renderVolunteerEditor() {
   el.querySelectorAll('[data-volunteer]').forEach(x => x.addEventListener('change', e => { const v = draftConfig.volunteers[Number(e.currentTarget.dataset.i)]; if (e.currentTarget.dataset.volunteer === 'active') v.active = e.currentTarget.checked; else v.name = e.currentTarget.value; }));
   el.querySelectorAll('[data-delete-volunteer]').forEach(b => b.addEventListener('click', e => { draftConfig.volunteers.splice(Number(e.currentTarget.dataset.deleteVolunteer), 1); renderVolunteerEditor(); }));
 }
+
 function renderStockEditor() {
   const el = document.getElementById('stockEditor');
   if (!el) return;
@@ -2138,18 +2459,106 @@ function renderStockEditor() {
     obj.stockAlert = e.currentTarget.value.trim();
   }));
 }
+
 function renderGeneralEditor() {
-  document.getElementById('setEventName').value = draftConfig.eventName;
-  document.getElementById('setPrefix').value = draftConfig.orderPrefix;
+  const eventNameInput = document.getElementById('setEventName');
+  const prefixInput = document.getElementById('setPrefix');
   const ticketColorSelect = document.getElementById('setTicketColor');
-  if (ticketColorSelect) {
-    ticketColorSelect.value = draftConfig.ticketColor;
+  const categoryColorEditor = document.getElementById('categoryColorEditor');
+
+  if (eventNameInput) eventNameInput.value = draftConfig.eventName || '';
+  if (prefixInput) prefixInput.value = draftConfig.orderPrefix || 'A';
+  if (ticketColorSelect) ticketColorSelect.value = draftConfig.ticketColor || 'black';
+
+  if (!categoryColorEditor) return;
+
+  draftConfig.sections ||= [
+    { id: 'main', title: 'Buv/Restau', minSlots: 24 },
+    { id: 'tickets', title: 'Billetterie', minSlots: 4 }
+  ];
+
+  const cats = Array.from(
+    new Set([
+      ...CATEGORIES,
+      ...(draftConfig.products || []).map(p => p.category).filter(Boolean)
+    ])
+  );
+
+  categoryColorEditor.innerHTML = `
+    <h3>Sections</h3>
+
+    <div class="editor-list">
+      ${draftConfig.sections.map((section, index) => `
+        <div class="editor-row color">
+          <div>
+            <small>Nom section</small>
+            <input
+              data-section-field="title"
+              data-section-index="${index}"
+              value="${escapeHtml(section.title || '')}"
+            >
+          </div>
+
+          <div>
+            <small>Minimum cases</small>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              data-section-field="minSlots"
+              data-section-index="${index}"
+              value="${Number(section.minSlots || 1)}"
+            >
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <h3>Couleur des catégories</h3>
+
+    ${cats.map(c => `
+      <div class="editor-row color">
+        <div>${escapeHtml(c)}</div>
+        <select data-cat-color="${escapeHtml(c)}">
+          ${paletteOptions(draftConfig.categoryColors[c] || 'gris')}
+        </select>
+      </div>
+    `).join('')}
+  `;
+
+  categoryColorEditor.querySelectorAll('[data-section-field]').forEach(input => {
+    input.addEventListener('change', updateSectionDraft);
+  });
+
+  categoryColorEditor.querySelectorAll('[data-cat-color]').forEach(select => {
+    select.addEventListener('change', e => {
+      draftConfig.categoryColors[e.currentTarget.dataset.catColor] =
+        e.currentTarget.value;
+    });
+  });
+}
+
+function updateSectionDraft(e) {
+  const index = Number(e.currentTarget.dataset.sectionIndex);
+  const field = e.currentTarget.dataset.sectionField;
+
+  if (!draftConfig.sections || !draftConfig.sections[index]) {
+    return;
   }
 
-  const cats = Array.from(new Set([...CATEGORIES, ...draftConfig.products.map(p => p.category).filter(Boolean)]));
-  document.getElementById('categoryColorEditor').innerHTML = cats.map(c => `<div class="editor-row color"><div>${escapeHtml(c)}</div><select data-cat-color="${escapeHtml(c)}">${paletteOptions(draftConfig.categoryColors[c] || 'gris')}</select></div>`).join('');
-  document.querySelectorAll('[data-cat-color]').forEach(x => x.addEventListener('change', e => { draftConfig.categoryColors[e.currentTarget.dataset.catColor] = e.currentTarget.value; }));
+  const section = draftConfig.sections[index];
+
+  if (field === 'minSlots') {
+    section.minSlots = Math.max(1, Number(e.currentTarget.value || 1));
+  } else {
+    section[field] = e.currentTarget.value.trim();
+  }
+
+  renderGeneralEditor();
+  renderProductEditor();
+  renderProducts();
 }
+
 function saveSettings() {
   draftConfig.eventName = document.getElementById('setEventName').value.trim() || 'Comité des Fêtes-Moroges';
   if (Array.isArray(draftConfig.volunteers)) {
@@ -2171,14 +2580,13 @@ function saveSettings() {
   showSettingsStatus("Paramètres enregistrés");
 }
 
-
-
 function sortedVolunteers() {
   return (config.volunteers || [])
     .filter(v => v.active !== false)
     .slice()
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'fr', { sensitivity: 'base' }));
 }
+
 function openVolunteerDialog() {
   if (!cart.length) return showMessage('Commande vide', 'Ajoute au moins un produit avant de l’attribuer à un bénévole.');
   const active = sortedVolunteers();
@@ -2192,6 +2600,7 @@ function openVolunteerDialog() {
   }
   document.getElementById('volunteerDialog').showModal();
 }
+
 function validateVolunteerOrder(id) {
   const selectedId = id || (document.getElementById('volunteerSelect') || {}).value;
   const v = (config.volunteers || []).find(x => x.id === selectedId);
@@ -3099,12 +3508,11 @@ function updateSettingsButtons() {
 
 
 function blankProductForSameSlot(p) {
-  const group = p.group || displayGroup(p.category);
-  const category = p.category || (group === 'Boissons' ? 'Boissons sans alcool' : (group === 'Consignes' ? 'Consigne' : 'Plat'));
   return {
     id: p.id || uid('p'),
-    group,
-    category,
+    section: p.section || 'main',
+    position: p.position || 1,
+    category: p.category || 'Plat',
     name: '',
     price: 0,
     type: 'simple',
@@ -3112,9 +3520,11 @@ function blankProductForSameSlot(p) {
     choices: [],
     menuSections: [],
     refundable: true,
-    stock: ''
+    stock: '',
+    stockAlert: ''
   };
 }
+
 async function resetDraftProducts() {
   const ok = await showConfirm(
     "Vider les boutons produits",
