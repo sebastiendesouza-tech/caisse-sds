@@ -275,6 +275,7 @@ function previewTicket(sale) {
 }
 
 async function printTicket(sale) {
+
     if (config.printTicketsEnabled === false) {
         return true;
     }
@@ -283,19 +284,22 @@ async function printTicket(sale) {
         return true;
     }
 
+    previewTicket(sale);
+
     if (mustPrintDirect()) {
-        previewTicket(sale);
         window.print();
         return true;
     }
 
     if (!selectedPrinterName) {
-        showSettingsStatus("Aucune imprimante sélectionnée.", "error");
+        showSettingsStatus(
+            "Aucune imprimante sélectionnée.",
+            "error"
+        );
         return false;
     }
 
     try {
-        previewTicket(sale);
 
         const content = ticketTextFromSale(sale);
 
@@ -316,10 +320,19 @@ async function printTicket(sale) {
             throw new Error(data.error || "Erreur d'impression");
         }
 
+        showToast("🖨️ Ticket envoyé à l'impression");
+
         return true;
+
     } catch (e) {
+
         console.error("Erreur printTicket", e);
-        showSettingsStatus("Erreur impression : " + e.message, "error");
+
+        showSettingsStatus(
+            "Erreur impression : " + e.message,
+            "error"
+        );
+
         return false;
     }
 }

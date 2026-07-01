@@ -123,6 +123,7 @@ let sales = JSON.parse(localStorage.getItem('caisse_sales') || '[]');
 let reportArchive = JSON.parse(localStorage.getItem('caisse_report_archive') || 'null');
 let reportResetAt = localStorage.getItem('caisse_report_reset_at') || '';
 let lastTicketHtml = localStorage.getItem('caisse_last_ticket_html') || '';
+let lastSale = JSON.parse(localStorage.getItem('caisse_last_sale') || 'null');
 let pendingChoiceProduct = null;
 let currentEventId = localStorage.getItem('caisse_event_id') || 'event-1';
 let activePaymentField = 'cash';
@@ -1455,11 +1456,20 @@ function buildTicket() {
 }
 
 
-function reprintLastTicket() {
-  if (!lastTicketHtml) { showMessage('Aucun ticket', 'Aucun dernier ticket à réimprimer.'); return; }
-  document.getElementById('printArea').innerHTML = lastTicketHtml;
-  window.print();
+async function reprintLastTicket() {
+
+  if (!lastSale) {
+    showMessage(
+      "Aucun ticket",
+      "Aucun dernier ticket à réimprimer."
+    );
+    return;
+  }
+
+  await printTicket(lastSale);
+
 }
+
 function saleTimestampParts(date = new Date()) {
   return { date: date.toISOString(), hour: date.getHours(), hourLabel: `${String(date.getHours()).padStart(2, '0')}h-${String(date.getHours() + 1).padStart(2, '0')}h` };
 }
@@ -1485,8 +1495,12 @@ function getCashPartCents() {
 function validateSale(extra = {}) {
   const deviceConfig = getDeviceConfig();
   const printMode = getDevicePrintMode();
-  const shouldPrint = config.printTicketsEnabled !== false && extra.print !== false && mustPrintDirect();
+  const shouldPrint = config.printTicketsEnabled !== false && extra.print !== false;
 
+  // Toujours construire le dernier ticket s'il y a une impression
+  if (shouldPrint) {
+    buildTicket();
+  }
   if (shouldPrint) buildTicket();
 
   const kind = extra.kind || 'sale';
@@ -1534,8 +1548,14 @@ function validateSale(extra = {}) {
     }
   });
   saveSales();
-
-  if (shouldPrint) window.print();
+  lastSale = clone(sale);
+  localStorage.setItem(
+    'caisse_last_sale',
+    JSON.stringify(lastSale)
+  );
+  if (shouldPrint && mustPrintDirect()) {
+    window.print();
+  }
 
   orderNumber += 1;
   saveOrderNumber();

@@ -78,7 +78,7 @@ function updateCentralDashboard() {
 // -----------------------------------------------------
 
 async function refreshCentralDashboard() {
-    await refreshDashboardConnections();
+
     await checkPendingPrints();
     updateDashboardPrinterConfig();
     await refreshDashboardSales();
