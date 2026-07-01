@@ -289,29 +289,7 @@ function getDeviceCode() {
 function isCentralCashier() {
   return getDeviceCode() === "A";
 }
-async function recoverDeviceCode(deviceCode, deviceName, printMode) {
-  if (!supabaseClient) return false;
 
-  const { error } = await supabaseClient
-    .from('devices')
-    .update({
-      device_name: deviceName,
-      device_type: /iPad/i.test(navigator.userAgent) ? 'ipad' : 'windows',
-      current_device: getDeviceInstanceId(),
-      device_status: 'busy',
-      print_mode: printMode,
-      app_version: '2026.06.25',
-      last_seen: new Date().toISOString()
-    })
-    .eq('device_code', deviceCode);
-
-  if (error) {
-    console.error('Erreur récupération caisse', error);
-    return false;
-  }
-
-  return true;
-}
 async function isDeviceCodeAvailable(deviceCode) {
   if (!supabaseClient) return true;
 
@@ -443,21 +421,39 @@ async function registerDevice() {
   renderDeviceInfo();
 
   if (getDeviceCode() === 'A') {
-    updateCentralDashboard();
-    updateDashboardStatus();
-    refreshCentralDashboard();
+
+    if (typeof updateCentralDashboard === "function") {
+      updateCentralDashboard();
+    }
+
+    if (typeof updateDashboardStatus === "function") {
+      updateDashboardStatus();
+    }
+
+    if (typeof refreshCentralDashboard === "function") {
+      refreshCentralDashboard();
+    }
+
   }
 }
 
 function startCentralServices() {
+
   if (getDeviceCode() !== 'A') return;
 
-  updateCentralDashboard();
-  updateDashboardStatus();
+  if (typeof updateCentralDashboard === "function") {
+    updateCentralDashboard();
+  }
 
-  refreshCentralDashboard();
+  if (typeof updateDashboardStatus === "function") {
+    updateDashboardStatus();
+  }
 
-  setInterval(refreshCentralDashboard, 5000);
+  if (typeof refreshCentralDashboard === "function") {
+    refreshCentralDashboard();
+    setInterval(refreshCentralDashboard, 5000);
+  }
+
   setInterval(processPrintQueue, 5000);
 }
 
@@ -518,20 +514,6 @@ async function loadConfigFromSupabase() {
 
   supabaseReady = true;
 }
-
-
-const devicesEl = document.getElementById("dashboardDevices");
-
-if (devicesEl) {
-  devicesEl.innerHTML =
-    "<strong>📱 Caisses</strong><br><br>" +
-    data.map(device =>
-      `${device.device_status === "busy" ? "🟢" : "⚪"} ${device.device_code} - ${device.device_name || "Libre"}`
-    ).join("<br>");
-}
-
-
-
 
 async function saveConfigToSupabase() {
   if (supabaseReceiving) return;
@@ -3187,7 +3169,10 @@ function initDeviceSetupDialog() {
 
       const deviceName = document.getElementById('deviceName').value.trim();
       const deviceCode = document.getElementById('deviceCode').value;
-      const printMode = document.getElementById('devicePrintMode').value;
+      const printMode =
+        document.getElementById("devicePrintMode")?.value
+        || getDeviceConfig()?.printMode
+        || "central";
 
       if (!deviceName) {
         showMessage('Configuration incomplète', 'Indique un nom pour cet appareil.');
@@ -3227,8 +3212,13 @@ function initDeviceSetupDialog() {
       if (dialog.open) dialog.close();
 
       if (getDeviceCode() === 'A') {
-        updateCentralDashboard();
+
+        if (typeof updateCentralDashboard === "function") {
+          updateCentralDashboard();
+        }
+
         startCentralServices();
+
       }
 
       showMessage('Appareil configuré', `Cet appareil est configuré comme caisse ${deviceCode}.`);
