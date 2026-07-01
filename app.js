@@ -210,10 +210,13 @@ async function loadSalesFromSupabase() {
 async function syncOrderNumberFromSupabase() {
   if (!supabaseClient) return;
 
+  const code = getDeviceCode();
+
   const { data, error } = await supabaseClient
     .from('sales')
     .select('order_number')
     .eq('event_id', currentEventId)
+    .like('order_number', `${code}%`)
     .order('created_at', { ascending: false })
     .limit(1);
 
@@ -225,14 +228,19 @@ async function syncOrderNumberFromSupabase() {
   if (!data || !data.length) {
     orderNumber = 1;
     saveOrderNumber();
+    renderCart();
     return;
   }
 
-  const match = (data[0].order_number || '').match(/(\d+)$/);
+  const match = String(data[0].order_number || '').match(/(\d+)$/);
+
   orderNumber = match ? Number(match[1]) + 1 : 1;
 
   saveOrderNumber();
+  renderCart();
 }
+
+
 const DEVICE_CONFIG_KEY = 'sds_device_config';
 
 function getDeviceConfig() {
@@ -291,12 +299,14 @@ function isCentralCashier() {
   return getDeviceCode() === "A";
 }
 
+const DEVICE_TIMEOUT_HOURS = 2;
+
 async function isDeviceCodeAvailable(deviceCode) {
   if (!supabaseClient) return true;
 
   const { data, error } = await supabaseClient
     .from('devices')
-    .select('device_name,current_device')
+    .select('device_name,current_device,last_seen')
     .eq('device_code', deviceCode)
     .single();
 
@@ -305,8 +315,20 @@ async function isDeviceCodeAvailable(deviceCode) {
   // Si le poste est libre
   if (!data.current_device) return true;
 
-  // Si c'est déjà CE même appareil (redémarrage)
+  // Si c'est déjà CE même appareil
   if (data.current_device === getDeviceInstanceId()) return true;
+
+  // Si l'autre appareil n'a pas donné signe de vie depuis plus de 2h
+  const lastSeenTime = data.last_seen
+    ? new Date(data.last_seen).getTime()
+    : 0;
+
+  const inactiveLimit =
+    Date.now() - DEVICE_TIMEOUT_HOURS * 60 * 60 * 1000;
+
+  if (!lastSeenTime || lastSeenTime < inactiveLimit) {
+    return true;
+  }
 
   // Sinon il est occupé
   return false;
@@ -704,23 +726,27 @@ function showMessage(title, text) {
   }
 }
 
-function showConfirm(title, text) {
+function showConfirm(title, text, onConfirm) {
   return new Promise(resolve => {
     const dlg = document.getElementById('messageDialog');
-    if (!dlg) {
-      resolve(false);
-      return;
-    }
-
-    document.getElementById('messageTitle').textContent = title || 'Confirmation';
-    document.getElementById('messageText').textContent = text || '';
-
+    const titleEl = document.getElementById('messageTitle');
+    const textEl = document.getElementById('messageText');
     const cancel = document.getElementById('messageCancel');
     const ok = document.getElementById('messageOk');
 
+    if (!dlg || !titleEl || !textEl || !cancel || !ok) {
+      const result = confirm(`${title}\n\n${text}`);
+      if (result && typeof onConfirm === "function") onConfirm();
+      resolve(result);
+      return;
+    }
+
+    titleEl.textContent = title || 'Confirmation';
+    textEl.textContent = text || '';
+
     cancel.style.display = '';
-    cancel.textContent = 'Non';
-    ok.textContent = 'Oui';
+    cancel.textContent = 'Annuler';
+    ok.textContent = 'OK';
 
     cancel.onclick = () => {
       dlg.close();
@@ -729,10 +755,17 @@ function showConfirm(title, text) {
 
     ok.onclick = () => {
       dlg.close();
+
+      if (typeof onConfirm === "function") {
+        onConfirm();
+      }
+
       resolve(true);
     };
 
-    dlg.showModal();
+    if (!dlg.open) {
+      dlg.showModal();
+    }
   });
 }
 
@@ -1733,7 +1766,7 @@ function renderSettingsOrders() {
   loadSalesFromSupabase().then(() => {
     const previousSales = sales;
 
-    let list = supabaseSales.length ? supabaseSales : sales;
+    let list = supabaseClient ? supabaseSales : sales;
 
     if (settingsOrdersScope === "device") {
       const code = getDeviceCode();
@@ -1745,6 +1778,7 @@ function renderSettingsOrders() {
     el.innerHTML = ordersHtml();
     bindRefundButtons(el);
     bindVolunteerPayButtons(el);
+    bindReprintOrderButtons(el);
 
     sales = previousSales;
   });
@@ -1820,21 +1854,33 @@ function addProductDraft(e) {
   renderStockEditor();
   renderGeneralEditor();
 }
-function deleteProductDraft(e) {
+async function deleteProductDraft(e) {
   const i = Number(e.currentTarget.dataset.deleteProduct);
   const p = draftConfig.products?.[i];
+
   if (!p) return;
-  const remove = () => {
-    const removedId = p.id;
-    draftConfig.products.splice(i, 1);
-    draftConfig.products.forEach(prod => {
-      prod.components = (prod.components || []).filter(id => id !== removedId);
-      prod.menuSections = (prod.menuSections || []).map(sec => ({ ...sec, options: (sec.options || []).filter(o => o.productId !== removedId) }));
-    });
-    renderSettings();
-  };
-  if (typeof showConfirm === 'function') showConfirm('Supprimer le bouton', `Supprimer ${p.name || 'ce bouton'} ?`, remove);
-  else if (confirm(`Supprimer ${p.name || 'ce bouton'} ?`)) remove();
+
+  const ok = await showConfirm(
+    'Supprimer le bouton',
+    `Supprimer ${p.name || 'ce bouton'} ?`
+  );
+
+  if (!ok) return;
+
+  const removedId = p.id;
+
+  draftConfig.products.splice(i, 1);
+
+  draftConfig.products.forEach(prod => {
+    prod.components = (prod.components || []).filter(id => id !== removedId);
+
+    prod.menuSections = (prod.menuSections || []).map(sec => ({
+      ...sec,
+      options: (sec.options || []).filter(o => o.productId !== removedId)
+    }));
+  });
+
+  renderSettings();
 }
 function moveProductDraft(e) {
   const i = Number(e.currentTarget.dataset.i);
@@ -2518,6 +2564,21 @@ function renderEventTitle() {
   const el = document.getElementById('eventTitle');
   if (el) el.textContent = config.eventName || 'Caisse';
 }
+function bindReprintOrderButtons(root = document) {
+  root.querySelectorAll('[data-reprint-order]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const index = Number(e.currentTarget.dataset.reprintOrder);
+      const sale = sales[index];
+
+      if (!sale) {
+        showMessage('Commande introuvable', 'Impossible de retrouver cette commande.');
+        return;
+      }
+
+      await printTicket(sale);
+    });
+  });
+}
 
 function ordersHtml() {
   return sales
@@ -2538,6 +2599,10 @@ function ordersHtml() {
           </button>`
         : '';
 
+      const reprintBtn = !isCancelled
+        ? `<button class="secondary" data-reprint-order="${idx}">🖨️ Réimprimer</button>`
+        : '';
+
       const refundInfo = isCancelled
         ? `<div class="hint">Commande annulée${s.cancelReason ? ' - ' + escapeHtml(s.cancelReason) : ''}</div>`
         : isVolunteer
@@ -2546,7 +2611,7 @@ function ordersHtml() {
             ? `<div class="hint">Remboursement en espèces</div>`
             : `<div class="hint">Déjà remboursé : ${fmt(refundAmountForSale(s.orderNumber))} / Net : ${fmt(netSaleTotal(s))}</div>`;
 
-      const btn = (!isRefund && !isVolunteer && !isCancelled)
+      const actionBtn = (!isRefund && !isVolunteer && !isCancelled)
         ? `<button class="danger" data-cancel-order="${escapeHtml(s.orderNumber)}">Annuler</button>`
         : volunteerToggle;
 
@@ -2562,7 +2627,8 @@ function ordersHtml() {
           <div class="order-bottom">
             <b>${fmt(s.total)}</b>
             <span>${escapeHtml(s.paymentMethod || '')}</span>
-            ${btn}
+            ${reprintBtn}
+            ${actionBtn}
           </div>
 
           ${refundInfo}
@@ -2700,6 +2766,7 @@ async function openOrders() {
   document.getElementById('ordersList').innerHTML = ordersHtml();
   bindRefundButtons(document.getElementById('ordersList'));
   bindVolunteerPayButtons(document.getElementById('ordersList'));
+  bindReprintOrderButtons(document.getElementById('ordersList'));
   document.getElementById('ordersDialog').showModal();
 
   sales = previousSales;
@@ -2836,9 +2903,9 @@ document.getElementById('btnGestionOrders')?.addEventListener('click', () => {
 
 document.getElementById('btnGestionAdmin')?.addEventListener('click', () => {
   if (getDeviceCode() !== 'A') {
-    showSettingsStatus(
-      'Administration réservée à la caisse centrale.',
-      'warning'
+    showMessage(
+      'Accès refusé',
+      'Administration réservée à la caisse centrale.'
     );
     return;
   }
@@ -2871,7 +2938,7 @@ document.addEventListener('click', e => {
 
 
 function activeSettingsTab() {
-  return document.querySelector('.settings-tabs .tab.active')?.dataset.tab || 'products';
+  return document.querySelector('.tab-panel.active')?.id?.replace('tab-', '') || 'products';
 }
 
 function showSettingsTab(tabName) {
@@ -2911,7 +2978,8 @@ function updateSettingsButtons() {
       tab === 'orders' ||
       tab === 'report' ||
       tab === 'export' ||
-      tab === 'new-event'
+      tab === 'new-event' ||
+      tab === 'live'
     ) {
       btnReset.style.display = 'none';
     } else {
@@ -2925,7 +2993,8 @@ function updateSettingsButtons() {
       tab === 'orders' ||
       tab === 'report' ||
       tab === 'export' ||
-      tab === 'new-event'
+      tab === 'new-event' ||
+      tab === 'live'
     ) {
       btnSave.style.display = 'none';
     } else {
@@ -3001,28 +3070,30 @@ async function resetDraftFoods() {
 }
 
 async function resetDraftStocks() {
-  const ok = await showConfirm(
-    "Réinitialiser les stocks",
-    "Tous les stocks seront mis en non suivi.\n\nCette action ne sera réellement appliquée qu'après avoir cliqué sur Enregistrer."
+  const ok = confirm(
+    "Réinitialiser les stocks ?\n\nTous les stocks seront mis en non suivi.\n\nCette action sera appliquée immédiatement."
   );
+
+
 
   if (!ok) return;
 
-  (draftConfig.products || []).forEach(p => {
-    p.stock = '';
+  config.products.forEach(p => {
+    p.stock = "";
   });
 
-  (draftConfig.baseFoods || []).forEach(f => {
-    f.stock = '';
+  config.baseFoods.forEach(f => {
+    f.stock = "";
   });
 
+  draftConfig = clone(config);
+
+  saveConfig();
   renderStockEditor();
+  renderProducts();
 
-  showSettingsStatus(
-    "Stocks réinitialisés. Cliquez sur Enregistrer pour valider."
-  );
+  showSettingsStatus("Stocks réinitialisés.");
 }
-
 async function resetDraftVolunteers() {
 
   const ok = await showConfirm(
@@ -3126,7 +3197,14 @@ document.getElementById('btnCloseSettingsBottom')?.addEventListener('click', () 
 document.getElementById('btnSaveSettings').addEventListener('click', saveSettings);
 document.getElementById('btnAddFood').addEventListener('click', () => { draftConfig.baseFoods.push({ id: uid('food'), name: 'Nouvel aliment', category: 'Viande', stock: '' }); renderSettings(); });
 document.getElementById('btnAddVolunteer').addEventListener('click', () => { draftConfig.volunteers ||= []; draftConfig.volunteers.push({ id: uid('vol'), name: 'Nouveau bénévole', active: true }); renderVolunteerEditor(); });
-document.getElementById('btnReset').addEventListener('click', handleSettingsReset);
+const btnReset = document.getElementById('btnReset');
+
+if (btnReset) {
+  btnReset.addEventListener('click', () => {
+    console.log("Clic Réinitialiser, onglet =", activeSettingsTab());
+    handleSettingsReset();
+  });
+}
 const btnNewEvent = document.getElementById('btnNewEvent');
 const btnResetAllSupabaseData = document.getElementById('btnResetAllSupabaseData');
 
