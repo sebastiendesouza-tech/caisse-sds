@@ -2679,10 +2679,17 @@ function restoreStockFromSale(sale) {
 
 async function openCancelSale(orderNumber) {
 
-  const sale = sales.find(s => s.orderNumber === orderNumber);
+  orderNumber = String(orderNumber || '').trim();
+
+  const sale =
+    sales.find(s => String(s.orderNumber || '').trim() === orderNumber) ||
+    supabaseSales.find(s => String(s.orderNumber || '').trim() === orderNumber);
 
   if (!sale) {
-    showMessage('Commande introuvable', `Impossible de retrouver la commande n°${orderNumber}.`);
+    showMessage(
+      'Commande introuvable',
+      `Impossible de retrouver la commande n°${orderNumber}.`
+    );
     return;
   }
 
@@ -2696,8 +2703,6 @@ async function openCancelSale(orderNumber) {
   sale.cancelled = true;
   sale.cancelDate = new Date().toISOString();
   sale.cancelReason = reason.trim() || 'Annulation';
-  console.log('Annulation - vente trouvée :', sale);
-  console.log('Annulation - items :', sale.items);
 
   restoreStockFromSale(sale);
   saveSales();
@@ -2716,10 +2721,15 @@ async function openCancelSale(orderNumber) {
 
     if (error) {
       console.error('Erreur annulation commande Supabase', error);
-      showMessage('Erreur', 'La commande a été annulée localement, mais pas dans Supabase.');
+      showMessage(
+        'Erreur',
+        'La commande a été annulée localement, mais pas dans Supabase.'
+      );
       return;
     }
   }
+
+  await loadSalesFromSupabase();
 
   renderSettingsOrders();
   renderSettingsReport();
