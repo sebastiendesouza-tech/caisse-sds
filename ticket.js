@@ -8,11 +8,11 @@ function ticketHtmlFromData(number, items, method, totalAmount, paidValue = 0, c
         order: childIndex,
         category: child.category || 'Plat',
         name: child.name,
-        qty: child.qty || item.qty || 1,
+        qty: '',
         price: null,
         composition: child.composition || '',
         withChecks: true,
-        cls: 'ticket-subline'
+        cls: 'ticket-subline ticket-menu-child'
       })).sort(ticketItemCompare);
 
       menuBlocks.push({

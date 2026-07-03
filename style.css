@@ -2645,3 +2645,7 @@ body.compact-mode .product-btn .btn-stock {
   break-after: auto;
   padding: 0;
 }
+
+.ticket-menu-child .ticket-product {
+  padding-left: 0;
+}
