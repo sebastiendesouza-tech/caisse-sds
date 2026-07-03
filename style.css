@@ -2266,14 +2266,22 @@ body.compact-mode .product-btn .btn-stock {
 #productEditor .clean-product-main {
   display: grid;
   grid-template-columns:
-    minmax(390px, 1fr)  /* Nom */
-    58px                /* Prix */
-    110px               /* Section */
-    48px                /* Pos */
-    96px                /* Structure */
-    150px               /* Categorie */
-    72px                /* Remb */
-    42px;               /* Supprimer */
+    minmax(390px, 1fr)
+    /* Nom */
+    58px
+    /* Prix */
+    110px
+    /* Section */
+    48px
+    /* Pos */
+    96px
+    /* Structure */
+    150px
+    /* Categorie */
+    72px
+    /* Remb */
+    42px;
+  /* Supprimer */
   gap: 8px;
   align-items: end;
   padding: 0;
@@ -2281,7 +2289,7 @@ body.compact-mode .product-btn .btn-stock {
   background: transparent;
 }
 
-#productEditor .clean-product-main > * {
+#productEditor .clean-product-main>* {
   min-width: 0;
 }
 
@@ -2354,7 +2362,6 @@ body.compact-mode .product-btn .btn-stock {
   transform: scale(1.08);
 }
 
-#productEditor .small-action,
 #productEditor .product-delete {
   width: 42px;
   min-width: 42px;
@@ -2367,10 +2374,17 @@ body.compact-mode .product-btn .btn-stock {
   justify-content: center;
 }
 
-#productEditor .small-action::after,
 #productEditor .product-delete::after {
   content: "🗑";
   font-size: 18px;
+}
+
+#productEditor .ticket-action {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 #productEditor .choice-edit,
@@ -2384,14 +2398,7 @@ body.compact-mode .product-btn .btn-stock {
 @media (max-width: 1180px) {
   #productEditor .clean-product-main {
     grid-template-columns:
-      minmax(300px, 1fr)
-      56px
-      105px
-      46px
-      92px
-      135px
-      70px
-      42px;
+      minmax(300px, 1fr) 56px 105px 46px 92px 135px 70px 42px;
     gap: 6px;
   }
 }
@@ -2401,7 +2408,7 @@ body.compact-mode .product-btn .btn-stock {
     grid-template-columns: 1fr 70px 110px 60px;
   }
 
-  #productEditor .clean-product-main > * {
+  #productEditor .clean-product-main>* {
     grid-column: auto;
   }
 
@@ -2409,6 +2416,7 @@ body.compact-mode .product-btn .btn-stock {
     grid-column: 1 / -1;
   }
 }
+
 .category.group-main {
   border-color: #16a34a;
 }
@@ -2416,10 +2424,224 @@ body.compact-mode .product-btn .btn-stock {
 .category.group-tickets {
   border-color: #7c3aed;
 }
+
 #productEditor .group-main-editor {
   border-left-color: #16a34a;
 }
 
 #productEditor .group-tickets-editor {
   border-left-color: #7c3aed;
+}
+
+.module-ticket {
+  page-break-after: always;
+  break-after: page;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+.module-ticket:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+.main-sale-ticket {
+  page-break-after: always;
+  break-after: page;
+}
+
+.product-advanced-details {
+  margin-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 8px;
+}
+
+.product-advanced-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #374151;
+  padding: 6px 0;
+}
+
+.product-advanced-details[open] summary {
+  margin-bottom: 8px;
+}
+
+.ticket-preview-details {
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+  background: #f9fafb;
+}
+
+.ticket-preview-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ticket-preview-details[open] summary {
+  margin-bottom: 8px;
+}
+
+#productEditor .product-delete {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  flex: 0 0 38px;
+}
+
+#productEditor .ticket-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  min-width: 90px;
+  width: auto;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.sheet-page {
+  page-break-after: always;
+  break-after: page;
+  padding: 2mm 4mm;
+  /* avant : 4mm partout */
+  box-sizing: border-box;
+}
+
+.sheet-page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+.sheet-ticket {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: 7mm;
+  /* avant : 5mm */
+}
+
+.sheet-ticket:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-ticket-content {
+  border: 1px dashed #999;
+  padding: 4mm;
+}
+
+.cut-line {
+  display: none;
+}
+
+.sheet-ticket.has-cut-after::after {
+  content: "✂ ---------------------------------------------------";
+  display: block;
+  height: 6mm;
+  line-height: 6mm;
+  text-align: center;
+  font-size: 11px;
+  color: #666;
+  overflow: hidden;
+}
+
+#layoutMeasureArea {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  width: 105mm;
+  /* largeur A6 */
+}
+
+#layoutMeasureArea {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  width: 105mm;
+}
+
+.sheet-page {
+  page-break-after: always;
+  break-after: page;
+  padding: 4mm;
+  box-sizing: border-box;
+}
+
+.sheet-ticket {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: 5mm;
+}
+
+.sheet-ticket:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-ticket-content {
+  border: 1px dashed #999;
+  padding: 4mm;
+}
+
+.sheet-ticket-content .module-ticket {
+  page-break-after: auto;
+  break-after: auto;
+  padding: 0;
+}
+
+/* =========================================================
+   Billetterie - mise en page A6 optimisée
+   ========================================================= */
+
+#layoutMeasureArea {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  width: 105mm;
+}
+
+.sheet-page {
+  page-break-after: always;
+  break-after: page;
+  padding: 2mm 4mm;
+  box-sizing: border-box;
+}
+
+.sheet-page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+.sheet-ticket {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: 7mm;
+}
+
+.sheet-ticket:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-ticket-content {
+  border: 1px dashed #999;
+  padding: 4mm;
+}
+
+.sheet-ticket-content .module-ticket {
+  page-break-after: auto;
+  break-after: auto;
+  padding: 0;
 }

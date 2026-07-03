@@ -22,6 +22,418 @@ const SECTIONS = [
     minSlots: 4
   }
 ];
+
+const SALE_MODULES = Object.create(null);
+let productEditorOpenState = {
+  products: [],
+  tickets: []
+};
+let preserveProductEditorOpenState = false;
+
+function registerSaleModule(type, moduleDefinition) {
+  if (!type || typeof type !== "string") {
+    console.error("Type de module de vente invalide :", type);
+    return false;
+  }
+
+  if (!moduleDefinition || typeof moduleDefinition !== "object") {
+    console.error("Définition de module invalide pour :", type);
+    return false;
+  }
+
+  const required = [
+    "renderConfig",
+    "sell",
+    "calculatePrice",
+    "buildDocuments",
+    "stats"
+  ];
+
+  for (const method of required) {
+    if (typeof moduleDefinition[method] !== "function") {
+      console.error(`Le module "${type}" ne possède pas la méthode "${method}".`);
+      return false;
+    }
+  }
+
+  SALE_MODULES[type] = moduleDefinition;
+
+  return true;
+}
+
+function getSaleModule(product) {
+  if (!product || product.type !== "advanced") {
+    return null;
+  }
+
+  const moduleType = product.module?.type;
+
+  if (!moduleType) {
+    console.error("Produit avancé sans module.type :", product);
+    return null;
+  }
+
+  return SALE_MODULES[moduleType] || null;
+}
+
+function callSaleModule(product, action, context = {}) {
+  const saleModule = getSaleModule(product);
+
+  if (!saleModule || typeof saleModule[action] !== "function") {
+    console.error("Module/action introuvable :", product?.module?.type, action);
+    return null;
+  }
+
+  return saleModule[action](product, context);
+}
+
+const MultiModule = {
+  id: "multi",
+  label: "Multi-tickets",
+  icon: "🎫",
+
+  getDefaultDocuments() {
+    return [
+      { id: uid("doc"), enabled: true, label: "Billet adulte", quantity: 1 },
+      { id: uid("doc"), enabled: true, label: "Ticket repas", quantity: 1 }
+    ];
+  },
+
+  getDefaultDocumentOptions() {
+    return {
+      showAssociation: true,
+      showEvent: true,
+      showDate: true,
+      showTime: true,
+      showOrderNumber: true,
+      showProductName: true,
+      showPrice: false,
+      showPaymentMethod: false,
+      showUsedCheckbox: true,
+      title: "",
+      subtitle: "",
+      footer: ""
+    };
+  },
+
+  getDefaultTicketOptions() {
+    return {
+      showAssociation: true,
+      showEvent: true,
+      showDate: true,
+      showTime: true,
+      showOrderNumber: true,
+      showProductName: true,
+      showPrice: false,
+      showPaymentMethod: false,
+      showUsedCheckbox: true,
+      freeMessage: ""
+    };
+  },
+  ensureSettings(product) {
+    product.module ||= {};
+    product.module.type = this.id;
+    product.module.settings ||= {};
+
+    product.module.settings.ticketOptions ||= this.getDefaultTicketOptions();
+
+    const defaultOptions = this.getDefaultTicketOptions();
+
+    Object.entries(defaultOptions).forEach(([key, value]) => {
+      if (product.module.settings.ticketOptions[key] === undefined) {
+        product.module.settings.ticketOptions[key] = value;
+      }
+    });
+
+    if (!Array.isArray(product.module.settings.documents)) {
+      product.module.settings.documents = this.getDefaultDocuments();
+    }
+
+    product.module.settings.documents.forEach(document => {
+      document.id ||= uid("doc");
+      document.enabled = document.enabled !== false;
+      document.label ||= "Ticket";
+      document.quantity = Math.max(1, Number(document.quantity || 1));
+      document.options ||= this.getDefaultDocumentOptions();
+
+      const defaultOptions = this.getDefaultDocumentOptions();
+
+      Object.entries(defaultOptions).forEach(([key, value]) => {
+        if (document.options[key] === undefined) {
+          document.options[key] = value;
+        }
+      });
+    });
+    return product.module.settings;
+  },
+
+  renderConfig(product, context = {}) {
+    const index = context.index;
+    const settings = this.ensureSettings(product);
+    const documents = settings.documents || [];
+
+    return `
+    <div class="advanced-edit multi-edit">
+
+      <h4>Tickets à générer</h4>
+
+      <div class="multi-documents-list">
+
+        ${documents.map((document, documentIndex) => {
+      const ticketName = document.label || `Ticket ${documentIndex + 1}`;
+
+      const previewHtml = renderTicketDocument({
+        type: "ticket",
+        title: ticketName,
+        options: document.options || this.getDefaultDocumentOptions(),
+        values: {
+          association: "Association Exemple",
+          event: "Événement Exemple",
+          productName: product.name || "Produit",
+          orderNumber: "A00123",
+          date: "14/07/2026",
+          time: "12:30",
+          price: Number(product.price || 0),
+          paymentMethod: "CB"
+        }
+      });
+
+      return `
+            <details class="multi-document-card" data-ticket-open-id="${document.id}">
+              <summary>
+                ${escapeHtml(ticketName)}
+                <span class="hint">x${Number(document.quantity || 1)}</span>
+              </summary>
+
+              <div class="editor-row multi-document-row">
+
+                <label class="checkline">
+                  <input
+                    type="checkbox"
+                    data-module-document-field="enabled"
+                    data-i="${index}"
+                    data-document-index="${documentIndex}"
+                    ${document.enabled !== false ? "checked" : ""}
+                  >
+                  Actif
+                </label>
+
+                <div class="field-name">
+                  <small>Nom du ticket</small>
+                  <input
+                    data-module-document-field="label"
+                    data-i="${index}"
+                    data-document-index="${documentIndex}"
+                    value="${escapeHtml(document.label || "")}"
+                  >
+                </div>
+
+                <div style="width:80px">
+                  <small>Copies</small>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    data-module-document-field="quantity"
+                    data-i="${index}"
+                    data-document-index="${documentIndex}"
+                    value="${Number(document.quantity || 1)}"
+                  >
+                </div>
+
+                <button
+                  type="button"
+                  class="secondary ticket-action"
+                  data-duplicate-module-document="${documentIndex}"
+                  data-i="${index}"
+                  title="Dupliquer"
+                >
+                  Dupliquer
+                </button>
+
+                <button
+                  type="button"
+                  class="danger product-delete"
+                  data-delete-module-document="${documentIndex}"
+                  data-i="${index}"
+                  title="Supprimer"
+                >
+                  🗑
+                </button>
+              </div>
+
+              <h5>Options du ticket</h5>
+
+              <div class="multi-ticket-options">
+                ${[
+          ["showAssociation", "Association"],
+          ["showEvent", "Événement"],
+          ["showDate", "Date"],
+          ["showTime", "Heure"],
+          ["showOrderNumber", "N° commande"],
+          ["showProductName", "Produit"],
+          ["showPrice", "Prix"],
+          ["showPaymentMethod", "Paiement"],
+          ["showUsedCheckbox", "Case à cocher"]
+        ].map(([field, label]) => `
+                  <label class="checkline">
+                    <input
+                      type="checkbox"
+                      data-module-document-option="${field}"
+                      data-i="${index}"
+                      data-document-index="${documentIndex}"
+                      ${document.options?.[field] ? "checked" : ""}
+                    >
+                    ${label}
+                  </label>
+                `).join("")}
+              </div>
+
+              <div class="editor-row">
+                <div class="field-name">
+                  <small>Titre personnalisé</small>
+                  <input
+                    data-module-document-option="title"
+                    data-i="${index}"
+                    data-document-index="${documentIndex}"
+                    value="${escapeHtml(document.options?.title || "")}"
+                  >
+                </div>
+
+                <div class="field-name">
+                  <small>Sous-titre</small>
+                  <input
+                    data-module-document-option="subtitle"
+                    data-i="${index}"
+                    data-document-index="${documentIndex}"
+                    value="${escapeHtml(document.options?.subtitle || "")}"
+                  >
+                </div>
+
+                <div class="field-name">
+                  <small>Pied de ticket</small>
+                  <input
+                    data-module-document-option="footer"
+                    data-i="${index}"
+                    data-document-index="${documentIndex}"
+                    value="${escapeHtml(document.options?.footer || "")}"
+                  >
+                </div>
+              </div>
+
+              <h5>Aperçu</h5>
+              <div class="multi-ticket-preview-inline">
+                ${previewHtml}
+              </div>
+            </details>
+          `;
+    }).join("")}
+
+      </div>
+
+      <button
+        type="button"
+        class="secondary"
+        data-add-module-document="${index}"
+      >
+        Ajouter un ticket
+      </button>
+
+    </div>
+  `;
+  },
+
+  sell(product, context = {}) {
+    const settings = this.ensureSettings(product);
+
+    const documents = (settings.documents || [])
+      .filter(document => document.enabled !== false)
+      .map(document => ({
+        id: document.id,
+        label: document.label,
+        quantity: Math.max(1, Number(document.quantity || 1)),
+        options: document.options || this.getDefaultDocumentOptions()
+      }));
+
+    if (isTracked(product.stock)) {
+      product.stock = Math.max(0, Number(product.stock) - 1);
+      saveConfig();
+    }
+
+    addCartLine({
+      id: product.id,
+      name: product.name,
+      type: "advanced",
+      moduleType: this.id,
+      category: product.category,
+      price: this.calculatePrice(product),
+      qty: 1,
+      refundable: product.refundable,
+      selectedFoods: [],
+      moduleData: {
+        type: this.id,
+        documents,
+        ticketOptions: settings.ticketOptions || this.getDefaultTicketOptions()
+      }
+    });
+
+    renderProducts();
+    renderCart();
+
+    return true;
+  },
+
+  calculatePrice(product) {
+    return Number(product.price || 0);
+  },
+
+  buildDocuments(item, context = {}) {
+    const documents = item.moduleData?.documents || [];
+    const globalOptions = item.moduleData?.ticketOptions || {};
+
+    return documents.flatMap(document => {
+      const copies =
+        Math.max(1, Number(document.quantity || 1)) *
+        Math.max(1, Number(item.qty || 1));
+
+      return Array.from({ length: copies }, () => ({
+        type: "ticket",
+
+        title: document.label || "Ticket",
+        height: 45,
+        options: {
+          ...globalOptions,
+          ...(document.options || {})
+        },
+
+        values: {
+          association: config.organizationName || "Comité des Fêtes",
+          event: config.eventName || "",
+          productName: item.name || "",
+          orderNumber: context.orderNumber || "",
+          date: context.date || "",
+          time: context.time || "",
+          price: item.price || 0,
+          paymentMethod: context.paymentMethod || ""
+        }
+      }));
+    });
+  },
+  stats(item, context = {}) {
+    const documents = item.moduleData?.documents || [];
+
+    return {
+      documents: documents.map(document => ({
+        label: document.label || 'Document',
+        quantity: Math.max(1, Number(document.quantity || 1)) * Number(item.qty || 1),
+        height: 45
+      }))
+    };
+  }
+};
+
+registerSaleModule(MultiModule.id, MultiModule);
+
 const DEFAULT_CONFIG = {
   configVersion: 2026.13,
   eventName: 'Comité des Fêtes-Moroges',
@@ -178,6 +590,51 @@ function addPendingSale(sale) {
   }
 }
 
+function renderMultiTicketPreview(productIndex) {
+  const product = draftConfig.products[productIndex];
+
+  if (!product) return;
+
+  const settings = MultiModule.ensureSettings(product);
+  const preview = document.getElementById(`multi-ticket-preview-${productIndex}`);
+
+  if (!preview) return;
+
+  const documents = settings.documents || [];
+
+  if (!documents.length) {
+    preview.innerHTML = "<em>Aucun ticket.</em>";
+    return;
+  }
+
+  preview.innerHTML = documents.map((document, documentIndex) => {
+    const title = document.label || `Ticket ${documentIndex + 1}`;
+
+    const html = renderTicketDocument({
+      type: "ticket",
+      title,
+      options: document.options || MultiModule.getDefaultDocumentOptions(),
+      values: {
+        association: "Association Exemple",
+        event: "Événement Exemple",
+        productName: product.name || "Produit",
+        orderNumber: "A00123",
+        date: "14/07/2026",
+        time: "12:30",
+        price: Number(product.price || 0),
+        paymentMethod: "CB"
+      }
+    });
+
+    return `
+      <details class="ticket-preview-details">
+        <summary>Aperçu — ${escapeHtml(title)}</summary>
+        ${html}
+      </details>
+    `;
+  }).join("");
+}
+
 async function syncPendingSales() {
   if (!supabaseClient) return;
 
@@ -200,6 +657,27 @@ async function syncPendingSales() {
     showToast("✅ Ventes hors ligne synchronisées");
   }
 }
+
+function updateModuleTicketOptionDraft(e) {
+  const productIndex = Number(e.currentTarget.dataset.i);
+  const field = e.currentTarget.dataset.moduleTicketOption;
+  const product = draftConfig.products[productIndex];
+
+  if (!product) return;
+
+  product.module ||= { type: "multi", settings: {} };
+  product.module.settings ||= {};
+  product.module.settings.ticketOptions ||= MultiModule.getDefaultTicketOptions();
+
+  if (e.currentTarget.type === "checkbox") {
+    product.module.settings.ticketOptions[field] = e.currentTarget.checked;
+  } else {
+    product.module.settings.ticketOptions[field] = e.currentTarget.value;
+  }
+
+  renderProductEditor();
+}
+
 async function saveSaleToSupabase(sale, fromPending = false) {
   if (!supabaseClient) {
     if (!fromPending) addPendingSale(sale);
@@ -923,33 +1401,53 @@ function normalizeConfig(c) {
     section.minSlots = Math.max(1, Number(section.minSlots || 1));
   });
 
-  c.products.forEach((p, i) => {
-    p.id ||= 'p' + (i + 1);
-    p.section ||= 'main';
-    p.position ||= i + 1;
-    p.category ||= 'Plat';
-    p.name ??= '';
-    p.price = Number(p.price || 0);
-    p.type ||= 'simple';
-    p.components ||= [];
-    p.choices ||= [];
-    p.menuSections ||= [];
-    p.refundable = p.refundable !== false;
-    p.stock ??= '';
-    p.stockAlert ??= '';
+  c.products.forEach((product, index) => {
+    product.id ||= 'p' + (index + 1);
+    product.section ||= 'main';
+    product.position ||= index + 1;
+    product.category ||= 'Plat';
+    product.name ??= '';
+    product.price = Number(product.price || 0);
+    product.type ||= 'simple';
+    product.components ||= [];
+    product.choices ||= [];
+    product.menuSections ||= [];
+    product.refundable = product.refundable !== false;
+    product.stock ??= '';
+    product.stockAlert ??= '';
+
+    if (product.type === 'advanced') {
+      product.components = [];
+      product.choices = [];
+      product.menuSections = [];
+
+      product.module ||= {
+        type: 'multi',
+        settings: {}
+      };
+
+      product.module.type ||= 'multi';
+      product.module.settings ||= {};
+
+      if (!Array.isArray(product.module.settings.documents)) {
+        product.module.settings.documents = MultiModule.getDefaultDocuments();
+      }
+    } else {
+      product.module = null;
+    }
   });
 
-  c.baseFoods.forEach(f => {
-    f.id ||= uid('food');
-    f.category ||= 'Viande';
-    f.stock ??= '';
-    f.stockAlert ??= '';
+  c.baseFoods.forEach(food => {
+    food.id ||= uid('food');
+    food.category ||= 'Viande';
+    food.stock ??= '';
+    food.stockAlert ??= '';
   });
 
-  c.volunteers.forEach(v => {
-    v.id ||= uid('vol');
-    v.name ||= 'Bénévole';
-    v.active = v.active !== false;
+  c.volunteers.forEach(volunteer => {
+    volunteer.id ||= uid('vol');
+    volunteer.name ||= 'Bénévole';
+    volunteer.active = volunteer.active !== false;
   });
 
   compactAllChoices(c);
@@ -957,8 +1455,6 @@ function normalizeConfig(c) {
 
   return c;
 }
-
-
 function groupClass(group) { return 'group-' + slug(group); }
 
 function slug(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
@@ -1116,6 +1612,7 @@ function moveProductToCase(index, sectionId, requestedPosition) {
 
   return true;
 }
+
 function renderProducts() {
   console.log('renderProducts eventName =', config.eventName);
 
@@ -1160,6 +1657,7 @@ function renderProducts() {
       btn.addEventListener('click', () => addProduct(btn.dataset.id));
     });
 }
+
 function renderMeatStockBox() {
   const meats = (config.baseFoods || []).filter(f =>
     String(f.category).toLowerCase() === 'viande' && isTracked(f.stock)
@@ -1586,13 +2084,38 @@ function checkMarker(qty) {
   return qty > 5 ? '<span class="reste-label">Reste : ________</span>' : Array.from({ length: Math.max(0, qty) }, () => '☐').join(' ');
 }
 function ticketLineHtml(name, qty, price, cls = '', withChecks = true) {
-  return `< div class="ticket-line ${cls}" ><div>${qty || ''}</div><div class="ticket-product">${escapeHtml(name)}</div><div class="checks">${withChecks ? checkMarker(qty || 1) : ''}</div><div class="ticket-price">${price === null ? '' : fmt(price)}</div></div > `;
+  return `
+    <div class="ticket-line ${cls}">
+      <div>${qty || ''}</div>
+      <div class="ticket-product">${escapeHtml(name)}</div>
+      <div class="checks">${withChecks ? checkMarker(qty || 1) : ''}</div>
+      <div class="ticket-price">${price === null ? '' : fmt(price)}</div>
+    </div>
+  `;
 }
 function ticketLineBlock(line) {
-  let html = ticketLineHtml(line.name, line.qty, line.price, line.cls || '', line.withChecks);
-  if (line.composition) html += `< div class="ticket-subline no-check" ><div></div><div class="ticket-composition">(${escapeHtml(line.composition)})</div><div></div><div></div></div > `;
+  let html = ticketLineHtml(
+    line.name,
+    line.qty,
+    line.price,
+    line.cls || '',
+    line.withChecks
+  );
+
+  if (line.composition) {
+    html += `
+      <div class="ticket-subline no-check">
+        <div></div>
+        <div class="ticket-composition">(${escapeHtml(line.composition)})</div>
+        <div></div>
+        <div></div>
+      </div>
+    `;
+  }
+
   return html;
 }
+
 function ticketItemCompare(a, b) {
   return ticketSortIndex(a.category) - ticketSortIndex(b.category) || a.order - b.order;
 }
@@ -1626,9 +2149,29 @@ async function printTicketForSale(sale) {
 
 function buildTicket() {
   const number = `${getDeviceCode()}${String(orderNumber).padStart(4, '0')} `;
-  const html = ticketHtmlFromData(number, cart, paymentMethod, total(), paidAmount(), Math.max(0, paidAmount() - total()));
-  document.getElementById('printArea').innerHTML = html;
-  lastTicketHtml = html;
+
+  const mainTicket = ticketHtmlFromData(
+    number,
+    cart,
+    paymentMethod,
+    total(),
+    paidAmount(),
+    Math.max(0, paidAmount() - total())
+  );
+
+  const moduleTickets = moduleDocumentTicketsHtmlFromData(
+    number,
+    cart,
+    paymentMethod
+  );
+
+  const fullTicketHtml = moduleTickets
+    ? `<div class="main-sale-ticket">${mainTicket}</div>${moduleTickets}`
+    : mainTicket;
+
+  document.getElementById('printArea').innerHTML = fullTicketHtml;
+
+  lastTicketHtml = fullTicketHtml;
   saveLastTicket();
 }
 
@@ -1645,6 +2188,64 @@ async function reprintLastTicket() {
 
   await printTicket(lastSale);
 
+}
+function printVolunteerSummary(volunteerId) {
+  const volunteer = (config.volunteers || []).find(v => v.id === volunteerId);
+
+  if (!volunteer) {
+    showMessage("Bénévole introuvable", "Impossible de retrouver ce bénévole.");
+    return;
+  }
+
+  const rows = {};
+
+  sales
+    .filter(s =>
+      s.kind === "volunteer" &&
+      s.volunteerId === volunteerId &&
+      s.settled === false
+    )
+    .forEach(sale => {
+      (sale.items || []).forEach(item => {
+        const key = `${item.name}|${item.price}`;
+        rows[key] ||= {
+          name: item.name,
+          price: Number(item.price || 0),
+          qty: 0
+        };
+
+        rows[key].qty += Number(item.qty || 0);
+      });
+    });
+
+  const lines = Object.values(rows);
+  const totalAmount = lines.reduce((sum, line) => {
+    return sum + line.qty * line.price;
+  }, 0);
+
+  const html = `
+    <div class="ticket-title">Récap bénévole</div>
+    <div class="ticket-bottom">${escapeHtml(volunteer.name)}</div>
+    <br>
+
+    ${lines.map(line => `
+      <div class="ticket-line">
+        <div>${line.qty}</div>
+        <div class="ticket-product">${escapeHtml(line.name)}</div>
+        <div></div>
+        <div class="ticket-price">${fmt(line.qty * line.price)}</div>
+      </div>
+    `).join("")}
+
+    <br>
+    <div class="ticket-bottom">Total à régler : ${fmt(totalAmount)}</div>
+  `;
+
+  document.getElementById("printArea").innerHTML = html;
+  lastTicketHtml = html;
+  saveLastTicket();
+
+  window.print();
 }
 
 function saleTimestampParts(date = new Date()) {
@@ -1899,7 +2500,19 @@ function addMenuProduct() {
 let settingsMode = "admin";
 let settingsOrdersScope = "device";
 
-function openSettings(mode = "admin") { settingsMode = mode; draftConfig = clone(config); renderSettings(); updateSettingsButtons(); document.getElementById('settingsDialog').showModal(); }
+function openSettings(mode = "admin") {
+  settingsMode = mode;
+  draftConfig = clone(config);
+
+  preserveProductEditorOpenState = false;
+
+  renderSettings();
+
+  preserveProductEditorOpenState = true;
+
+  updateSettingsButtons();
+  document.getElementById('settingsDialog').showModal();
+}
 
 function renderSettingsOrders() {
   const el = document.getElementById('settingsOrdersList');
@@ -1969,6 +2582,33 @@ function defaultCategoryForSection(sectionId) {
   return 'Plat';
 }
 
+function updateModuleDocumentDraft(e) {
+  const productIndex = Number(e.currentTarget.dataset.i);
+  const documentIndex = Number(e.currentTarget.dataset.documentIndex);
+  const field = e.currentTarget.dataset.moduleDocumentField;
+  const product = draftConfig.products[productIndex];
+
+  if (!product) return;
+
+  product.module ||= { type: "multi", settings: {} };
+  product.module.settings ||= {};
+  product.module.settings.documents ||= [];
+
+  const document = product.module.settings.documents[documentIndex];
+
+  if (!document) return;
+
+  if (field === "enabled") {
+    document.enabled = e.currentTarget.checked;
+  } else if (field === "quantity") {
+    document.quantity = Math.max(1, Number(e.currentTarget.value || 1));
+  } else {
+    document[field] = e.currentTarget.value;
+  }
+
+  renderProductEditor();
+}
+
 function renderProductEditor() {
   const el = document.getElementById('productEditor');
   if (!el) return;
@@ -1999,7 +2639,14 @@ function renderProductEditor() {
         ? renderChoiceEditor(product, index)
         : product.type === 'menu'
           ? renderMenuEditor(product, index)
-          : '';
+          : product.type === 'advanced'
+            ? callSaleModule(product, 'renderConfig', {
+              product,
+              index,
+              draftConfig,
+              config
+            }) || ''
+            : '';
 
     return `
       <article class="product-edit-card clean-product-card">
@@ -2033,7 +2680,7 @@ function renderProductEditor() {
               <option value="simple" ${product.type === 'simple' ? 'selected' : ''}>Simple</option>
               <option value="compose" ${product.type === 'compose' ? 'selected' : ''}>Composé</option>
               <option value="menu" ${product.type === 'menu' ? 'selected' : ''}>Menu</option>
-              <option value="service" ${product.type === 'service' ? 'selected' : ''}>Avancé</option>
+              <option value="advanced" ${product.type === 'advanced' ? 'selected' : ''}>Avancé</option>
             </select>
           </div>
 
@@ -2052,10 +2699,25 @@ function renderProductEditor() {
           <button type="button" class="danger small-action" data-delete-product="${index}" title="Supprimer">🗑</button>
         </div>
 
-        ${detail}
+        ${detail ? `
+          <details class="product-advanced-details" data-product-open-id="${product.id}">
+            <summary>Réglages avancés</summary>
+            ${detail}
+          </details>
+        ` : ''}
       </article>
     `;
   }
+
+  const openedProducts = preserveProductEditorOpenState
+    ? Array.from(el.querySelectorAll('[data-product-open-id][open]'))
+      .map(detail => detail.dataset.productOpenId)
+    : [];
+
+  const openedTickets = preserveProductEditorOpenState
+    ? Array.from(el.querySelectorAll('[data-ticket-open-id][open]'))
+      .map(detail => detail.dataset.ticketOpenId)
+    : [];
 
   el.innerHTML = sections.map(section => {
     const rows = (bySection[section.id] || [])
@@ -2078,13 +2740,170 @@ function renderProductEditor() {
     `;
   }).join('');
 
-  el.querySelectorAll('[data-product]').forEach(input => input.addEventListener('change', updateProductDraft));
-  el.querySelectorAll('[data-choice-field]').forEach(input => input.addEventListener('change', updateChoiceDraft));
-  el.querySelectorAll('[data-menu-field]').forEach(input => input.addEventListener('change', updateMenuDraft));
-  el.querySelectorAll('[data-add-product-zone]').forEach(button => button.addEventListener('click', addProductDraft));
-  el.querySelectorAll('[data-delete-product]').forEach(button => button.addEventListener('click', deleteProductDraft));
+  openedProducts.forEach(id => {
+    const detail = el.querySelector(`[data-product-open-id="${CSS.escape(id)}"]`);
+    if (detail) detail.open = true;
+  });
+
+  openedTickets.forEach(id => {
+    const detail = el.querySelector(`[data-ticket-open-id="${CSS.escape(id)}"]`);
+    if (detail) detail.open = true;
+  });
+
+  el.querySelectorAll('[data-module-field]').forEach(input => {
+    input.addEventListener('change', updateModuleDraft);
+  });
+
+  el.querySelectorAll('[data-module-document-field]').forEach(input => {
+    input.addEventListener('change', updateModuleDocumentDraft);
+  });
+
+  el.querySelectorAll('[data-module-document-option]').forEach(input => {
+    input.addEventListener('change', updateModuleDocumentOptionDraft);
+  });
+
+  el.querySelectorAll('[data-product]').forEach(input => {
+    input.addEventListener('change', updateProductDraft);
+  });
+
+  el.querySelectorAll('[data-choice-field]').forEach(input => {
+    input.addEventListener('change', updateChoiceDraft);
+  });
+
+  el.querySelectorAll('[data-menu-field]').forEach(input => {
+    input.addEventListener('change', updateMenuDraft);
+  });
+
+  el.querySelectorAll('[data-add-product-zone]').forEach(button => {
+    button.addEventListener('click', addProductDraft);
+  });
+
+  el.querySelectorAll('[data-duplicate-module-document]').forEach(button => {
+    button.addEventListener('click', duplicateModuleDocumentDraft);
+  });
+
+  el.querySelectorAll('[data-delete-product]').forEach(button => {
+    button.addEventListener('click', deleteProductDraft);
+  });
+
+  el.querySelectorAll('[data-add-module-document]').forEach(button => {
+    button.addEventListener('click', addModuleDocumentDraft);
+  });
+
+  el.querySelectorAll('[data-delete-module-document]').forEach(button => {
+    button.addEventListener('click', deleteModuleDocumentDraft);
+  });
 }
 
+function updateModuleDraft(e) {
+  const index = Number(e.currentTarget.dataset.i);
+  const field = e.currentTarget.dataset.moduleField;
+  const product = draftConfig.products[index];
+
+  if (!product) return;
+
+  product.module ||= { type: "multi", settings: {} };
+  product.module.type ||= "multi";
+  product.module.settings ||= {};
+
+  if (field === "type") {
+    product.module.type = e.currentTarget.value || "multi";
+  }
+
+  renderProductEditor();
+
+}
+
+function updateModuleDocumentOptionDraft(e) {
+  const productIndex = Number(e.currentTarget.dataset.i);
+  const documentIndex = Number(e.currentTarget.dataset.documentIndex);
+  const field = e.currentTarget.dataset.moduleDocumentOption;
+  const product = draftConfig.products[productIndex];
+
+  if (!product) return;
+
+  product.module ||= { type: "multi", settings: {} };
+  product.module.settings ||= {};
+  product.module.settings.documents ||= [];
+
+  const document = product.module.settings.documents[documentIndex];
+
+  if (!document) return;
+
+  document.options ||= MultiModule.getDefaultDocumentOptions();
+
+  if (e.currentTarget.type === "checkbox") {
+    document.options[field] = e.currentTarget.checked;
+  } else {
+    document.options[field] = e.currentTarget.value;
+  }
+
+  renderProductEditor();
+}
+function deleteModuleDocumentDraft(e) {
+  const productIndex = Number(e.currentTarget.dataset.i);
+  const documentIndex = Number(e.currentTarget.dataset.deleteModuleDocument);
+  const product = draftConfig.products[productIndex];
+
+  if (!product?.module?.settings?.documents) return;
+
+  product.module.settings.documents.splice(documentIndex, 1);
+
+  renderProductEditor();
+}
+
+function duplicateModuleDocumentDraft(e) {
+  const productIndex = Number(e.currentTarget.dataset.i);
+  const documentIndex = Number(e.currentTarget.dataset.duplicateModuleDocument);
+
+  const product = draftConfig.products[productIndex];
+
+  if (!product?.module?.settings?.documents) return;
+
+  const source = product.module.settings.documents[documentIndex];
+
+  if (!source) return;
+
+  const copy = structuredClone(source);
+
+  copy.id = uid("doc");
+  copy.label += " (copie)";
+
+  product.module.settings.documents.splice(documentIndex + 1, 0, copy);
+
+  renderProductEditor();
+}
+
+function addModuleDocumentDraft(e) {
+  const productIndex = Number(e.currentTarget.dataset.addModuleDocument);
+  const product = draftConfig.products[productIndex];
+
+  if (!product) return;
+
+  product.module ||= { type: "multi", settings: {} };
+  product.module.settings ||= {};
+  product.module.settings.documents ||= [];
+
+  product.module.settings.documents.push({
+    id: uid("doc"),
+    enabled: true,
+    label: "Nouveau document",
+    quantity: 1
+  });
+
+  renderProductEditor();
+}
+
+function addProductDraft(e) {
+  const sectionId = e.currentTarget.dataset.addProductZone || 'main';
+
+  draftConfig.products ||= [];
+  draftConfig.products.push(newProductForZone(sectionId));
+
+  renderProductEditor();
+  renderStockEditor();
+  renderGeneralEditor();
+}
 function newProductForZone(sectionId) {
   return {
     id: uid('p'),
@@ -2103,15 +2922,63 @@ function newProductForZone(sectionId) {
   };
 }
 
-function addProductDraft(e) {
-  const sectionId = e.currentTarget.dataset.addProductZone || 'main';
+function addProduct(productId) {
+  const product = config.products.find(p => p.id === productId);
 
-  draftConfig.products ||= [];
-  draftConfig.products.push(newProductForZone(sectionId));
+  if (!product || !product.name) {
+    return;
+  }
 
-  renderProductEditor();
-  renderStockEditor();
-  renderGeneralEditor();
+  if (isTracked(product.stock) && Number(product.stock) <= 0) {
+    showToast("Stock insuffisant pour " + product.name);
+    renderProducts();
+    return;
+  }
+
+  switch (product.type) {
+
+    case "advanced":
+      callSaleModule(product, "sell", {
+        cart,
+        config,
+        addCartLine,
+        renderProducts,
+        renderCart,
+        saveConfig
+      });
+      return;
+
+    case "compose":
+      if ((product.choices || []).length) {
+        openChoiceDialog(product);
+        return;
+      }
+      break;
+
+    case "menu":
+      if ((product.menuSections || []).length) {
+        openMenuDialog(product);
+        return;
+      }
+      break;
+  }
+
+  if (isTracked(product.stock)) {
+    product.stock = Math.max(0, Number(product.stock) - 1);
+    saveConfig();
+  }
+
+  addCartLine({
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    qty: 1,
+    refundable: product.refundable,
+    selectedFoods: []
+  });
+
+  renderProducts();
 }
 
 function updateProductDraft(e) {
@@ -2129,11 +2996,13 @@ function updateProductDraft(e) {
     moveProductToCase(index, product.section || 'main', e.currentTarget.value);
   } else if (field === 'section') {
     moveProductToCase(index, e.currentTarget.value || 'main', product.position || 1);
-  } else {
-    product[field] = e.currentTarget.value;
-  }
+  } else if (field === 'type') {
+    product.type = e.currentTarget.value;
 
-  if (field === 'type') {
+    if (product.type === 'service') {
+      product.type = 'advanced';
+    }
+
     if (product.type === 'simple') {
       product.components = [];
       product.choices = [];
@@ -2142,25 +3011,37 @@ function updateProductDraft(e) {
     }
 
     if (product.type === 'compose') {
+      product.components ||= [];
+      product.choices ||= [];
       product.menuSections = [];
       product.module = null;
-      product.choices ||= [];
     }
 
     if (product.type === 'menu') {
+      product.components = [];
       product.choices = [];
-      product.module = null;
       product.menuSections ||= [];
+      product.module = null;
     }
 
     if (product.type === 'advanced') {
       product.components = [];
       product.choices = [];
       product.menuSections = [];
-      product.module ||= {
-        type: 'meal'
+
+      product.section = 'tickets';
+      product.category = 'Billetterie';
+      product.position = nextPositionForSection('tickets');
+
+      product.module = {
+        type: 'multi',
+        settings: {
+          documents: MultiModule.getDefaultDocuments()
+        }
       };
     }
+  } else {
+    product[field] = e.currentTarget.value;
   }
 
   renderProductEditor();
@@ -2793,7 +3674,16 @@ function reportHtml() {
   const volunteerRows = (config.volunteers || [])
     .map(v => ({ v, amount: volunteerPendingAmount(v.id) }))
     .filter(x => x.amount > 0)
-    .map(x => `<tr><td>${escapeHtml(x.v.name)}</td><td>${fmt(x.amount)}</td><td><button class="validate" data-pay-volunteer="${escapeHtml(x.v.id)}">Régler</button></td></tr>`)
+    .map(x => `
+    <tr>
+      <td>${escapeHtml(x.v.name)}</td>
+      <td>${fmt(x.amount)}</td>
+      <td>
+        <button class="secondary" data-print-volunteer-summary="${escapeHtml(x.v.id)}">Récap</button>
+        <button class="validate" data-pay-volunteer="${escapeHtml(x.v.id)}">Régler</button>
+      </td>
+    </tr>
+  `)
     .join('');
 
   const paymentRows = [
@@ -2884,6 +3774,11 @@ function reportHtml() {
 function bindVolunteerPayButtons(root = document) {
   root.querySelectorAll('[data-pay-volunteer]').forEach(b => b.addEventListener('click', e => openVolunteerPayment(e.currentTarget.dataset.payVolunteer)));
   root.querySelectorAll('[data-toggle-volunteer-order]').forEach(b => b.addEventListener('click', e => toggleVolunteerOrder(Number(e.currentTarget.dataset.toggleVolunteerOrder))));
+  root.querySelectorAll('[data-print-volunteer-summary]').forEach(button => {
+    button.addEventListener('click', e => {
+      printVolunteerSummary(e.currentTarget.dataset.printVolunteerSummary);
+    });
+  });
 }
 function toggleVolunteerOrder(index) {
   const s = sales[index];
