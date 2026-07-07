@@ -439,6 +439,7 @@ const DEFAULT_CONFIG = {
   eventName: 'Comité des Fêtes-Moroges',
   orderPrefix: 'A',
   ticketColor: 'black',
+  printerProfile: "a6",
   printTicketsEnabled: true,
   volunteers: [
     { id: 'vol-daudey', name: 'Daudey', active: true },
@@ -1388,6 +1389,7 @@ function normalizeConfig(c) {
   c.configVersion = 2026.14;
   c.eventName ||= base.eventName;
   c.orderPrefix ||= 'A';
+  c.printerProfile ||= "a6";
   c.ticketColor ||= 'black';
   c.printTicketsEnabled ??= true;
   c.baseFoods ||= clone(base.baseFoods);
@@ -3345,12 +3347,18 @@ function renderGeneralEditor() {
   const eventNameInput = document.getElementById('setEventName');
   const prefixInput = document.getElementById('setPrefix');
   const ticketColorSelect = document.getElementById('setTicketColor');
+  const printerProfileSelect = document.getElementById('setPrinterProfile');
   const categoryColorEditor = document.getElementById('categoryColorEditor');
 
   if (eventNameInput) eventNameInput.value = draftConfig.eventName || '';
   if (prefixInput) prefixInput.value = draftConfig.orderPrefix || 'A';
   if (ticketColorSelect) ticketColorSelect.value = draftConfig.ticketColor || 'black';
-
+  if (printerProfileSelect) {
+    printerProfileSelect.value = draftConfig.printerProfile || 'a6';
+    printerProfileSelect.addEventListener('change', e => {
+      draftConfig.printerProfile = e.currentTarget.value || 'a6';
+    });
+  }
   if (!categoryColorEditor) return;
 
   draftConfig.sections ||= [
