@@ -92,13 +92,6 @@ function moduleDocumentTicketsHtmlFromData(number, items, method = "") {
     documents.push(...(saleModule.buildDocuments(item, context) || []));
   });
 
-  if (config.printerProfile === "thermal72") {
-    return renderPrintLayout(documents, {
-      format: "thermal72",
-      layoutMode: "roll"
-    });
-  }
-
   return renderPrintLayout(documents, {
     format: "a6",
     layoutMode: "sheetOptimized",

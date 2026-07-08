@@ -362,7 +362,9 @@ const MultiModule = {
 
     addCartLine({
       id: product.id,
-      name: product.name,
+      name: productTicketName(product),
+      buttonName: productButtonName(product),
+      ticketName: productTicketName(product),
       type: "advanced",
       moduleType: this.id,
       category: product.category,
@@ -757,37 +759,47 @@ async function loadSalesFromSupabase() {
 }
 
 async function syncOrderNumberFromSupabase() {
-  if (!supabaseClient) return;
-
   const code = getDeviceCode();
+  let maxNumber = 0;
 
-  const { data, error } = await supabaseClient
-    .from('sales')
-    .select('order_number')
-    .eq('event_id', currentEventId)
-    .like('order_number', `${code}%`)
-    .order('created_at', { ascending: false })
-    .limit(1);
+  const readNumber = value => {
+    const text = String(value || '').trim();
+    if (!text.startsWith(code)) return 0;
+    const match = text.match(/(\d+)$/);
+    return match ? Number(match[1]) : 0;
+  };
 
-  if (error) {
-    console.error('Erreur lecture dernier ticket', error);
-    return;
+  [...(sales || []), ...(supabaseSales || [])].forEach(sale => {
+    maxNumber = Math.max(maxNumber, readNumber(sale.orderNumber || sale.order_number));
+  });
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('sales')
+      .select('order_number')
+      .eq('event_id', currentEventId)
+      .like('order_number', `${code}%`)
+      .limit(1000);
+
+    if (error) {
+      console.error('Erreur lecture dernier ticket', error);
+    } else {
+      (data || []).forEach(row => {
+        maxNumber = Math.max(maxNumber, readNumber(row.order_number));
+      });
+    }
   }
 
-  if (!data || !data.length) {
-    orderNumber = 1;
-    saveOrderNumber();
-    renderCart();
-    return;
+  const localNumber = loadOrderNumber();
+  if (Number.isFinite(localNumber) && localNumber > 0) {
+    maxNumber = Math.max(maxNumber, localNumber - 1);
   }
 
-  const match = String(data[0].order_number || '').match(/(\d+)$/);
-
-  orderNumber = match ? Number(match[1]) + 1 : 1;
-
+  orderNumber = Math.max(1, maxNumber + 1);
   saveOrderNumber();
   renderCart();
 }
+
 
 
 const DEVICE_CONFIG_KEY = 'sds_device_config';
@@ -1178,6 +1190,7 @@ function startSupabaseRealtime() {
 
 async function initSupabaseSync() {
   await loadConfigFromSupabase();
+  await loadSalesFromSupabase();
   await syncOrderNumberFromSupabase();
   await registerDevice();
   await syncPendingSales();
@@ -1409,6 +1422,8 @@ function normalizeConfig(c) {
     product.position ||= index + 1;
     product.category ||= 'Plat';
     product.name ??= '';
+    product.buttonName ??= product.name || '';
+    product.ticketName ??= product.name || '';
     product.price = Number(product.price || 0);
     product.type ||= 'simple';
     product.components ||= [];
@@ -1462,6 +1477,14 @@ function groupClass(group) { return 'group-' + slug(group); }
 function slug(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 
 function escapeHtml(str) { return String(str).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function productButtonName(product) {
+  return product?.buttonName || product?.name || '';
+}
+
+function productTicketName(productOrItem) {
+  return productOrItem?.ticketName || productOrItem?.name || '';
+}
 
 function summarizeNames(names) {
   const counts = {};
@@ -1728,7 +1751,7 @@ function productButtonHtml(p) {
       class="${classes}"
       style="${style}"
       data-id="${p.id}">
-      <strong>${escapeHtml(p.name)}</strong>
+      <strong>${escapeHtml(productButtonName(p))}</strong>
       <span>${sub}</span>
       ${stockLabel}
     </button>
@@ -1755,7 +1778,9 @@ function addProduct(id) {
 
   addCartLine({
     id: p.id,
-    name: p.name,
+    name: productTicketName(p),
+    buttonName: productButtonName(p),
+    ticketName: productTicketName(p),
     category: p.category,
     price: p.price,
     qty: 1,
@@ -2135,7 +2160,9 @@ async function printTicketForSale(sale) {
   lastTicketHtml = html;
   saveLastTicket();
 
-  const content = document.getElementById('printArea').innerText;
+  const content = typeof ticketTextFromSale === 'function'
+    ? ticketTextFromSale(sale)
+    : document.getElementById('printArea').innerText;
 
   await fetch("http://127.0.0.1:17890/print", {
     method: "POST",
@@ -2143,11 +2170,13 @@ async function printTicketForSale(sale) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      printer: "EPSON_XP_2200_Series",
+      printer: selectedPrinterName || "",
+      format: config.printerProfile || "thermal",
       content
     })
   });
 }
+
 
 function buildTicket() {
   const number = `${getDeviceCode()}${String(orderNumber).padStart(4, '0')} `;
@@ -2277,10 +2306,6 @@ function validateSale(extra = {}) {
   const printMode = getDevicePrintMode();
   const shouldPrint = config.printTicketsEnabled !== false && extra.print !== false;
 
-  // Toujours construire le dernier ticket s'il y a une impression
-  if (shouldPrint) {
-    buildTicket();
-  }
   if (shouldPrint) buildTicket();
 
   const kind = extra.kind || 'sale';
@@ -2292,9 +2317,12 @@ function validateSale(extra = {}) {
 
   if (salePaymentMethod === 'CB') {
     cardAmountCents = totalSaleCents;
+    cashAmountCents = 0;
+    paidCents = totalSaleCents;
   }
 
   if (salePaymentMethod === 'Espèces') {
+    cardAmountCents = 0;
     cashAmountCents = totalSaleCents;
   }
 
@@ -2311,8 +2339,8 @@ function validateSale(extra = {}) {
     paymentMethod: salePaymentMethod,
     cardAmount: cardAmountCents / 100,
     cashAmount: cashAmountCents / 100,
-    paid: extra.paid ?? paidAmount(),
-    change: extra.change ?? Math.max(0, paidAmount() - (cashAmountCents / 100)),
+    paid: extra.paid ?? (salePaymentMethod === 'CB' ? totalSaleCents / 100 : paidAmount()),
+    change: extra.change ?? (salePaymentMethod === 'Espèces' ? Math.max(0, paidAmount() - (cashAmountCents / 100)) : 0),
     total: total(),
     items: clone(cart),
     volunteerId: extra.volunteerId || '',
@@ -2424,7 +2452,7 @@ function addChoiceProduct() {
       selectedFoods.push(...result.selectedFoods); supplements += result.supplements; details.push(...result.details);
     }
   } catch (err) { return showMessage('Choix incomplet', err.message); }
-  addCartLine({ id: p.id, name: p.name, category: p.category, detail: summarizeNames(details), ticketChildren: [{ name: '', composition: summarizeNames(details), withCheck: false, category: p.category }], price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods });
+  addCartLine({ id: p.id, name: productTicketName(p), buttonName: productButtonName(p), ticketName: productTicketName(p), category: p.category, detail: summarizeNames(details), ticketChildren: [{ name: '', composition: summarizeNames(details), withCheck: false, category: p.category }], price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods });
   document.getElementById('choiceDialog').close();
   pendingChoiceProduct = null;
 }
@@ -2494,7 +2522,7 @@ function addMenuProduct() {
       });
     }
   } catch (err) { return showMessage('Choix incomplet', err.message); }
-  addCartLine({ id: p.id, name: p.name, type: 'menu', category: p.category, detail: details.join(' / '), ticketChildren, price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods, selectedProducts });
+  addCartLine({ id: p.id, name: productTicketName(p), buttonName: productButtonName(p), ticketName: productTicketName(p), type: 'menu', category: p.category, detail: details.join(' / '), ticketChildren, price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods, selectedProducts });
   document.getElementById('choiceDialog').close();
   pendingChoiceProduct = null;
 }
@@ -2655,8 +2683,13 @@ function renderProductEditor() {
         <div class="editor-row product-main clean-product-main">
 
           <div class="field-name">
-            <small>Nom</small>
-            <input data-product="name" data-i="${index}" value="${escapeHtml(product.name || '')}">
+            <small>Nom bouton</small>
+            <input data-product="buttonName" data-i="${index}" value="${escapeHtml(product.buttonName || product.name || '')}">
+          </div>
+
+          <div class="field-name">
+            <small>Nom ticket / commande</small>
+            <input data-product="ticketName" data-i="${index}" value="${escapeHtml(product.ticketName || product.name || '')}">
           </div>
 
           <div class="field-price">
@@ -2972,7 +3005,9 @@ function addProduct(productId) {
 
   addCartLine({
     id: product.id,
-    name: product.name,
+    name: productTicketName(product),
+    buttonName: productButtonName(product),
+    ticketName: productTicketName(product),
     category: product.category,
     price: product.price,
     qty: 1,
@@ -3042,6 +3077,12 @@ function updateProductDraft(e) {
         }
       };
     }
+  } else if (field === 'buttonName') {
+    product.buttonName = e.currentTarget.value;
+    if (!product.name) product.name = product.buttonName;
+  } else if (field === 'ticketName') {
+    product.ticketName = e.currentTarget.value;
+    if (!product.name) product.name = product.ticketName;
   } else {
     product[field] = e.currentTarget.value;
   }

@@ -176,7 +176,7 @@ async function renderLiveStatus() {
 
                 <p>Supabase : <strong>${supabaseClient ? "🟢 Connecté" : "🔴 Non connecté"}</strong></p>
 
-                <p>SDS Printer : <strong>${printer}${version}</strong></p>
+                <p>Caisse Printer : <strong>${printer}${version}</strong></p>
 
                 <h3>Caisses</h3>
 
@@ -347,7 +347,7 @@ async function renderLiveStatus() {
 
                 <p>Supabase : <strong>${supabaseClient ? "🟢 Connecté" : "🔴 Non connecté"}</strong></p>
 
-                <p>SDS Printer : <strong>${printer}${version}</strong></p>
+                <p>Caisse Printer : <strong>${printer}${version}</strong></p>
 
                 <h3>Caisses</h3>
 

@@ -75,7 +75,7 @@ function getSaleData(sale) {
 }
 
 function formatMoney(value) {
-    return `${Number(value || 0).toFixed(2)} €`;
+    return `${Number(value || 0).toFixed(2).replace(".", ",")} €`;
 }
 
 function normalizeText(value) {
@@ -97,11 +97,13 @@ function checkMarks(qty) {
 }
 
 function ticketLine(qty, name, price, withCheck = true) {
-    const left = `${qty} x ${name}`;
-    const middle = withCheck ? checkMarks(qty) : "";
+    const q = Number(qty || 1);
+    const leftRaw = `${q} x ${name}`;
+    const left = leftRaw.length > 22 ? leftRaw.slice(0, 22) : leftRaw;
+    const middle = withCheck ? checkMarks(q) : "";
     const right = formatMoney(price);
-
-    return `${left} ${middle}`.padEnd(34, " ") + right;
+    const base = `${left} ${middle}`.trimEnd();
+    return base.padEnd(30, " ") + right;
 }
 
 function childLine(child) {
@@ -154,8 +156,8 @@ function ticketTextFromSale(sale) {
     const orderNumber = sale.order_number || saleData.orderNumber || "";
     const paymentMethod = sale.payment_method || saleData.paymentMethod || "";
     const total = Number(sale.total || saleData.total || 0);
-    const paid = Number(saleData.paid || total || 0);
-    const change = Number(saleData.change || 0);
+    const paid = paymentMethod === 'CB' ? total : Number(saleData.paid || total || 0);
+    const change = paymentMethod === 'Espèces' ? Number(saleData.change || 0) : 0;
 
     const categoryOrder = [
         "BOISSONS",
@@ -190,7 +192,7 @@ function ticketTextFromSale(sale) {
         groupedItems[group].push(item);
     });
 
-    lines.push("SDS CAISSE");
+    lines.push("CAISSE");
     lines.push(`Commande ${orderNumber}`);
     lines.push(`Paiement : ${paymentMethod}`);
     lines.push("--------------------------------");
@@ -209,7 +211,7 @@ function ticketTextFromSale(sale) {
             const totalPrice = Number(item.price || 0) * qty;
             const isReturnDeposit = normalizeText(item.category).includes("retour consigne");
 
-            lines.push(ticketLine(qty, item.name, totalPrice, !isReturnDeposit));
+            lines.push(ticketLine(qty, item.ticketName || item.name, totalPrice, !isReturnDeposit));
 
             if (item.selectedFoods && item.selectedFoods.length > 0) {
                 lines.push(...selectedFoodLines(item.selectedFoods));
@@ -227,7 +229,7 @@ function ticketTextFromSale(sale) {
             const qty = Number(item.qty || 1);
             const totalPrice = Number(item.price || 0) * qty;
 
-            lines.push(ticketLine(qty, item.name, totalPrice, false));
+            lines.push(ticketLine(qty, item.ticketName || item.name, totalPrice, false));
 
             (item.ticketChildren || []).forEach(child => {
                 lines.push(childLine(child));
@@ -310,6 +312,7 @@ async function printTicket(sale) {
             },
             body: JSON.stringify({
                 printer: selectedPrinterName,
+                format: config.printerProfile || "thermal",
                 content
             })
         });
