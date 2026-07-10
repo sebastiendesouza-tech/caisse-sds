@@ -55,7 +55,7 @@ function ticketHtmlFromData(number, items, method, totalAmount, paidValue = 0, c
   ].join('');
 
   const cashDetails = method === 'Espèces'
-    ? `<div class="ticket-bottom">Payé : ${fmt(paidValue)}</div><div class="ticket-bottom">À rendre : ${fmt(changeValue)}</div>`
+    ? `<div class="ticket-bottom">Payé : ${fmt(paidValue)}</div><div class="ticket-bottom">A RENDRE : ${fmt(changeValue)}</div>`
     : '';
 
   return `

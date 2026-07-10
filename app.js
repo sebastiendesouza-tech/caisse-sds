@@ -362,9 +362,7 @@ const MultiModule = {
 
     addCartLine({
       id: product.id,
-      name: productTicketName(product),
-      buttonName: productButtonName(product),
-      ticketName: productTicketName(product),
+      name: product.name,
       type: "advanced",
       moduleType: this.id,
       category: product.category,
@@ -758,20 +756,32 @@ async function loadSalesFromSupabase() {
   console.log('Ventes trouvées =', data);
 }
 
-async function syncOrderNumberFromSupabase() {
-  const code = getDeviceCode();
+function nextOrderNumberFromList(list, code) {
   let maxNumber = 0;
 
-  const readNumber = value => {
-    const text = String(value || '').trim();
-    if (!text.startsWith(code)) return 0;
-    const match = text.match(/(\d+)$/);
-    return match ? Number(match[1]) : 0;
-  };
+  for (const sale of list || []) {
+    const value = String(sale?.orderNumber || sale?.order_number || '').trim();
+    if (!value.startsWith(code)) continue;
 
-  [...(sales || []), ...(supabaseSales || [])].forEach(sale => {
-    maxNumber = Math.max(maxNumber, readNumber(sale.orderNumber || sale.order_number));
-  });
+    const match = value.match(/(\d+)$/);
+    if (match) maxNumber = Math.max(maxNumber, Number(match[1]));
+  }
+
+  return maxNumber + 1;
+}
+
+async function syncOrderNumberFromSupabase() {
+  const code = getDeviceCode();
+
+  // Le compteur ne doit jamais reculer si Supabase est indisponible,
+  // vide, ou plus lent que le stockage local.
+  let nextNumber = Math.max(
+    1,
+    Number(orderNumber) || 1,
+    Number(loadOrderNumber()) || 1,
+    nextOrderNumberFromList(sales, code),
+    nextOrderNumberFromList(loadPendingSales(), code)
+  );
 
   if (supabaseClient) {
     const { data, error } = await supabaseClient
@@ -779,27 +789,23 @@ async function syncOrderNumberFromSupabase() {
       .select('order_number')
       .eq('event_id', currentEventId)
       .like('order_number', `${code}%`)
-      .limit(1000);
+      .order('created_at', { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error('Erreur lecture dernier ticket', error);
     } else {
-      (data || []).forEach(row => {
-        maxNumber = Math.max(maxNumber, readNumber(row.order_number));
-      });
+      nextNumber = Math.max(
+        nextNumber,
+        nextOrderNumberFromList(data || [], code)
+      );
     }
   }
 
-  const localNumber = loadOrderNumber();
-  if (Number.isFinite(localNumber) && localNumber > 0) {
-    maxNumber = Math.max(maxNumber, localNumber - 1);
-  }
-
-  orderNumber = Math.max(1, maxNumber + 1);
+  orderNumber = nextNumber;
   saveOrderNumber();
   renderCart();
 }
-
 
 
 const DEVICE_CONFIG_KEY = 'sds_device_config';
@@ -1190,7 +1196,6 @@ function startSupabaseRealtime() {
 
 async function initSupabaseSync() {
   await loadConfigFromSupabase();
-  await loadSalesFromSupabase();
   await syncOrderNumberFromSupabase();
   await registerDevice();
   await syncPendingSales();
@@ -1201,9 +1206,10 @@ async function initSupabaseSync() {
     if (!supabaseReady) await saveConfigToSupabase();
     startSupabaseRealtime();
 
-    setTimeout(() => {
-      loadConfigFromSupabase();
-      registerDevice();
+    setTimeout(async () => {
+      await loadConfigFromSupabase();
+      await syncOrderNumberFromSupabase();
+      await registerDevice();
     }, 1500);
   }
 }
@@ -1422,8 +1428,6 @@ function normalizeConfig(c) {
     product.position ||= index + 1;
     product.category ||= 'Plat';
     product.name ??= '';
-    product.buttonName ??= product.name || '';
-    product.ticketName ??= product.name || '';
     product.price = Number(product.price || 0);
     product.type ||= 'simple';
     product.components ||= [];
@@ -1477,14 +1481,6 @@ function groupClass(group) { return 'group-' + slug(group); }
 function slug(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 
 function escapeHtml(str) { return String(str).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-
-function productButtonName(product) {
-  return product?.buttonName || product?.name || '';
-}
-
-function productTicketName(productOrItem) {
-  return productOrItem?.ticketName || productOrItem?.name || '';
-}
 
 function summarizeNames(names) {
   const counts = {};
@@ -1751,7 +1747,7 @@ function productButtonHtml(p) {
       class="${classes}"
       style="${style}"
       data-id="${p.id}">
-      <strong>${escapeHtml(productButtonName(p))}</strong>
+      <strong>${escapeHtml(p.name)}</strong>
       <span>${sub}</span>
       ${stockLabel}
     </button>
@@ -1778,9 +1774,7 @@ function addProduct(id) {
 
   addCartLine({
     id: p.id,
-    name: productTicketName(p),
-    buttonName: productButtonName(p),
-    ticketName: productTicketName(p),
+    name: p.name,
     category: p.category,
     price: p.price,
     qty: 1,
@@ -2160,9 +2154,7 @@ async function printTicketForSale(sale) {
   lastTicketHtml = html;
   saveLastTicket();
 
-  const content = typeof ticketTextFromSale === 'function'
-    ? ticketTextFromSale(sale)
-    : document.getElementById('printArea').innerText;
+  const content = document.getElementById('printArea').innerText;
 
   await fetch("http://127.0.0.1:17890/print", {
     method: "POST",
@@ -2171,12 +2163,10 @@ async function printTicketForSale(sale) {
     },
     body: JSON.stringify({
       printer: selectedPrinterName || "",
-      format: config.printerProfile || "thermal",
       content
     })
   });
 }
-
 
 function buildTicket() {
   const number = `${getDeviceCode()}${String(orderNumber).padStart(4, '0')} `;
@@ -2306,6 +2296,10 @@ function validateSale(extra = {}) {
   const printMode = getDevicePrintMode();
   const shouldPrint = config.printTicketsEnabled !== false && extra.print !== false;
 
+  // Toujours construire le dernier ticket s'il y a une impression
+  if (shouldPrint) {
+    buildTicket();
+  }
   if (shouldPrint) buildTicket();
 
   const kind = extra.kind || 'sale';
@@ -2317,12 +2311,9 @@ function validateSale(extra = {}) {
 
   if (salePaymentMethod === 'CB') {
     cardAmountCents = totalSaleCents;
-    cashAmountCents = 0;
-    paidCents = totalSaleCents;
   }
 
   if (salePaymentMethod === 'Espèces') {
-    cardAmountCents = 0;
     cashAmountCents = totalSaleCents;
   }
 
@@ -2339,8 +2330,8 @@ function validateSale(extra = {}) {
     paymentMethod: salePaymentMethod,
     cardAmount: cardAmountCents / 100,
     cashAmount: cashAmountCents / 100,
-    paid: extra.paid ?? (salePaymentMethod === 'CB' ? totalSaleCents / 100 : paidAmount()),
-    change: extra.change ?? (salePaymentMethod === 'Espèces' ? Math.max(0, paidAmount() - (cashAmountCents / 100)) : 0),
+    paid: extra.paid ?? paidAmount(),
+    change: extra.change ?? Math.max(0, paidAmount() - (cashAmountCents / 100)),
     total: total(),
     items: clone(cart),
     volunteerId: extra.volunteerId || '',
@@ -2452,7 +2443,7 @@ function addChoiceProduct() {
       selectedFoods.push(...result.selectedFoods); supplements += result.supplements; details.push(...result.details);
     }
   } catch (err) { return showMessage('Choix incomplet', err.message); }
-  addCartLine({ id: p.id, name: productTicketName(p), buttonName: productButtonName(p), ticketName: productTicketName(p), category: p.category, detail: summarizeNames(details), ticketChildren: [{ name: '', composition: summarizeNames(details), withCheck: false, category: p.category }], price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods });
+  addCartLine({ id: p.id, name: p.name, category: p.category, detail: summarizeNames(details), ticketChildren: [{ name: '', composition: summarizeNames(details), withCheck: false, category: p.category }], price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods });
   document.getElementById('choiceDialog').close();
   pendingChoiceProduct = null;
 }
@@ -2522,7 +2513,7 @@ function addMenuProduct() {
       });
     }
   } catch (err) { return showMessage('Choix incomplet', err.message); }
-  addCartLine({ id: p.id, name: productTicketName(p), buttonName: productButtonName(p), ticketName: productTicketName(p), type: 'menu', category: p.category, detail: details.join(' / '), ticketChildren, price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods, selectedProducts });
+  addCartLine({ id: p.id, name: p.name, type: 'menu', category: p.category, detail: details.join(' / '), ticketChildren, price: Number(p.price || 0) + supplements, qty: 1, refundable: p.refundable, selectedFoods, selectedProducts });
   document.getElementById('choiceDialog').close();
   pendingChoiceProduct = null;
 }
@@ -2683,13 +2674,8 @@ function renderProductEditor() {
         <div class="editor-row product-main clean-product-main">
 
           <div class="field-name">
-            <small>Nom bouton</small>
-            <input data-product="buttonName" data-i="${index}" value="${escapeHtml(product.buttonName || product.name || '')}">
-          </div>
-
-          <div class="field-name">
-            <small>Nom ticket / commande</small>
-            <input data-product="ticketName" data-i="${index}" value="${escapeHtml(product.ticketName || product.name || '')}">
+            <small>Nom</small>
+            <input data-product="name" data-i="${index}" value="${escapeHtml(product.name || '')}">
           </div>
 
           <div class="field-price">
@@ -3005,9 +2991,7 @@ function addProduct(productId) {
 
   addCartLine({
     id: product.id,
-    name: productTicketName(product),
-    buttonName: productButtonName(product),
-    ticketName: productTicketName(product),
+    name: product.name,
     category: product.category,
     price: product.price,
     qty: 1,
@@ -3077,12 +3061,6 @@ function updateProductDraft(e) {
         }
       };
     }
-  } else if (field === 'buttonName') {
-    product.buttonName = e.currentTarget.value;
-    if (!product.name) product.name = product.buttonName;
-  } else if (field === 'ticketName') {
-    product.ticketName = e.currentTarget.value;
-    if (!product.name) product.name = product.ticketName;
   } else {
     product[field] = e.currentTarget.value;
   }
@@ -4871,8 +4849,8 @@ setInterval(syncPendingSales, 30000);
 applyDisplayMode();
 renderProducts();
 renderCart();
-initSupabaseSync();
 initDeviceSetupDialog();
+initSupabaseSync();
 setTimeout(() => {
   ensureCurrentEvent();
 }, 800);
